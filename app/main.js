@@ -4,6 +4,7 @@ import registry from '../.generated/tv-registry.js'; // généré par tools/buil
 import { applyDefaults, DEFAULT_GRID } from './config.js';
 import GLOBAL_SCHEMA from './global-schema.js';
 import { createStage } from './grid.js';
+import { createPanelHost } from './panel.js';
 import { initRemote } from './remote.js';
 import { findNeighbor, firstItem } from './focus.js';
 import { parseTime, isInRange } from './schedule.js';
@@ -24,6 +25,7 @@ function start() {
 
   platform.disableScreenSaver();
   const stage = createStage(root, grid, global);
+  const panels = createPanelHost(root);
   const instances = [];
 
   (config.widgets || []).forEach((w) => {
@@ -36,7 +38,7 @@ function start() {
     const inst = new entry.Widget();
     inst._init({
       id: w.id, cell: parts.cell, el: parts.body, size: parts.size, manifest: entry.manifest,
-      settings: applyDefaults(entry.manifest.schema, w.settings), platform,
+      settings: applyDefaults(entry.manifest.schema, w.settings), platform, panels,
     });
     try {
       const r = inst.mount(inst.el, inst.settings);
@@ -65,6 +67,13 @@ function start() {
   if (items.length) setFocus(firstItem(items));
 
   initRemote((key) => {
+    // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
+    const owner = panels.owner();
+    if (owner) {
+      if (safeKey(owner, key)) return;
+      if (key === 'back') { owner.closePanel(); return; }
+      if (MEDIA_KEYS.indexOf(key) === -1) return;
+    }
     const cur = byId(focusedId);
     if (cur && safeKey(cur.inst, key)) return;
     if (key === 'left' || key === 'right' || key === 'up' || key === 'down') {

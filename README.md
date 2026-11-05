@@ -73,8 +73,31 @@ L'app est buildée, signée, installée puis lancée sur la TV (environ 10 s). �
 | 🕐 Horloge | Fuseau horaire configurable. |
 | ⛅ Météo | [Open-Meteo](https://open-meteo.com), sans clé API. |
 | 📶 QR Wi-Fi | Le mot de passe reste dans la config locale et dans l'app installée sur la TV. |
-| 🎵 Musique YouTube | Collez le lien d'une playlist YouTube Music. OK = lecture/pause, ⏭ ⏮ ⏯ fonctionnent même sans focus, touche rouge = app YouTube. Les titres dont l'intégration est bloquée par l'ayant droit sont sautés. |
+| 🎵 Musique YouTube | Connecté à votre compte YouTube (voir ci-dessous). OK = bibliothèque plein écran (playlists, J'aime, recherche, recherches rapides, file en cours), ⏭ ⏮ ⏯ fonctionnent même sans focus, touche rouge = app YouTube. |
 | 🖼️ Photos | Disque branché sur la box : le **partage multimédia DLNA/UPnP** doit être activé sur la box Zeop. Le bouton « Rechercher la box » trouve l'URL automatiquement. Sinon, un disque USB branché directement sur la TV fonctionne aussi. |
+
+## Connecter YouTube (widget Musique)
+
+YouTube Music n'a pas d'API publique : le widget utilise l'**API officielle YouTube Data v3** avec votre compte
+Google, et le lecteur YouTube intégré pour la lecture.
+
+1. **Identifiants Google** (une fois, ~15 min, gratuit) — le guide détaillé avec les liens est affiché dans l'admin
+   quand on sélectionne le widget :
+   - créer un projet sur la [Google Cloud Console](https://console.cloud.google.com/projectcreate) ;
+   - activer l'**API YouTube Data v3** ;
+   - configurer l'écran de consentement OAuth (« Externe ») puis le **publier en production** — sinon la connexion
+     expire au bout de 7 jours (l'avertissement « application non validée » est normal pour un usage perso) ;
+   - créer un **ID client OAuth** de type **« TV et appareils à saisie limitée »** ;
+   - coller l'ID et le secret dans l'admin, puis « Tester les identifiants ».
+2. **Sur la TV** : sélectionnez le widget, OK, puis scannez le QR code avec votre téléphone (ou ouvrez
+   `google.com/device`) et saisissez le code affiché. La connexion est mémorisée sur la TV ; elle n'est ni dans
+   la config ni dans git. « Se déconnecter » est dans la bibliothèque.
+
+Limites (imposées par YouTube, pas contournables proprement) :
+- pas de mixes ni de recommandations personnalisées YouTube Music ; les « J'aime » sont ceux du compte YouTube ;
+- le lecteur intégré n'est pas connecté au compte : **les pubs ne sont pas garanties absentes** malgré Premium
+  (la touche rouge ouvre l'app YouTube officielle, connectée à Premium) ;
+- quota gratuit : ~100 recherches par jour (les listes ne coûtent presque rien et sont mises en cache 30 min).
 
 ## Créer un widget
 

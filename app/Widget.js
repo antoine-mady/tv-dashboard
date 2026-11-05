@@ -2,6 +2,30 @@
 import { proxify } from './platform.js';
 import { h } from './dom.js';
 
+/**
+ * Petit stockage persistant sur la TV (localStorage), propre à chaque widget.
+ * Ne lève jamais d'erreur : si le stockage est indisponible, get() renvoie la valeur par défaut.
+ */
+export function createStore(prefix, storage) {
+  const s = () => {
+    try { return storage || window.localStorage; } catch (e) { return null; }
+  };
+  return {
+    get(key, fallback) {
+      try {
+        const raw = s().getItem(prefix + key);
+        return raw === null ? fallback : JSON.parse(raw);
+      } catch (e) { return fallback; }
+    },
+    set(key, value) {
+      try { s().setItem(prefix + key, JSON.stringify(value)); } catch (e) { /* stockage indisponible */ }
+    },
+    remove(key) {
+      try { s().removeItem(prefix + key); } catch (e) { /* stockage indisponible */ }
+    },
+  };
+}
+
 export default class Widget {
   /** Appelé par l'app avant mount(). Ne pas surcharger. */
   _init(ctx) {
@@ -14,6 +38,9 @@ export default class Widget {
     this.platform = ctx.platform; // { isTizen, isPreview, launchApp… }
     this._cleanups = [];
     this._errorEl = null;
+    this._panels = ctx.panels;   // hôte des panneaux plein écran (géré par l'app)
+    this._panel = null;
+    this.store = createStore('tvdash:' + ctx.id + ':');
   }
 
   // ---- À surcharger ----------------------------------------------------------
@@ -25,6 +52,28 @@ export default class Widget {
   onFocus(focused) {}
   /** Libère les ressources propres au widget (timers et listeners de this.every/after/listen sont déjà nettoyés). */
   destroy() {}
+  /** Appelé quand le panneau plein écran du widget se ferme (Retour, ou closePanel()). */
+  onPanelClose() {}
+
+  // ---- Panneau plein écran ----------------------------------------------------
+  /**
+   * Ouvre un panneau plein écran (1920×1080) et renvoie l'élément à remplir.
+   * Tant qu'il est ouvert, TOUTES les touches arrivent dans onKey() de ce widget ;
+   * si onKey ne gère pas « back », l'app ferme le panneau.
+   */
+  openPanel() {
+    if (!this._panel) this._panel = this._panels.open(this);
+    return this._panel;
+  }
+
+  closePanel() {
+    if (!this._panel) return;
+    this._panels.close(this);
+    this._panel = null;
+    try { this.onPanelClose(); } catch (e) { console.error(e); }
+  }
+
+  get panelOpen() { return !!this._panel; }
 
   // ---- Utilitaires ------------------------------------------------------------
   /**
@@ -63,20 +112,27 @@ export default class Widget {
     this._cleanups.push(() => target.removeEventListener(type, fn, opts));
   }
 
-  /** fetch avec timeout (15 s par défaut) et erreur si statut HTTP ≠ 2xx. */
-  fetch(url, opts) {
+  /** fetch avec timeout (15 s par défaut) et proxy dans l'aperçu. Renvoie la réponse quel que soit le statut HTTP. */
+  fetchRaw(url, opts) {
     const o = opts || {};
     const timeout = o.timeout || 15000;
     return new Promise((resolve, reject) => {
       const t = setTimeout(() => reject(new Error('Délai dépassé (' + url.split('?')[0] + ')')), timeout);
       fetch(proxify(url), o).then((r) => {
         clearTimeout(t);
-        if (!r.ok) reject(new Error('Erreur HTTP ' + r.status));
-        else resolve(r);
+        resolve(r);
       }, (e) => {
         clearTimeout(t);
         reject(new Error('Réseau indisponible (' + (e && e.message ? e.message : e) + ')'));
       });
+    });
+  }
+
+  /** Comme fetchRaw, mais erreur si statut HTTP ≠ 2xx. */
+  fetch(url, opts) {
+    return this.fetchRaw(url, opts).then((r) => {
+      if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+      return r;
     });
   }
 
@@ -101,6 +157,7 @@ export default class Widget {
 
   /** Appelé par l'app. Ne pas surcharger (surcharger destroy()). */
   _destroy() {
+    this.closePanel();
     this._cleanups.forEach((fn) => { try { fn(); } catch (e) { /* ignore */ } });
     this._cleanups = [];
     try { this.destroy(); } catch (e) { /* ignore */ }

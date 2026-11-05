@@ -89,3 +89,17 @@ html, body {
 /* Petits utilitaires partagés par les widgets */
 .muted { color: rgba(242, 245, 249, 0.6); }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Panneau plein écran ouvert par un widget (this.openPanel()). Le widget le remplit et le stylise
+   avec une classe préfixée par .w-<type> (ex. .w-music-panel). */
+.panel-layer {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 50;
+  box-sizing: border-box;
+  background: rgba(6, 9, 20, 0.97);
+  color: #f2f5f9;
+  overflow: hidden;
+}

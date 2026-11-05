@@ -62,8 +62,19 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    - Utilitaires : `this.every(ms, fn)` (timer auto-nettoyé ; une erreur/promesse rejetée affiche l'état
      d'erreur, effacé au succès suivant), `this.after(ms, fn)`, `this.listen(target, type, fn)`,
      `this.fetchJson/fetchText(url, opts)` (timeout, erreurs HTTP, proxy automatique dans l'aperçu),
+     `this.fetchRaw(url, opts)` (idem mais renvoie la réponse quel que soit le statut, ex. pour OAuth),
      `this.showError(msg)` / `this.clearError()`, `this.size` (`{ width, height }` en px),
      `this.platform` (`isTizen`, `isPreview`, `launchApp(appId)`). Helper DOM : `h()` de `app/dom.js`.
+   - `this.store.get(key, défaut)` / `set(key, valeur)` / `remove(key)` : stockage persistant **sur la TV**
+     (localStorage, JSON, propre au widget, ne lève jamais d'erreur). Pour ce qui est appris sur la TV
+     (ex. jeton de connexion) — jamais pour la config, qui vient de l'admin.
+   - `this.openPanel()` → élément **plein écran** (1920×1080) à remplir ; ajoutez-y une classe `.w-<type>-panel`
+     pour le styler. Tant qu'il est ouvert, **toutes** les touches vont à `onKey()` ; si « back » n'est pas
+     gérée, l'app ferme le panneau. `this.closePanel()`, `this.panelOpen`, hook `onPanelClose()`.
+     Exemple : la bibliothèque de `widgets/music/` (`browser.js`).
+   - QR code : `qrSvg(texte)` de `app/qr.js` (SVG à insérer en `innerHTML`).
+   - Champs de saisie : quand un `<input>` a le focus, la télécommande ne transmet que Entrée, Retour, haut et
+     bas (`app/remote.js`) ; le clavier natif de la TV gère le reste.
 4. **`tv.css`** — chaque sélecteur **commence par `.w-<type>`** (vérifié par les tests). Les variables
    `var(--w)` / `var(--h)` donnent la taille du widget : `font-size: calc(var(--h) * 0.2)`. `var(--accent)` = couleur d'accent.
 5. **Logique pure** dans un fichier à part (ex. `codes.js`, `dlna.js`) + **test** `<nom>.test.js` à côté.

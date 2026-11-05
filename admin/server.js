@@ -57,7 +57,7 @@ async function apiProxy(req, res, url) {
   const target = url.searchParams.get('url') || '';
   if (!/^https?:\/\//i.test(target)) return send(res, 400, 'URL invalide');
   const headers = {};
-  for (const h of ['content-type', 'soapaction', 'accept']) if (req.headers[h]) headers[h] = req.headers[h];
+  for (const h of ['content-type', 'soapaction', 'accept', 'authorization']) if (req.headers[h]) headers[h] = req.headers[h];
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await readBody(req);
   try {
     const r = await fetch(target, { method: req.method, headers, body, signal: AbortSignal.timeout(30000) });

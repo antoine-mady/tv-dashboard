@@ -1,6 +1,128 @@
-.w-music {
+.w-music .mu-playerview {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+.w-music .mu-source {
+  font-size: calc(var(--h) * 0.042);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-height: 1.2em;
+}
+
+/* ---- Écran de connexion ---- */
+.w-music .mu-login {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.w-music .mu-login-qr {
+  height: 78%;
+  margin-right: calc(var(--h) * 0.06);
+  flex: none;
+}
+.w-music .mu-login-qr svg { height: 100%; width: auto; border-radius: 10px; }
+.w-music .mu-login-info { min-width: 0; font-size: calc(var(--h) * 0.06); line-height: 1.35; }
+.w-music .mu-login-title {
+  font-size: calc(var(--h) * 0.09);
+  font-weight: 700;
+  margin-bottom: calc(var(--h) * 0.03);
+}
+.w-music .mu-login-code {
+  font-size: calc(var(--h) * 0.095);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--accent);
+  margin-top: 4px;
+  font-family: monospace;
+}
+.w-music .mu-login-warn { color: #ffb4a8; margin-bottom: 8px; }
+
+/* ---- Panneau bibliothèque (plein écran) ---- */
+.w-music-panel .mp-layout {
+  display: flex;
+  height: 100%;
+}
+.w-music-panel .mp-side {
+  width: 540px;
+  flex: none;
+  box-sizing: border-box;
+  padding: 64px 32px 48px 64px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.04);
+}
+.w-music-panel .mp-brand { font-size: 44px; font-weight: 700; margin-bottom: 40px; }
+.w-music-panel .mp-menu { flex: 1; }
+.w-music-panel .mp-tab {
+  font-size: 32px;
+  padding: 16px 22px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  color: rgba(242, 245, 249, 0.7);
+}
+.w-music-panel .mp-tab-icon { display: inline-block; width: 52px; }
+.w-music-panel .mp-tab.is-current { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.w-music-panel .mp-tab.is-selected { background: var(--accent); color: #06243b; font-weight: 700; }
+.w-music-panel .mp-help { font-size: 22px; line-height: 1.6; color: rgba(242, 245, 249, 0.55); }
+.w-music-panel .mp-main {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 64px 72px 48px 56px;
+  display: flex;
+  flex-direction: column;
+}
+.w-music-panel .mp-title { font-size: 48px; font-weight: 700; margin-bottom: 24px; }
+.w-music-panel .mp-search {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 36px;
+  padding: 18px 26px;
+  border-radius: 16px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  margin-bottom: 24px;
+  outline: none;
+}
+.w-music-panel .mp-search:focus { border-color: var(--accent); }
+.w-music-panel .mp-status { font-size: 30px; color: rgba(242, 245, 249, 0.6); margin: 12px 0; }
+.w-music-panel .mp-list { flex: 1; min-height: 0; position: relative; }
+.w-music-panel .mp-row {
+  display: flex;
+  align-items: center;
+  height: 104px;
+  padding: 0 20px;
+  margin-bottom: 6px;
+  border-radius: 18px;
+}
+.w-music-panel .mp-row.is-selected { background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 4px var(--accent); }
+.w-music-panel .mp-row.is-playing .mp-row-title { color: var(--accent); }
+.w-music-panel .mp-thumb {
+  width: 136px;
+  height: 80px;
+  flex: none;
+  margin-right: 28px;
+  border-radius: 10px;
+  background: #222 center / cover no-repeat;
+}
+.w-music-panel .mp-thumb-icon { display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.w-music-panel .mp-row-text { flex: 1; min-width: 0; }
+.w-music-panel .mp-row-title { font-size: 32px; font-weight: 600; }
+.w-music-panel .mp-row-sub { font-size: 24px; color: rgba(242, 245, 249, 0.6); margin-top: 4px; }
+.w-music-panel .mp-row-badge { font-size: 32px; color: var(--accent); margin-left: 20px; }
+.w-music-panel .mp-more { position: absolute; right: 8px; bottom: 0; font-size: 22px; color: rgba(242, 245, 249, 0.5); }
+.w-music-panel .mp-now {
+  font-size: 26px;
+  color: rgba(242, 245, 249, 0.75);
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .w-music .mu-media {
   position: relative;

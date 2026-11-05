@@ -28,6 +28,15 @@ export default class PhotosWidget extends Widget {
   }
 
   async loadList() {
+    try {
+      await this.indexPhotos();
+    } catch (e) {
+      if (!this.photos.length) this.statusEl.textContent = ''; // le message d'erreur prend la place
+      throw e;
+    }
+  }
+
+  async indexPhotos() {
     const s = this.settings;
     const list = s.source === 'usb'
       ? await listUsbImages(s.usbFolder, s.maxPhotos)

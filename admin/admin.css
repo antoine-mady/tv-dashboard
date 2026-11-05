@@ -261,3 +261,10 @@ dialog pre {
   .layout { grid-template-columns: 1fr; }
   .panel { position: static; max-height: none; }
 }
+
+/* Guides et codes dans les éditeurs de widgets */
+.ext details summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.ext .guide { padding-left: 20px; margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.ext .guide li { margin-bottom: 6px; }
+.ext a { color: var(--accent); }
+.ext .code { font: 700 28px/1.2 ui-monospace, monospace; letter-spacing: 0.1em; color: var(--accent); margin: 6px 0; }

@@ -15,3 +15,12 @@ test('format de durée', () => {
   assert.equal(formatDuration(65.9), '1:05');
   assert.equal(formatDuration(600), '10:00');
 });
+
+test('lecture aléatoire : le titre choisi reste en premier', async () => {
+  const { shuffleQueue } = await import('./playlist.js');
+  const list = ['a', 'b', 'c', 'd', 'e'];
+  const q = shuffleQueue(list, 2);
+  assert.equal(q[0], 'c');
+  assert.deepEqual(q.slice().sort(), list);
+  assert.deepEqual(shuffleQueue(list, -1).sort(), list);
+});

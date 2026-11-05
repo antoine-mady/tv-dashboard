@@ -14,3 +14,17 @@ export function formatDuration(sec) {
   const r = s % 60;
   return m + ':' + (r < 10 ? '0' : '') + r;
 }
+
+/**
+ * Ordre de lecture aléatoire : le titre choisi (startIndex) reste en premier, le reste est mélangé.
+ * startIndex = -1 : tout est mélangé.
+ */
+export function shuffleQueue(tracks, startIndex, random) {
+  const rnd = random || Math.random;
+  const rest = tracks.filter((_, i) => i !== startIndex);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    const t = rest[i]; rest[i] = rest[j]; rest[j] = t;
+  }
+  return startIndex >= 0 && startIndex < tracks.length ? [tracks[startIndex]].concat(rest) : rest;
+}
