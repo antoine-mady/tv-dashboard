@@ -18,6 +18,7 @@ function safeKey(inst, key) {
 }
 
 function start() {
+  window.__APP_STARTED__ = true;
   const config = window.__DASHBOARD_CONFIG__ || { widgets: [] };
   const global = applyDefaults(GLOBAL_SCHEMA, config.global);
   const grid = Object.assign({}, DEFAULT_GRID, config.grid);

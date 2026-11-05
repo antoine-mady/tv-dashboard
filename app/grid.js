@@ -5,6 +5,20 @@ export const STAGE_W = 1920;
 export const STAGE_H = 1080;
 const INNER_PADDING = 28; // padding interne d'une cellule encadrée (doit correspondre à styles.css)
 
+/**
+ * Taille de la fenêtre. Sur TV, innerWidth/innerHeight peuvent valoir 0 au lancement :
+ * on se rabat sur la taille du document, de l'écran, puis sur 1920×1080.
+ */
+export function viewportSize(win) {
+  const w = win || window;
+  const doc = w.document && w.document.documentElement;
+  const scr = w.screen || {};
+  return {
+    width: w.innerWidth || (doc && doc.clientWidth) || scr.width || STAGE_W,
+    height: w.innerHeight || (doc && doc.clientHeight) || scr.height || STAGE_H,
+  };
+}
+
 export function createStage(root, grid, global) {
   const pad = global.padding;
   const gap = global.gap;
@@ -17,13 +31,18 @@ export function createStage(root, grid, global) {
   root.style.setProperty('--accent', global.accent);
 
   function fit() {
-    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
-    const offX = (window.innerWidth - STAGE_W * scale) / 2;
-    const offY = (window.innerHeight - STAGE_H * scale) / 2;
+    const v = viewportSize();
+    const scale = Math.min(v.width / STAGE_W, v.height / STAGE_H);
+    const offX = (v.width - STAGE_W * scale) / 2;
+    const offY = (v.height - STAGE_H * scale) / 2;
     root.style.transform = 'translate(' + (offX + shiftX * scale) + 'px,' + (offY + shiftY * scale) + 'px) scale(' + scale + ')';
   }
   window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
   fit();
+  // Sur certaines TV, la fenêtre n'a pas encore sa taille au démarrage (0×0) et aucun « resize »
+  // ne suit : on recalcule un peu plus tard pour ne pas rester à l'échelle 0 (écran vide).
+  [300, 1500, 5000].forEach((ms) => setTimeout(fit, ms));
 
   function rect(w) {
     return {

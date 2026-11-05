@@ -26,8 +26,24 @@ export function generateRegistry() {
   fs.writeFileSync(path.join(GENERATED, 'tv-registry.js'), lines.join('\n'));
 }
 
-function inlineJson(obj) {
-  return JSON.stringify(obj).replace(/</g, '\\u003c');
+/** JSON sûr dans un <script> inline : pas de « </script> » ni de U+2028/2029 (invalides en JS avant ES2019). */
+export function inlineJson(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+/**
+ * Injecte la plateforme et la config dans index.html. Remplacements par FONCTION : avec une chaîne,
+ * `$&`, `$'`, `` $` `` ou `$$` présents dans un réglage (ex. mot de passe Wi-Fi) seraient interprétés
+ * par String.replace et casseraient le JSON → la TV démarrerait sans aucun widget.
+ */
+export function renderIndexHtml(template, platform, config) {
+  const configScript = '<script>window.__DASHBOARD_CONFIG__ = ' + inlineJson(config) + ';</script>';
+  return template
+    .replace('<!--PLATFORM-->', () => platform)
+    .replace('<!--CONFIG-->', () => configScript);
 }
 
 /**
@@ -62,9 +78,7 @@ export async function buildApp({ outdir = DIST, preview = false, config = readCo
   const platform = preview
     ? '<script>window.__PREVIEW__ = true;</script>'
     : '<script src="$WEBAPIS/webapis/webapis.js"></script>';
-  const html = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8')
-    .replace('<!--PLATFORM-->', platform)
-    .replace('<!--CONFIG-->', '<script>window.__DASHBOARD_CONFIG__ = ' + inlineJson(config) + ';</script>');
+  const html = renderIndexHtml(fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8'), platform, config);
   fs.writeFileSync(path.join(outdir, 'index.html'), html);
 
   if (!preview) {
