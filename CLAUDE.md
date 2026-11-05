@@ -105,3 +105,7 @@ Référence la plus simple : **`widgets/clock/`**. Exemple complet (admin + serv
 - Navigation 100 % télécommande, lisible à 3 m : textes grands, contrastes forts.
 - Les requêtes cross-origin marchent sur la TV grâce à `<access origin="*">` (tizen/config.xml) ; dans l'aperçu
   elles passent par `/api/proxy` (automatique avec `this.fetch*`).
+- **CSP** : `tizen/config.xml` déclare une `<tizen:content-security-policy>` (sans elle, Tizen bloque tout script
+  externe). Un widget qui charge un **script, une iframe ou un média externe** doit ajouter l'hôte à la bonne
+  directive (`script-src`, `frame-src`, `media-src`…). L'aperçu applique la même CSP : une violation y apparaît
+  dans la console du navigateur, comme elle se produirait sur la TV. `tools/build.test.js` vérifie l'essentiel.

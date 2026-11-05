@@ -42,6 +42,20 @@ export function renderConfigJs(config, preview) {
   return (preview ? 'window.__PREVIEW__ = true;\n' : '') + 'window.__DASHBOARD_CONFIG__ = ' + inlineJson(config) + ';\n';
 }
 
+/** Politique CSP déclarée dans tizen/config.xml (balise <tizen:content-security-policy>), ou '' si absente. */
+export function extractCsp(xml) {
+  const m = /<tizen:content-security-policy>([\s\S]*?)<\/tizen:content-security-policy>/.exec(xml);
+  return m ? m[1].replace(/\s+/g, ' ').trim() : '';
+}
+
+export function readCsp() {
+  return extractCsp(fs.readFileSync(path.join(ROOT, 'tizen', 'config.xml'), 'utf8'));
+}
+
+function escapeAttr(s) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
 /**
  * Construit l'app dans `outdir`.
  * preview=true : version pour l'aperçu navigateur (pas de fichiers Tizen, sourcemaps, proxy activé).
@@ -72,8 +86,12 @@ export async function buildApp({ outdir = DIST, preview = false, config = readCo
     logLevel: 'silent',
   });
 
+  // L'aperçu applique la même CSP que la TV (tizen/config.xml) pour révéler les blocages avant l'installation.
   // Remplacement par fonction : une chaîne contenant « $ » serait interprétée par String.replace.
-  const platform = preview ? '' : '<script src="$WEBAPIS/webapis/webapis.js"></script>';
+  const csp = preview ? readCsp() : '';
+  const platform = csp
+    ? '<meta http-equiv="Content-Security-Policy" content="' + escapeAttr(csp) + '">'
+    : (preview ? '' : '<script src="$WEBAPIS/webapis/webapis.js"></script>');
   const html = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8').replace('<!--PLATFORM-->', () => platform);
   fs.writeFileSync(path.join(outdir, 'index.html'), html);
   fs.writeFileSync(path.join(outdir, 'config.js'), renderConfigJs(config, preview));

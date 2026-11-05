@@ -16,9 +16,23 @@ function loadYouTubeApi() {
     if (window.YT && window.YT.Player) { resolve(window.YT); return; }
     const prev = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => { if (prev) prev(); resolve(window.YT); };
+    // Distingue un blocage par la politique de sécurité (CSP de tizen/config.xml) d'un problème réseau.
+    let blockedByCsp = false;
+    const onViolation = (e) => { if (/youtube|ytimg/.test(e.blockedURI || '')) blockedByCsp = true; };
+    document.addEventListener('securitypolicyviolation', onViolation);
     const s = document.createElement('script');
     s.src = 'https://www.youtube.com/iframe_api';
-    s.onerror = () => { apiPromise = null; reject(new Error('Impossible de charger YouTube (connexion internet ?)')); };
+    s.onload = () => document.removeEventListener('securitypolicyviolation', onViolation);
+    s.onerror = () => {
+      // L'événement CSP peut arriver juste après onerror : on attend un instant avant de conclure.
+      setTimeout(() => {
+        document.removeEventListener('securitypolicyviolation', onViolation);
+        apiPromise = null;
+        reject(new Error(blockedByCsp
+          ? 'Lecteur YouTube bloqué par la sécurité de l’app (CSP de tizen/config.xml)'
+          : 'Impossible de charger le lecteur YouTube (youtube.com injoignable ?)'));
+      }, 50);
+    };
     document.head.appendChild(s);
   });
   return apiPromise;
@@ -210,7 +224,7 @@ export default class MusicWidget extends Widget {
   onState(state) {
     this.stateEl.textContent = state === PLAYING ? '' : state === BUFFERING ? '…' : '▶';
     this.stateEl.style.opacity = state === PLAYING ? '0' : '1';
-    if (state === PLAYING) this.errors = 0;
+    if (state === PLAYING && this.errors) { this.errors = 0; this.setSource(this.queue.label); }
     const t = this.currentTrack();
     if (t && t.id !== this.videoId) {
       this.videoId = t.id;
@@ -222,12 +236,18 @@ export default class MusicWidget extends Widget {
   }
 
   onPlayerError(code) {
-    // 101/150 : intégration refusée par l'ayant droit ; 100 : vidéo supprimée → piste suivante.
+    // 100 : vidéo supprimée ; 101/150 : intégration refusée par l'ayant droit → piste suivante.
+    // 152/153 : le lecteur refuse l'environnement (référent manquant) → inutile d'insister.
     this.errors++;
+    if (code === 152 || code === 153) {
+      this.setSource('⚠ Lecteur YouTube refusé sur cette TV (erreur ' + code + ')');
+      return;
+    }
     if (this.errors > 15) {
       this.setSource('⚠ Aucun titre lisible ici (erreur YouTube ' + code + ')');
       return;
     }
+    this.setSource((this.queue.label || '') + ' · titre ignoré (erreur ' + code + ')');
     this.after(500, () => this.player.nextVideo());
   }
 
