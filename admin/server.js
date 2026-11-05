@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { ROOT, listWidgets, readConfig, writeConfig, readEnv } from '../tools/widgets.js';
 import { buildApp } from '../tools/build.js';
 import { deploy, resolveTools } from '../tools/deploy.js';
+import { buildWgt } from '../tools/wgt.js';
 
 const PORT = Number(process.env.PORT) || 5173;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -126,6 +127,16 @@ async function handle(req, res) {
     return sendJson(res, 200, { tvIp: t.tvIp, profile: t.profile, configured: !!(t.tvIp && t.profile), hasEnvFile: Object.keys(env).length > 0 });
   }
   if (p === '/api/deploy' && req.method === 'POST') return apiDeploy(req, res);
+  if (p === '/api/wgt') {
+    // Paquet non signé pour Apps2Samsung (qui le signe lui-même).
+    try {
+      const file = await buildWgt();
+      res.writeHead(200, { 'Content-Type': 'application/widget', 'Content-Disposition': 'attachment; filename="TVDashboard.wgt"', 'Cache-Control': 'no-store' });
+      return res.end(fs.readFileSync(file));
+    } catch (e) {
+      return send(res, 400, e.message);
+    }
+  }
   if (p === '/api/proxy') return apiProxy(req, res, url);
   const m = /^\/api\/widgets\/([a-z0-9-]+)\/(.+)$/.exec(p);
   if (m) return apiWidgetRoute(req, res, m[1], m[2]);

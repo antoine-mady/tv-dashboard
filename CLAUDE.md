@@ -15,6 +15,7 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
 | `npm run dev` | Page d'admin + aperçu live sur http://localhost:5173 |
 | `npm test` | Tests (`node --test`, tous les `*.test.js`) |
 | `npm run build` | Build de production dans `dist/` (échoue si la config est invalide) |
+| `npm run wgt` | Build + `TVDashboard.wgt` non signé (installation via Apps2Samsung) |
 | `npm run deploy` | Build + paquet `.wgt` signé + installation + lancement sur la TV (`.env.local` requis) |
 | `npm run new-widget <type> "Nom"` | Crée `widgets/<type>/` depuis `widgets/_template/` |
 

@@ -275,6 +275,7 @@ function renderErrors() {
     box.append(p);
   });
   $('#btn-deploy').disabled = errors.length > 0;
+  $('#btn-wgt').classList.toggle('disabled', errors.length > 0);
   $('#btn-deploy').title = errors.length ? 'Corrigez les erreurs avant d’envoyer' : '';
 }
 

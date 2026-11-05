@@ -18,7 +18,29 @@ npm run dev
 Ouvrez http://localhost:5173 : ajoutez et disposez les widgets, réglez-les, vérifiez le résultat dans l'aperçu.
 La config est enregistrée dans `config/dashboard.json` (fichier personnel, non versionné).
 
-## Préparer la TV (une seule fois)
+## Installer sur la TV avec Apps2Samsung (le plus simple)
+
+[Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung) gère lui-même le certificat Samsung et
+l'installation : Tizen Studio n'est pas nécessaire.
+
+1. **Mode développeur de la TV** : ouvrez *Apps*, tapez `1 2 3 4 5` avec la télécommande, activez
+   *Developer mode*, saisissez l'**IP du PC** qui lance Apps2Samsung, puis redémarrez complètement la TV
+   (débranchez-la 30 secondes). La TV et le PC doivent être sur le même réseau.
+2. **Créer le paquet** : bouton **⬇ Télécharger le .wgt** dans l'admin, ou :
+   ```bash
+   npm run wgt
+   ```
+   Cela produit `TVDashboard.wgt` (non signé : Apps2Samsung le signe lui-même).
+3. **Installer** : dans Apps2Samsung, choisissez l'installation d'un **WGT personnalisé**, sélectionnez
+   `TVDashboard.wgt`, choisissez la TV détectée et lancez l'installation (connexion au compte Samsung demandée
+   la première fois pour le certificat).
+4. **Démarrage automatique** : *Paramètres → Général → Fonctions Smart → Exécution auto. dernière app* = ON,
+   puis lancez une fois « TVDashboard » depuis la liste des apps.
+
+Après chaque changement de config : nouveau `.wgt` et réinstallation par Apps2Samsung.
+⚠ Laissez le **mode développeur activé** : les apps installées ainsi peuvent disparaître s'il est désactivé.
+
+## Préparer la TV avec Tizen Studio (alternative : bouton « Envoyer sur la TV »)
 
 1. **Tizen Studio** : installez [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download)
    (la version « CLI » suffit), puis, dans le *Package Manager*, les extensions **Samsung TV** (« TV Extensions »
