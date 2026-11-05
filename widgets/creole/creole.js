@@ -20,6 +20,14 @@ export function buildList(builtIn, custom, onlyCustom) {
   return base.concat(custom);
 }
 
+/** Liste intégrée selon le mode : 'words', 'proverbs' ou 'both'. Les proverbes sont marqués 'proverb'. */
+export function builtInFor(mode, words, proverbs) {
+  const p = proverbs.map((x) => [x[0], x[1], x[2], 'proverb']);
+  if (mode === 'proverbs') return p;
+  if (mode === 'both') return words.concat(p);
+  return words;
+}
+
 /** Numéro du jour local (change à minuit, heure de la TV). */
 export function dayNumber(date) {
   return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS);
@@ -43,7 +51,7 @@ export function wordFor(list, date) {
   if (!list.length) return null;
   const order = shuffled(list.length);
   const w = list[order[((dayNumber(date) % list.length) + list.length) % list.length]];
-  return { word: w[0], meaning: w[1], example: w[2] || '' };
+  return { word: w[0], meaning: w[1], example: w[2] || '', proverb: w[3] === 'proverb' };
 }
 
 export function yesterday(date) {

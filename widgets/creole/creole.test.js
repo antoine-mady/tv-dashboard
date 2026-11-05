@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import WORDS from './words.js';
-import { parseCustomWords, buildList, wordFor, yesterday, dayNumber } from './creole.js';
+import WORDS, { PROVERBS } from './words.js';
+import { parseCustomWords, buildList, builtInFor, wordFor, yesterday, dayNumber } from './creole.js';
 
 test('liste intégrée : mots et traductions renseignés, sans doublon', () => {
   assert.ok(WORDS.length >= 30);
@@ -31,4 +31,15 @@ test('un mot par jour, stable dans la journée, tous les mots sur un cycle', () 
   assert.equal(Object.keys(seen).length, WORDS.length);
   assert.equal(dayNumber(new Date(2026, 10, 6, 0, 1)) - dayNumber(new Date(2026, 10, 5, 23, 59)), 1);
   assert.equal(wordFor([], morning), null);
+});
+
+test('proverbes : renseignés et sélectionnés selon le mode', () => {
+  assert.ok(PROVERBS.length >= 10);
+  PROVERBS.forEach((p) => assert.ok(p[0] && p[1] && p[2], 'proverbe incomplet : ' + p[0]));
+  assert.equal(builtInFor('words', WORDS, PROVERBS).length, WORDS.length);
+  assert.equal(builtInFor('both', WORDS, PROVERBS).length, WORDS.length + PROVERBS.length);
+  const only = builtInFor('proverbs', WORDS, PROVERBS);
+  assert.equal(only.length, PROVERBS.length);
+  assert.equal(wordFor(only, new Date(2026, 10, 5)).proverb, true);
+  assert.equal(wordFor(WORDS, new Date(2026, 10, 5)).proverb, false);
 });

@@ -1,10 +1,12 @@
 // Mots du créole réunionnais : [mot, traduction, exemple (facultatif)].
+// Sources : liste de base + lexique du Comité Réunionnais du Tourisme
+// (https://www.reunion.fr/organisez/informations-utiles-avant-de-voyager/lexique-creole/).
 // L'orthographe du créole varie (Lékritir 77, KWZ, Tangol…) : celle-ci est une graphie courante, phonétique.
 // Pour corriger ou compléter : réglage « Mots personnels » dans l'admin, sans toucher au code.
 export default [
   ['Oté !', 'Salut ! / Hé ! (pour interpeller)', 'Oté dalon, koman i lé ?'],
   ['Koman i lé ?', 'Comment ça va ?', ''],
-  ['Lé bon', 'Ça va bien', 'Koman i lé ? — Lé bon !'],
+  ['Lé bon', 'D’accord, c’est bon', ''],
   ['Dalon', 'Ami, copain', 'Mon dalon i vien manzé.'],
   ['Marmay', 'Enfant(s)', 'Bann marmay i zoué dann la kour.'],
   ['Gramoun', 'Personne âgée', 'Respek bann gramoun.'],
@@ -56,7 +58,7 @@ export default [
   ['Moukat', 'Se moquer', 'Arèt moukat amwin !'],
   ['Ayo !', 'Aïe ! / Oh là là !', ''],
   ['Larg pa', 'Ne lâche pas, courage', 'Larg pa la patat !'],
-  ['Mi aime aou', 'Je t’aime', ''],
+  ['Mi aime a ou', 'Je t’aime', ''],
   ['Kèr', 'Cœur', ''],
   ['Fanm', 'Femme', ''],
   ['Boug', 'Homme, gars', ''],
@@ -64,4 +66,47 @@ export default [
   ['Maloya', 'Musique et danse traditionnelles', ''],
   ['Kabar', 'Fête ou concert de maloya', ''],
   ['Moring', 'Moringue, art martial réunionnais', ''],
+  ['Akoz', 'Pourquoi', ''],
+  ['Allons bouger', 'On y va', ''],
+  ['Larack', 'Le rhum', ''],
+  ['Bat karé', 'Se promener', ''],
+  ['Bonbon', 'Gâteau salé ou sucrerie', 'Bonbon piment, bonbon banane.'],
+  ['Bordmer', 'Plage, bord de mer', ''],
+  ['Kafrine', 'Fille (souvent affectueux)', ''],
+  ['Kayamb', 'Instrument de musique en roseaux rempli de graines', ''],
+  ['Kosasa ?', 'Qu’est-ce que c’est ?', ''],
+  ['Kwélafé ?', 'Qu’est-ce qui se passe ? Quoi de neuf ?', ''],
+  ['Grègue', 'Cafetière en fer blanc pour le café coulé', ''],
+  ['Léla', 'Ça va', ''],
+  ['Lé mol', 'Ça ne va pas', ''],
+  ['Loto', 'Voiture', ''],
+  ['Pilon', 'Mortier pour piler les épices', ''],
+  ['Pokoué ?', 'Pourquoi ?', ''],
+  ['Lambrequin', 'Frise décorative des cases créoles', ''],
+  ['Sa mèm', 'C’est ça', ''],
+  ['Santé vié moun', 'On fait aller', ''],
+  ['Siouplé', 'S’il vous plaît', ''],
+  ['Soulyé', 'Chaussures', ''],
+  ['Tantine', 'Petite amie', ''],
+  ['Yab', 'Habitant des Hauts à la peau blanche', ''],
+  ['Ziskakan ?', 'Jusqu’à quand ?', ''],
+];
+
+// Proverbes : [proverbe, traduction littérale, sens]. Même source (Comité Réunionnais du Tourisme).
+export const PROVERBS = [
+  ['La lang na pwin le zo', 'La langue n’a pas d’os', 'La parole a peu de valeur.'],
+  ['Goni vid i tyen pa debout', 'Un sac vide ne peut rester debout', 'L’estomac vide, on ne tient pas longtemps.'],
+  ['Fé pa la bou avan la pli', 'On ne fait pas la boue avant la pluie', 'Il ne faut pas mettre la charrue avant les bœufs.'],
+  ['Kan i koz ek boukané, sosis res pandiyé', 'Quand on s’adresse au boucané, la saucisse reste sur le crochet', 'Quand on parle à Jacques, Paul n’intervient pas.'],
+  ['Bondié i puni pa le roche', 'Dieu ne punit pas les pierres', 'Un malheur n’arrive qu’à ceux qui le méritent.'],
+  ['Dann oui na pwin batay', 'Dans oui, il n’y a pas de bataille', 'Il est facile de dire oui pour éviter la discussion.'],
+  ['Gro poison i bèk si le tar', 'Le gros poisson mord sur le tard', 'Tout vient à qui sait attendre.'],
+  ['I geyn le pus a fors frékant le sien', 'À force de fréquenter les chiens, on attrape des puces', 'Les mauvaises fréquentations mènent à la perte.'],
+  ['An atendan, kabri i manz salad', 'En attendant, la chèvre mange la salade', 'Sans solution, un problème perdure.'],
+  ['La pasians i géri la gal', 'La patience guérit la gale', 'Avec de la patience, on peut tout guérir.'],
+  ['Na in zour i apèl demin', 'Il y a un jour qui s’appelle demain', 'La roue tourne.'],
+  ['Fourmi i mars sous la tèr, domoun i koné', 'Les fourmis marchent sous terre, tout le monde le sait', 'Ce qu’on fait en cachette finit par se savoir.'],
+  ['Zanfan i plèr pa i gyen pa tété', 'L’enfant qui ne pleure pas n’a pas son lait', 'Il faut oser demander ce que l’on veut.'],
+  ['Ou donn in pié, i pran le karo', 'On donne un plant, on vous prend le champ entier', 'On donne un doigt, il prend le bras.'],
+  ['Ti ash i koup gro bwa', 'Une petite hache coupe une grosse bûche', 'À force de patience, on arrive à tout.'],
 ];

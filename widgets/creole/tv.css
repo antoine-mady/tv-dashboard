@@ -41,3 +41,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.w-creole .is-proverb .cr-word {
+  font-size: calc(var(--h) * 0.13);
+  white-space: normal;
+  line-height: 1.2;
+}
+.w-creole .is-proverb .cr-meaning { font-size: calc(var(--h) * 0.085); opacity: 0.85; }
+.w-creole .is-proverb .cr-example {
+  font-size: calc(var(--h) * 0.1);
+  font-style: normal;
+  font-weight: 600;
+  opacity: 1;
+  white-space: normal;
+}
