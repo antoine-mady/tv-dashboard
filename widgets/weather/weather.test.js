@@ -14,3 +14,11 @@ test('URL Open-Meteo', () => {
   assert.match(url, /latitude=-20.88&longitude=55.45/);
   assert.match(url, /forecast_days=4/);
 });
+
+test('URL Open-Meteo : soleil et UV selon les réglages', () => {
+  const all = buildUrl({ latitude: 1, longitude: 2, days: 3, showSun: true, showUv: true });
+  assert.match(all, /daily=[^&]*,sunrise,sunset/);
+  assert.match(all, /daily=[^&]*,uv_index_max/);
+  const none = buildUrl({ latitude: 1, longitude: 2, days: 3, showSun: false, showUv: false });
+  assert.doesNotMatch(none, /sunrise|uv_index_max/);
+});

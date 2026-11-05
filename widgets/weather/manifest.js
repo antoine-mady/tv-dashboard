@@ -2,7 +2,7 @@ export default {
   type: 'weather',
   name: 'Météo',
   icon: '⛅',
-  description: 'Météo actuelle et prévisions (Open-Meteo, sans clé API).',
+  description: 'Météo actuelle, prévisions, soleil, UV et qualité de l’air (Open-Meteo, sans clé API).',
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
   focusable: false,
   schema: [
@@ -11,6 +11,10 @@ export default {
       help: 'Clic droit sur Google Maps → les coordonnées s’affichent.' },
     { key: 'longitude', label: 'Longitude', type: 'number', step: 0.0001, min: -180, max: 180, default: 55.4504 },
     { key: 'days', label: 'Jours de prévision affichés', type: 'number', min: 0, max: 6, default: 3 },
+    { key: 'showSun', label: 'Lever et coucher du soleil', type: 'bool', default: true },
+    { key: 'showUv', label: 'Indice UV du jour (max)', type: 'bool', default: true },
+    { key: 'showAir', label: 'Qualité de l’air (indice européen + PM2.5)', type: 'bool', default: true,
+      help: 'Source : Open-Meteo / Copernicus (CAMS), sans clé API.' },
     { key: 'refreshMinutes', label: 'Rafraîchir toutes les (minutes)', type: 'number', min: 5, max: 180, default: 15 },
   ],
 };

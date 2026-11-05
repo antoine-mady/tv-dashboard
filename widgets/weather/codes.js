@@ -44,5 +44,7 @@ export function buildUrl(s) {
     + '?latitude=' + s.latitude + '&longitude=' + s.longitude
     + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    + (s.showSun !== false ? ',sunrise,sunset' : '')
+    + (s.showUv !== false ? ',uv_index_max' : '')
     + '&timezone=auto&forecast_days=' + (Number(s.days) + 1);
 }
