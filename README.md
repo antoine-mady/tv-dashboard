@@ -1,6 +1,6 @@
 # 📺 TV Dashboard
 
-Dashboard à widgets pour TV Samsung (Tizen) : horloge, météo, agenda (iCal), anniversaires, QR code Wi-Fi, musique YouTube,
+Dashboard à widgets pour TV Samsung (Tizen) : horloge, météo, agenda (iCal), anniversaires, mot créole du jour, QR code Wi-Fi, musique YouTube,
 diaporama des photos du disque branché sur la box. Configuration depuis le PC, puis envoi sur la TV.
 
 ## Démarrage rapide (sur le PC)
