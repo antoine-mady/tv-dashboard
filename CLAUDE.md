@@ -99,6 +99,8 @@ Référence la plus simple : **`widgets/clock/`**. Exemple complet (admin + serv
 - **Compatibilité TV (Chrome 56)** : esbuild convertit la syntaxe moderne, mais **pas les API** — éviter
   `AbortController`, `IntersectionObserver`, `ResizeObserver`, `Intl…formatToParts`, `Array.prototype.flat`,
   `Object.fromEntries`… En CSS : pas de `inset`, `gap` en flexbox, `aspect-ratio`, `:is()`, container queries.
+- **Aucun `<script>` inline** dans `app/index.html` : la CSP par défaut des apps Tizen les bloque (la config est
+  écrite dans `dist/config.js`, le diagnostic de démarrage est `app/boot.js`, en ES5). Vérifié par `tools/build.test.js`.
 - Pas de CDN ni de police distante : tout est embarqué dans le `.wgt` (exception : les API des services eux-mêmes).
 - Navigation 100 % télécommande, lisible à 3 m : textes grands, contrastes forts.
 - Les requêtes cross-origin marchent sur la TV grâce à `<access origin="*">` (tizen/config.xml) ; dans l'aperçu

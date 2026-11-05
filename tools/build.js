@@ -26,7 +26,7 @@ export function generateRegistry() {
   fs.writeFileSync(path.join(GENERATED, 'tv-registry.js'), lines.join('\n'));
 }
 
-/** JSON sûr dans un <script> inline : pas de « </script> » ni de U+2028/2029 (invalides en JS avant ES2019). */
+/** JSON sûr dans du code JS : pas de « </script » ni de U+2028/2029 (invalides en JS avant ES2019). */
 export function inlineJson(obj) {
   return JSON.stringify(obj)
     .replace(/</g, '\\u003c')
@@ -35,15 +35,11 @@ export function inlineJson(obj) {
 }
 
 /**
- * Injecte la plateforme et la config dans index.html. Remplacements par FONCTION : avec une chaîne,
- * `$&`, `$'`, `` $` `` ou `$$` présents dans un réglage (ex. mot de passe Wi-Fi) seraient interprétés
- * par String.replace et casseraient le JSON → la TV démarrerait sans aucun widget.
+ * Contenu de dist/config.js. La config est dans un fichier à part (et non inline dans index.html)
+ * car la CSP par défaut des apps Tizen bloque les scripts inline : la TV démarrait sans config.
  */
-export function renderIndexHtml(template, platform, config) {
-  const configScript = '<script>window.__DASHBOARD_CONFIG__ = ' + inlineJson(config) + ';</script>';
-  return template
-    .replace('<!--PLATFORM-->', () => platform)
-    .replace('<!--CONFIG-->', () => configScript);
+export function renderConfigJs(config, preview) {
+  return (preview ? 'window.__PREVIEW__ = true;\n' : '') + 'window.__DASHBOARD_CONFIG__ = ' + inlineJson(config) + ';\n';
 }
 
 /**
@@ -76,11 +72,12 @@ export async function buildApp({ outdir = DIST, preview = false, config = readCo
     logLevel: 'silent',
   });
 
-  const platform = preview
-    ? '<script>window.__PREVIEW__ = true;</script>'
-    : '<script src="$WEBAPIS/webapis/webapis.js"></script>';
-  const html = renderIndexHtml(fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8'), platform, config);
+  // Remplacement par fonction : une chaîne contenant « $ » serait interprétée par String.replace.
+  const platform = preview ? '' : '<script src="$WEBAPIS/webapis/webapis.js"></script>';
+  const html = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8').replace('<!--PLATFORM-->', () => platform);
   fs.writeFileSync(path.join(outdir, 'index.html'), html);
+  fs.writeFileSync(path.join(outdir, 'config.js'), renderConfigJs(config, preview));
+  fs.copyFileSync(path.join(ROOT, 'app', 'boot.js'), path.join(outdir, 'boot.js'));
 
   if (!preview) {
     for (const f of ['config.xml', 'icon.png']) fs.copyFileSync(path.join(ROOT, 'tizen', f), path.join(outdir, f));
