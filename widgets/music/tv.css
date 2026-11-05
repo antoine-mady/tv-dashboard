@@ -1,0 +1,48 @@
+.w-music {
+  display: flex;
+  flex-direction: column;
+}
+.w-music .mu-media {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+.w-music .mu-player,
+.w-music .mu-cover,
+.w-music .mu-state {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+}
+.w-music .mu-player-inner,
+.w-music .mu-player iframe { width: 100%; height: 100%; border: 0; }
+/* Mode audio : la pochette recouvre le lecteur (qui reste actif dessous). */
+.w-music .mu-cover {
+  background: #111 center / cover no-repeat;
+}
+.w-music.mu-video .mu-cover { display: none; }
+.w-music .mu-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--h) * 0.18);
+  color: #fff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.35);
+  transition: opacity 0.3s;
+}
+.w-music .mu-info { padding-top: calc(var(--h) * 0.04); }
+.w-music .mu-title { font-size: calc(var(--h) * 0.075); font-weight: 600; }
+.w-music .mu-artist { font-size: calc(var(--h) * 0.055); }
+.w-music .mu-bar {
+  height: 6px;
+  margin-top: calc(var(--h) * 0.025);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.w-music .mu-bar-fill { height: 100%; width: 0; background: var(--accent); transition: width 1s linear; }
+.w-music .mu-time { font-size: calc(var(--h) * 0.045); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.w-music .mu-hint { font-size: calc(var(--h) * 0.04); opacity: 0; transition: opacity 0.3s; margin-top: 4px; }

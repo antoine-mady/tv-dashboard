@@ -1,0 +1,12 @@
+/* Styles du widget, TOUJOURS préfixés par .w-__TYPE__ */
+/* var(--w) et var(--h) = taille du widget en px : s'en servir pour adapter les tailles de texte. */
+.w-__TYPE__ {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.w-__TYPE__ .tpl-text {
+  font-size: calc(var(--h) * 0.25);
+  font-weight: 600;
+  text-align: center;
+}

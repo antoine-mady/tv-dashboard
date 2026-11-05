@@ -1,0 +1,42 @@
+.w-photos {
+  overflow: hidden;
+  border-radius: 28px;
+  background: #000;
+}
+.w-photos .ph-layer {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+.w-photos .ph-layer.is-visible { opacity: 1; }
+.w-photos .ph-img {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.w-photos.fit-contain .ph-img { object-fit: contain; }
+/* Fond flou derrière une photo entière (mode « contain ») */
+.w-photos .ph-blur { display: none; }
+.w-photos.fit-contain .ph-blur {
+  display: block;
+  position: absolute;
+  left: -40px; top: -40px; right: -40px; bottom: -40px;
+  background: center / cover no-repeat;
+  filter: blur(30px) brightness(0.55);
+}
+.w-photos .ph-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 18px;
+  font-size: calc(var(--h) * 0.035);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+.w-photos .ph-status {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  text-align: center;
+  font-size: calc(var(--h) * 0.05);
+}

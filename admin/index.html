@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TV Dashboard · Admin</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">▦</span> TV Dashboard</div>
+    <span id="status" class="status"></span>
+    <div class="spacer"></div>
+    <button id="btn-global" type="button">⚙ Réglages généraux</button>
+    <button id="btn-deploy" type="button" class="primary">📺 Envoyer sur la TV</button>
+  </header>
+
+  <main class="layout">
+    <aside class="panel library">
+      <h2>Ajouter un widget</h2>
+      <div id="library" class="library-list"></div>
+      <h2>Sur l’écran</h2>
+      <ul id="widget-list" class="widget-list"></ul>
+    </aside>
+
+    <section class="center">
+      <div class="section-head">
+        <h2>Disposition</h2>
+        <span class="hint">Glissez pour déplacer · coin ↘ pour redimensionner · clic pour régler</span>
+      </div>
+      <div id="editor" class="editor"></div>
+      <div id="errors" class="errors"></div>
+
+      <div class="section-head">
+        <h2>Aperçu</h2>
+        <button id="btn-reload" type="button" class="ghost" title="Recharger l’aperçu">↻</button>
+        <span class="hint">Cliquez dans l’aperçu puis : flèches, Entrée, P = lecture/pause, N/B = piste, R = touche rouge</span>
+      </div>
+      <div id="preview-wrap" class="preview-wrap"><iframe id="preview" title="Aperçu du dashboard" src="about:blank"></iframe></div>
+    </section>
+
+    <aside id="inspector" class="panel inspector"></aside>
+  </main>
+
+  <dialog id="deploy-dialog">
+    <h2>Envoi sur la TV</h2>
+    <pre id="deploy-log"></pre>
+    <div class="dialog-actions"><button id="deploy-close" type="button">Fermer</button></div>
+  </dialog>
+
+  <script type="module" src="/admin/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+export default {
+  type: 'photos',
+  name: 'Photos',
+  icon: '🖼️',
+  description: 'Diaporama des photos du disque branché sur la box (DLNA) ou sur la TV (USB). OK = photo suivante.',
+  size: { default: { w: 8, h: 4 }, min: { w: 2, h: 2 } },
+  focusable: true,
+  frameless: true,
+  schema: [
+    { key: 'source', label: 'Source des photos', type: 'select', default: 'dlna', options: [
+      { value: 'dlna', label: 'Disque sur la box (DLNA / UPnP)' },
+      { value: 'usb', label: 'Disque USB branché sur la TV' },
+    ] },
+    { key: 'dlnaUrl', label: 'URL DLNA (ContentDirectory)', type: 'text', default: '', required: true, when: { source: 'dlna' },
+      placeholder: 'http://192.168.1.1:8200/ctl/ContentDir',
+      help: 'Utilisez « Rechercher la box » ci-dessous pour la trouver automatiquement.' },
+    { key: 'rootId', label: 'Dossier de départ (ID DLNA)', type: 'text', default: '0', when: { source: 'dlna' },
+      help: '0 = tout le disque. Utilisez « Parcourir » pour choisir un dossier.' },
+    { key: 'usbFolder', label: 'Sous-dossier sur la clé / le disque USB', type: 'text', default: '', when: { source: 'usb' },
+      placeholder: 'ex. Photos/2024' },
+    { key: 'intervalSec', label: 'Durée par photo (secondes)', type: 'number', min: 3, max: 3600, default: 15 },
+    { key: 'shuffle', label: 'Ordre aléatoire', type: 'bool', default: true },
+    { key: 'fit', label: 'Cadrage', type: 'select', default: 'cover', options: [
+      { value: 'cover', label: 'Remplir le cadre (rogne les bords)' },
+      { value: 'contain', label: 'Photo entière (bandes floues)' },
+    ] },
+    { key: 'showCaption', label: 'Afficher le nom / la date', type: 'bool', default: false },
+    { key: 'maxPhotos', label: 'Nombre max. de photos indexées', type: 'number', min: 10, max: 50000, default: 5000 },
+    { key: 'refreshHours', label: 'Ré-indexer toutes les (heures)', type: 'number', min: 1, max: 168, default: 12 },
+  ],
+};

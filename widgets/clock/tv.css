@@ -1,0 +1,24 @@
+.w-clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.w-clock .clock-label {
+  font-size: calc(var(--h) * 0.11);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: calc(var(--h) * 0.02);
+}
+.w-clock .clock-time {
+  font-size: calc(var(--h) * 0.5);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.w-clock .clock-date {
+  font-size: calc(var(--h) * 0.13);
+  margin-top: calc(var(--h) * 0.05);
+}

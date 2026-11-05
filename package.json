@@ -1,0 +1,20 @@
+{
+  "name": "tv-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard à widgets pour TV Samsung (Tizen)",
+  "type": "module",
+  "scripts": {
+    "dev": "node admin/server.js",
+    "build": "node tools/build.js",
+    "deploy": "node tools/deploy.js",
+    "new-widget": "node tools/new-widget.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "qrcode-generator": "^1.4.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

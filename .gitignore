@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.cache/
+.generated/
+*.wgt
+# Config perso (contient le mot de passe Wi-Fi) et réglages TV
+config/dashboard.json
+.env.local

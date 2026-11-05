@@ -1,0 +1,29 @@
+.w-wifi-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+.w-wifi-qr .wq-title {
+  font-size: calc(var(--h) * 0.075);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+.w-wifi-qr .wq-code {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: calc(var(--h) * 0.03) 0;
+  display: flex;
+  justify-content: center;
+}
+.w-wifi-qr .wq-code svg {
+  height: 100%;
+  max-width: 100%;
+  border-radius: 12px;
+}
+.w-wifi-qr .wq-info { max-width: 100%; }
+.w-wifi-qr .wq-ssid { font-size: calc(var(--h) * 0.075); font-weight: 600; }
+.w-wifi-qr .wq-pass { font-size: calc(var(--h) * 0.06); font-family: monospace; }
