@@ -23,6 +23,8 @@ export default {
     { key: 'quickSearches', label: 'Recherches rapides (une par ligne)', type: 'textarea', default: 'Lofi hip hop\nDaft Punk\nMusique réunionnaise',
       help: 'Accessibles en un clic depuis la TV, sans clavier.' },
     { key: 'showVideo', label: 'Afficher la vidéo (sinon la pochette)', type: 'bool', default: false },
+    { key: 'playerUrl', label: 'Adresse de la page lecteur', type: 'text', default: 'https://antoine-mady.github.io/tv-dashboard/player/', required: true,
+      help: 'Page player/ du projet publiée sur GitHub Pages : YouTube refuse de lire directement dans une app TV. Si vous changez d’hébergement, ajoutez son origine à frame-src dans tizen/config.xml.' },
     { key: 'youtubeAppId', label: 'ID de l’app YouTube sur la TV', type: 'text', default: '111299001912',
       help: 'Utilisé par la touche rouge. 111299001912 = YouTube sur les TV Samsung.' },
   ],

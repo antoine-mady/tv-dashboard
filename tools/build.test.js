@@ -66,13 +66,16 @@ test('extractCsp lit la balise Tizen', () => {
   assert.equal(extractCsp('<widget></widget>'), '');
 });
 
-test('la CSP de l’app autorise ce dont les widgets ont besoin', () => {
+test('la CSP de l’app autorise ce dont les widgets ont besoin', async () => {
   const d = directives(readCsp());
-  assert.ok(d['script-src'], 'script-src requis (sinon Tizen bloque tout script externe)');
+  assert.ok(d['script-src'], 'script-src requis');
   assert.ok(!d['script-src'].includes("'unsafe-inline'"), 'aucun script inline : inutile de les autoriser');
   assert.ok(d['script-src'].includes('file:'), '$WEBAPIS/webapis.js');
-  assert.ok(d['script-src'].includes('https://www.youtube.com'), 'API du lecteur YouTube');
-  assert.ok(d['frame-src'].includes('https://www.youtube.com'), 'iframe du lecteur YouTube');
+  // Le lecteur YouTube tourne dans la page player/ hébergée : son origine doit être autorisée en iframe.
+  const music = (await import('../widgets/music/manifest.js')).default;
+  const playerUrl = music.schema.find((f) => f.key === 'playerUrl').default;
+  assert.ok(d['frame-src'].includes(new URL(playerUrl).origin), 'origine de la page lecteur dans frame-src');
+  assert.ok(d['frame-src'].includes("'self'"), 'page lecteur servie par l’aperçu');
   assert.ok(d['connect-src'].includes('*'), 'météo, Google, DLNA');
   assert.ok(d['img-src'].includes('*'), 'photos DLNA (http) et pochettes');
 });

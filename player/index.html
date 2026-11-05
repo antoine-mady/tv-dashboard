@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Le lecteur YouTube exige un référent HTTPS : il est transmis par cette page, pas par l'app TV (file://). -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>TV Dashboard · lecteur</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #player, iframe { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <!--
+    Page « lecteur » du widget Musique de TV Dashboard (https://github.com/antoine-mady/tv-dashboard).
+    Ouverte dans une iframe par l'app TV, elle pilote le lecteur YouTube sur ordre de l'app (postMessage).
+    Elle ne contient ni ne reçoit aucune donnée personnelle : seulement des identifiants de vidéos.
+  -->
+  <div id="player"></div>
+  <script src="player.js"></script>
+</body>
+</html>

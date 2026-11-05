@@ -78,7 +78,8 @@
         "volume": 60,
         "quickSearches": "Lofi hip hop\nDaft Punk\nMusique réunionnaise",
         "showVideo": false,
-        "youtubeAppId": "111299001912"
+        "youtubeAppId": "111299001912",
+        "playerUrl": "https://antoine-mady.github.io/tv-dashboard/player/"
       }
     },
     {

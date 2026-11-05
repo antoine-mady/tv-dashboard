@@ -93,6 +93,13 @@ Google, et le lecteur YouTube intégré pour la lecture.
    `google.com/device`) et saisissez le code affiché. La connexion est mémorisée sur la TV ; elle n'est ni dans
    la config ni dans git. « Se déconnecter » est dans la bibliothèque.
 
+**Page lecteur** : YouTube refuse de lire dans une app installée sur la TV (« Erreur de configuration du lecteur
+vidéo », erreur 153 : une app locale n'a pas d'adresse web). Le lecteur tourne donc dans la petite page
+[`player/`](player/), publiée sur GitHub Pages (`https://antoine-mady.github.io/tv-dashboard/player/`), que le
+widget ouvre en arrière-plan et pilote par messages. Elle ne contient et ne reçoit aucune donnée personnelle
+(seulement les identifiants des morceaux à jouer). Si vous hébergez cette page ailleurs, changez « Adresse de la
+page lecteur » dans l'admin et ajoutez son origine à `frame-src` dans `tizen/config.xml`.
+
 Limites (imposées par YouTube, pas contournables proprement) :
 - pas de mixes ni de recommandations personnalisées YouTube Music ; les « J'aime » sont ceux du compte YouTube ;
 - le lecteur intégré n'est pas connecté au compte : **les pubs ne sont pas garanties absentes** malgré Premium

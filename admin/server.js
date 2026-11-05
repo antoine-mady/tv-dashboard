@@ -99,6 +99,9 @@ async function handle(req, res) {
   if (p.startsWith('/admin/')) return serveStatic(res, path.join(ROOT, 'admin'), p.slice(7), ['.html', '.js', '.css', '.svg', '.png']);
   // Code partagé chargé directement par la page admin (manifest.js, admin.js, app/config.js…)
   if (p.startsWith('/app/')) return serveStatic(res, path.join(ROOT, 'app'), p.slice(5), ['.js']);
+  // Page lecteur du widget musique (publiée sur GitHub Pages pour la TV ; servie ici pour l'aperçu).
+  if (p === '/player/') return serveStatic(res, path.join(ROOT, 'player'), 'index.html');
+  if (p.startsWith('/player/')) return serveStatic(res, path.join(ROOT, 'player'), p.slice(8), ['.html', '.js']);
   if (p.startsWith('/widgets/')) return serveStatic(res, path.join(ROOT, 'widgets'), p.slice(9), ['.js', '.css', '.svg', '.png', '.jpg']);
 
   // Aperçu : l'app TV reconstruite à chaque chargement (config + code toujours à jour).

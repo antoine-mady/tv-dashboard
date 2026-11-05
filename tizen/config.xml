@@ -15,7 +15,7 @@
   <!-- Politique de sécurité (CSP). Sans elle, Tizen n'autorise que les scripts embarqués et bloque le lecteur YouTube.
        Un widget qui charge un script / une iframe / un média externe doit ajouter son hôte ici.
        L'aperçu (npm run dev) applique la même politique. -->
-  <tizen:content-security-policy>default-src 'self' file: data: blob:; script-src 'self' file: https://www.youtube.com https://*.youtube.com https://s.ytimg.com https://*.ytimg.com; style-src 'self' file: 'unsafe-inline'; img-src * file: data: blob:; media-src * file: blob:; frame-src https://www.youtube.com https://*.youtube.com https://www.youtube-nocookie.com; connect-src *</tizen:content-security-policy>
+  <tizen:content-security-policy>default-src 'self' file: data: blob:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src * file: data: blob:; media-src * file: blob:; frame-src 'self' https://antoine-mady.github.io; connect-src *</tizen:content-security-policy>
 
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>

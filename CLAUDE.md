@@ -26,7 +26,8 @@ widgets/<type>/   ★ UN DOSSIER = UN WIDGET (TV + admin + serveur + tests + ass
 app/              cœur de l'app TV (grille, télécommande, classe Widget…) — aucun code de widget
 admin/            cœur de la page d'admin (serveur, éditeur de grille, formulaires) — aucun code de widget
 tools/            build, deploy, découverte des widgets, générateur de widget
-tizen/            config.xml (manifeste Tizen, privilèges) + icon.png
+tizen/            config.xml (manifeste Tizen, privilèges, CSP) + icon.png
+player/           page lecteur YouTube publiée sur GitHub Pages (ES5) : YouTube refuse de lire en file://
 config/           dashboard.example.json (versionné) ; dashboard.json (perso, ignoré par git)
 ```
 

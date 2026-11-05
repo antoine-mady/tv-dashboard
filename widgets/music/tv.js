@@ -1,42 +1,13 @@
-// Widget musique connecté au compte YouTube (API YouTube Data v3 + lecteur IFrame YouTube).
+// Widget musique connecté au compte YouTube (API YouTube Data v3 + lecteur YouTube via la page player/).
 // États : 'login' (bouton connecter) → 'connecting' (QR code + code) → 'player' (mini-lecteur).
 // OK sur le mini-lecteur ouvre la bibliothèque en plein écran (browser.js).
-/* global YT */
 import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 import { qrSvg } from '../../app/qr.js';
 import { parsePlaylistId, formatDuration, shuffleQueue } from './playlist.js';
 import { createAuth, createLibrary } from './auth.js';
 import { MusicBrowser } from './browser.js';
-
-let apiPromise = null;
-function loadYouTubeApi() {
-  if (apiPromise) return apiPromise;
-  apiPromise = new Promise((resolve, reject) => {
-    if (window.YT && window.YT.Player) { resolve(window.YT); return; }
-    const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); resolve(window.YT); };
-    // Distingue un blocage par la politique de sécurité (CSP de tizen/config.xml) d'un problème réseau.
-    let blockedByCsp = false;
-    const onViolation = (e) => { if (/youtube|ytimg/.test(e.blockedURI || '')) blockedByCsp = true; };
-    document.addEventListener('securitypolicyviolation', onViolation);
-    const s = document.createElement('script');
-    s.src = 'https://www.youtube.com/iframe_api';
-    s.onload = () => document.removeEventListener('securitypolicyviolation', onViolation);
-    s.onerror = () => {
-      // L'événement CSP peut arriver juste après onerror : on attend un instant avant de conclure.
-      setTimeout(() => {
-        document.removeEventListener('securitypolicyviolation', onViolation);
-        apiPromise = null;
-        reject(new Error(blockedByCsp
-          ? 'Lecteur YouTube bloqué par la sécurité de l’app (CSP de tizen/config.xml)'
-          : 'Impossible de charger le lecteur YouTube (youtube.com injoignable ?)'));
-      }, 50);
-    };
-    document.head.appendChild(s);
-  });
-  return apiPromise;
-}
+import { PlayerBridge } from './bridge.js';
 
 const PLAYING = 1;
 const BUFFERING = 3;
@@ -146,21 +117,28 @@ export default class MusicWidget extends Widget {
     }, (e) => this.showError(e.message));
   }
 
+  /** Adresse de la page lecteur : servie par l'admin dans l'aperçu, hébergée (HTTPS) sur la TV. */
+  playerUrl() {
+    return this.platform.isPreview ? '/player/' : this.settings.playerUrl;
+  }
+
   ensurePlayer() {
     if (this.playerReady) return this.playerReady;
-    this.playerReady = loadYouTubeApi().then(() => new Promise((resolve) => {
-      this.player = new YT.Player(this.holder, {
-        width: '100%',
-        height: '100%',
-        playerVars: { controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, fs: 0 },
-        events: {
-          onReady: () => { this.player.setVolume(this.settings.volume); resolve(); },
-          onStateChange: (e) => this.onState(e.data),
-          onError: (e) => this.onPlayerError(e.data),
-        },
+    this.playerReady = new Promise((resolve, reject) => {
+      if (!this.playerUrl()) { reject(new Error('Renseignez l’adresse de la page lecteur dans l’admin')); return; }
+      // YouTube refuse de lire dans une app chargée en file:// (erreur 153) : le lecteur tourne dans une page
+      // hébergée en HTTPS (player/), pilotée par messages.
+      const timeout = setTimeout(() => {
+        this.playerReady = null;
+        reject(new Error('Page lecteur injoignable (' + this.playerUrl() + ')'));
+      }, 30000);
+      this.player = new PlayerBridge(this.holder, this.playerUrl(), {
+        onReady: () => { clearTimeout(timeout); this.player.setVolume(this.settings.volume); resolve(); },
+        onStateChange: (e) => this.onState(e.data),
+        onError: (e) => this.onPlayerError(e.data),
       });
       this.every(1000, () => this.updateProgress(), { immediate: false });
-    }));
+    });
     return this.playerReady;
   }
 
@@ -193,7 +171,7 @@ export default class MusicWidget extends Widget {
     this.ensurePlayer().then(() => {
       this.player.loadPlaylist(ordered.map((t) => t.id), start);
       this.player.setLoop(true);
-    });
+    }, (e) => this.setSource('⚠ ' + e.message));
   }
 
   playAt(index) {
@@ -239,6 +217,10 @@ export default class MusicWidget extends Widget {
     // 100 : vidéo supprimée ; 101/150 : intégration refusée par l'ayant droit → piste suivante.
     // 152/153 : le lecteur refuse l'environnement (référent manquant) → inutile d'insister.
     this.errors++;
+    if (code === 'api') {
+      this.setSource('⚠ La page lecteur n’arrive pas à charger YouTube');
+      return;
+    }
     if (code === 152 || code === 153) {
       this.setSource('⚠ Lecteur YouTube refusé sur cette TV (erreur ' + code + ')');
       return;
