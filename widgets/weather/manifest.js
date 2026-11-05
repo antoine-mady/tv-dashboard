@@ -15,6 +15,13 @@ export default {
     { key: 'showUv', label: 'Indice UV du jour (max)', type: 'bool', default: true },
     { key: 'showAir', label: 'Qualité de l’air (indice européen + PM2.5)', type: 'bool', default: true,
       help: 'Source : Open-Meteo / Copernicus (CAMS), sans clé API.' },
+    { key: 'showVigilance', label: 'Vigilance Météo-France (vent, pluie, cyclone…)', type: 'bool', default: false,
+      help: 'Service NON officiel de l’application Météo-France : peut cesser de fonctionner sans préavis.' },
+    { key: 'vigilanceDomain', label: 'Zone de vigilance', type: 'text', default: '974', when: { showVigilance: true },
+      help: '974 = La Réunion, 976 = Mayotte, 971 = Guadeloupe, numéro du département en métropole.' },
+    { key: 'vigilanceToken', label: 'Jeton de l’application Météo-France', type: 'password', default: '', required: true,
+      when: { showVigilance: true },
+      help: 'Jeton public de l’appli mobile (voir le projet open source « meteofrance-api » sur GitHub).' },
     { key: 'refreshMinutes', label: 'Rafraîchir toutes les (minutes)', type: 'number', min: 5, max: 180, default: 15 },
   ],
 };

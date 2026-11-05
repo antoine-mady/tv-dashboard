@@ -1,6 +1,7 @@
 import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 import { describeWeather, buildUrl } from './codes.js';
+import { buildVigilanceUrl, parseVigilance, vigilanceText } from './vigilance.js';
 import { formatHour, dayLength, uvLevel, aqiLevel, buildAirUrl } from './extras.js';
 import clearDay from './assets/clear-day.svg';
 import clearNight from './assets/clear-night.svg';
@@ -27,7 +28,7 @@ export default class WeatherWidget extends Widget {
     this.daysEl = h('div', { className: 'wx-days' });
     this.extraEl = h('div', { className: 'wx-extra' });
     // Widget étroit (3 colonnes) avec la colonne soleil/UV/air : on retire la grande icône pour lui faire de la place.
-    const hasExtras = s.showSun || s.showUv || s.showAir;
+    const hasExtras = s.showSun || s.showUv || s.showAir || s.showVigilance;
     if (hasExtras && this.size && this.size.width < this.size.height * 1.7) el.className += ' wx-compact';
     el.appendChild(h('div', { className: 'wx-now' },
       this.iconEl,
@@ -46,8 +47,12 @@ export default class WeatherWidget extends Widget {
     const air = s.showAir
       ? this.fetchJson(buildAirUrl(s)).then((r) => r.current || null, () => null)
       : Promise.resolve(null);
+    // Vigilance : service non officiel, facultatif lui aussi. null = indisponible / format inattendu.
+    const vigi = s.showVigilance
+      ? this.fetchJson(buildVigilanceUrl(s)).then(parseVigilance, () => null)
+      : Promise.resolve(null);
     const data = await this.fetchJson(buildUrl(s));
-    this.renderExtras(data.daily, await air);
+    this.renderExtras(data.daily, await air, await vigi);
     const c = data.current;
     const now = describeWeather(c.weather_code, c.is_day === 1);
     this.iconEl.innerHTML = ICONS[now.icon];
@@ -72,10 +77,17 @@ export default class WeatherWidget extends Widget {
     }
   }
 
-  /** Colonne de droite : soleil, UV du jour, qualité de l'air. */
-  renderExtras(d, air) {
+  /** Colonne de droite : vigilance, soleil, UV du jour, qualité de l'air. */
+  renderExtras(d, air, vigi) {
     const s = this.settings;
     const rows = [];
+    if (s.showVigilance) {
+      // En tête de colonne : c'est l'info la plus importante quand elle est jaune ou plus.
+      const lvl = vigi ? vigi.level : 0;
+      rows.push(h('div', { className: 'wx-extra-row wx-vigi wx-vigi-' + lvl + (lvl >= 2 ? '' : ' muted') },
+        lvl >= 2 ? h('span', { className: 'wx-dot wx-vigi-dot-' + lvl }) : null,
+        h('span', { text: vigilanceText(vigi) })));
+    }
     if (s.showSun && d.sunrise && d.sunset) {
       const rise = formatHour(d.sunrise[0]);
       const set = formatHour(d.sunset[0]);
