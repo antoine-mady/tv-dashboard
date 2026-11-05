@@ -71,6 +71,7 @@ export async function buildApp({ outdir = DIST, preview = false, config = readCo
     sourcemap: preview ? 'inline' : false,
     loader: { '.svg': 'text', '.png': 'dataurl', '.jpg': 'dataurl', '.woff2': 'dataurl' },
     legalComments: 'none',
+    define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
     charset: 'utf8',
     logLevel: 'silent',
   });

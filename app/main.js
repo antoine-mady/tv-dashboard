@@ -113,7 +113,41 @@ function start() {
     setInterval(check, 30 * 1000);
   }
 
+  showStartupInfo(config, instances.length);
+
   window.addEventListener('unload', () => instances.forEach((i) => i.inst._destroy()));
+}
+
+/* global __BUILD_TIME__ */
+const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '?';
+
+/**
+ * Bandeau de diagnostic affiché quelques secondes au démarrage (permanent si aucun widget) :
+ * date du build (vérifier que la bonne version est installée), widgets, écran, navigateur.
+ */
+function showStartupInfo(config, mounted) {
+  const count = (config.widgets || []).length;
+  const ua = navigator.userAgent;
+  const m = /(Tizen [\d.]+)/.exec(ua);
+  const c = /(Chrome\/[\d]+)/.exec(ua);
+  const lines = [
+    'TV Dashboard · build du ' + BUILD_TIME.replace('T', ' ').slice(0, 16) + ' (UTC)',
+    'Widgets dans la config : ' + count + (count !== mounted ? ' (' + mounted + ' affichés)' : '') +
+      (window.__DASHBOARD_CONFIG__ ? '' : ' · ⚠ config embarquée absente'),
+    'Écran : ' + window.innerWidth + '×' + window.innerHeight + ' · ' + (m ? m[1] + ' · ' : '') + (c ? c[1] : ua),
+  ];
+  if (!count) lines.push('⚠ Aucun widget : ajoutez-en dans l’admin (npm run dev), puis « Envoyer sur la TV ».');
+  const box = h('pre', {
+    id: 'boot-info',
+    text: lines.join('\n'),
+    style: {
+      position: 'fixed', left: '40px', bottom: '40px', zIndex: '99998', margin: '0', padding: '20px 28px',
+      background: 'rgba(0,0,0,0.8)', color: '#fff', border: '2px solid #7cc4ff', borderRadius: '14px',
+      font: '24px/1.45 monospace', whiteSpace: 'pre-wrap',
+    },
+  });
+  document.body.appendChild(box);
+  if (count) setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 20000);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
