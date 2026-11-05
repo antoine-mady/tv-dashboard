@@ -1,0 +1,50 @@
+.w-birthdays .bd-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.w-birthdays .bd-title {
+  font-size: calc(var(--h) * 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: calc(var(--h) * 0.03);
+  flex: none;
+}
+.w-birthdays .bd-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.w-birthdays .bd-item {
+  display: flex;
+  align-items: center;
+  padding: calc(var(--h) * 0.015) 0;
+}
+.w-birthdays .bd-icon {
+  flex: none;
+  font-size: calc(var(--h) * 0.1);
+  width: 1.4em;
+}
+.w-birthdays .bd-text { flex: 1; min-width: 0; }
+.w-birthdays .bd-name {
+  font-size: calc(var(--h) * 0.085);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-birthdays .bd-when {
+  font-size: calc(var(--h) * 0.06);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-birthdays .bd-item.is-today .bd-name { color: var(--accent); font-size: calc(var(--h) * 0.1); }
+.w-birthdays .bd-item.is-today .bd-when { opacity: 1; color: var(--accent); }
+.w-birthdays .bd-empty {
+  font-size: calc(var(--h) * 0.08);
+  margin-top: calc(var(--h) * 0.05);
+}
