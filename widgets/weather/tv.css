@@ -16,7 +16,7 @@
   margin-right: calc(var(--h) * 0.06);
 }
 .w-weather .wx-icon svg, .w-weather .wx-day-icon svg { width: 100%; height: 100%; }
-.w-weather .wx-main { min-width: 0; }
+.w-weather .wx-main { min-width: 0; flex: 1; }
 .w-weather .wx-place { font-size: calc(var(--h) * 0.075); text-transform: uppercase; letter-spacing: 0.1em; }
 .w-weather .wx-temp { font-size: calc(var(--h) * 0.27); font-weight: 300; line-height: 1.05; }
 .w-weather .wx-desc { font-size: calc(var(--h) * 0.085); font-weight: 600; }
@@ -31,3 +31,50 @@
 .w-weather .wx-day-name { text-transform: capitalize; }
 .w-weather .wx-day-icon { width: calc(var(--h) * 0.13); height: calc(var(--h) * 0.13); margin: 2px auto; }
 .w-weather .wx-day-rain { font-size: calc(var(--h) * 0.045); color: #9fd2ff; }
+
+/* Colonne soleil / UV / qualité de l'air */
+.w-weather .wx-extra {
+  flex: none;
+  margin-left: calc(var(--h) * 0.05);
+  text-align: right;
+  font-size: calc(var(--h) * 0.06);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.w-weather .wx-extra-row { margin-top: calc(var(--h) * 0.015); }
+.w-weather .wx-extra-sub { font-size: calc(var(--h) * 0.05); }
+.w-weather.wx-compact .wx-icon { display: none; }
+.w-weather.wx-compact .wx-desc { font-size: calc(var(--h) * 0.07); }
+.w-weather .wx-extra-k { color: #ffd166; margin-right: 0.35em; }
+.w-weather .wx-dot {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  margin-right: 0.4em;
+  vertical-align: 0.05em;
+  background: #888;
+}
+/* Couleurs officielles : échelle UV de l'OMS, indice européen de qualité de l'air (AEE) */
+.w-weather .wx-uv-1 { background: #4eb400; }
+.w-weather .wx-uv-2 { background: #f8d500; }
+.w-weather .wx-uv-3 { background: #f88700; }
+.w-weather .wx-uv-4 { background: #e82c0e; }
+.w-weather .wx-uv-5 { background: #b54cff; }
+.w-weather .wx-aqi-1 { background: #50f0e6; }
+.w-weather .wx-aqi-2 { background: #50ccaa; }
+.w-weather .wx-aqi-3 { background: #f0e641; }
+.w-weather .wx-aqi-4 { background: #ff5050; }
+.w-weather .wx-aqi-5 { background: #c8004b; }
+.w-weather .wx-aqi-6 { background: #9a3ad8; }
+/* Vigilance Météo-France (jaune / orange / rouge / violette) */
+.w-weather .wx-vigi { font-weight: 600; }
+.w-weather .wx-vigi-2 { color: #ffe14d; }
+.w-weather .wx-vigi-3 { color: #ffa53a; }
+.w-weather .wx-vigi-4 { color: #ff5a4f; }
+.w-weather .wx-vigi-5 { color: #d58cff; }
+.w-weather .wx-vigi-dot-2 { background: #ffe14d; }
+.w-weather .wx-vigi-dot-3 { background: #ff9800; }
+.w-weather .wx-vigi-dot-4 { background: #e53935; }
+.w-weather .wx-vigi-dot-5 { background: #b54cff; }
+.w-weather .wx-extra .wx-vigi { white-space: normal; max-width: calc(var(--w) * 0.42); margin-left: auto; }
