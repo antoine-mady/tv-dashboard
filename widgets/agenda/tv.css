@@ -1,0 +1,70 @@
+.w-agenda .ag-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.w-agenda .ag-title {
+  font-size: calc(var(--h) * 0.06);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: calc(var(--h) * 0.02);
+  flex: none;
+}
+.w-agenda .ag-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.w-agenda .ag-day {
+  font-size: calc(var(--h) * 0.05);
+  font-weight: 700;
+  opacity: 0.7;
+  margin-top: calc(var(--h) * 0.03);
+  margin-bottom: calc(var(--h) * 0.008);
+}
+.w-agenda .ag-day:first-child { margin-top: 0; }
+.w-agenda .ag-day.is-today { opacity: 1; color: var(--accent); }
+.w-agenda .ag-event {
+  display: flex;
+  align-items: baseline;
+  font-size: calc(var(--h) * 0.06);
+  line-height: 1.25;
+  padding: calc(var(--h) * 0.008) 0;
+}
+.w-agenda .ag-event.is-now .ag-time { color: var(--accent); font-weight: 700; }
+.w-agenda .ag-dot {
+  flex: none;
+  width: calc(var(--h) * 0.025);
+  height: calc(var(--h) * 0.025);
+  border-radius: 50%;
+  margin-right: calc(var(--h) * 0.025);
+  position: relative;
+  top: calc(var(--h) * -0.005);
+}
+.w-agenda .ag-time {
+  flex: none;
+  width: 4.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.w-agenda .ag-text { flex: 1; min-width: 0; }
+.w-agenda .ag-summary {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-agenda .ag-location {
+  font-size: 0.72em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-agenda .ag-empty {
+  font-size: calc(var(--h) * 0.07);
+  margin-top: calc(var(--h) * 0.05);
+}
