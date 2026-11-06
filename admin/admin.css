@@ -132,27 +132,15 @@ button.danger:hover:not(:disabled) { border-color: var(--error); background: var
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; margin-right: 6px; }
-/* Logo : une petite TV (le même objet que l'écran central). */
 .logo {
-  width: 22px;
-  height: 15px;
-  border-radius: 3px;
-  border: 2.5px solid var(--bezel);
-  background: linear-gradient(135deg, var(--action), color-mix(in srgb, var(--action) 40%, var(--bezel)));
-  position: relative;
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 7px;
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(10, 14, 20, 0.2);
 }
-.logo::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 9px;
-  height: 2.5px;
-  margin-left: -4.5px;
-  border-radius: 2px;
-  background: var(--bezel);
-}
-@media (prefers-color-scheme: dark) { .logo, .logo::after { border-color: var(--muted); } .logo::after { background: var(--muted); } }
 .spacer { flex: 1; }
 .history-buttons { display: flex; }
 
