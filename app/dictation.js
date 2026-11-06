@@ -196,6 +196,22 @@ export function initDictation(root, opts) {
 
   const available = !!(engines.samsung || engines.Speech);
   if (available) {
+    // Icône SVG discrète dans les champs texte : indique que le bouton micro est prêt.
+    const style = document.createElement('style');
+    style.id = 'dictation-input-hint-style';
+    style.textContent = [
+      'html.has-dictation input:not([type]), html.has-dictation input[type="text"],',
+      'html.has-dictation input[type="search"], html.has-dictation textarea {',
+      'background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23bac7d8%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Crect x=%279%27 y=%272%27 width=%276%27 height=%2712%27 rx=%273%27/%3E%3Cpath d=%27M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8%27/%3E%3C/svg%3E") !important;',
+      'background-repeat: no-repeat !important;',
+      'background-position: right 18px center !important;',
+      'background-size: 30px 30px !important;',
+      'padding-right: 64px !important;',
+      '}'
+    ].join('\\n');
+    document.head.appendChild(style);
+    document.documentElement.classList.add('has-dictation');
+
     document.addEventListener('focusin', (e) => {
       if (!isEditable(e.target)) return;
       lastField = e.target;
