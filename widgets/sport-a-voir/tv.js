@@ -46,6 +46,10 @@ export default class SportAvoirWidget extends Widget {
     this.selectedLeagues = this.selectedLeagues.length === LEAGUES.length
       ? [] : LEAGUES.map((league) => league.id);
     this.saveSelection();
+    const pending = this.refreshPromise;
+    if (pending) pending.then(() => this.refresh()).catch(() => {});
+    else this.refresh().catch(() => {});
+    if (this.list) this.list.refresh();
   }
 
   toggleLeague(id) {
@@ -53,7 +57,9 @@ export default class SportAvoirWidget extends Widget {
     if (index === -1) this.selectedLeagues.push(id);
     else this.selectedLeagues.splice(index, 1);
     this.saveSelection();
-    this.refresh().catch(() => {});
+    const pending = this.refreshPromise;
+    if (pending) pending.then(() => this.refresh()).catch(() => {});
+    else this.refresh().catch(() => {});
     if (this.list) this.list.refresh();
   }
 
