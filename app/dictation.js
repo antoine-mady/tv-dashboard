@@ -208,7 +208,7 @@ export function initDictation(root, opts) {
       'background-size: 30px 30px !important;',
       'padding-right: 64px !important;',
       '}'
-    ].join('\\n');
+    ].join('\n');
     document.head.appendChild(style);
     document.documentElement.classList.add('has-dictation');
 
