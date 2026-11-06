@@ -30,5 +30,6 @@ export default {
     // Remplis par l'assistant de l'admin (admin.js) ; jamais affichés.
     { key: 'stopIds', label: 'Identifiants GTFS de l’arrêt', type: 'text', default: '', when: { network: '__jamais__' } },
     { key: 'timetable', label: 'Table des horaires', type: 'textarea', default: '', when: { network: '__jamais__' } },
+    { key: 'stops', label: 'Arrêts et horaires', type: 'textarea', default: '', when: { network: '__jamais__' } },
   ],
 };
