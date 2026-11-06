@@ -1,11 +1,13 @@
 // Prochains départs à un arrêt : horaires embarqués (préparés par l'admin) + retards GTFS-RT.
 import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
+import { ListPanel, focusHint } from '../../app/list-panel.js';
 import { feedsFor } from './networks.js';
 import { decodeFeed } from './gtfsrt.js';
 import {
   parseRouteFilter, selectRoutes, scheduledBetween, applyRealtime, pickNext,
   formatWait, formatDelay, relevantAlerts, tableExpired, daysLeft,
+  formatClock, endOfTomorrow, departuresByDay,
 } from './schedule.js';
 
 const BACK = 60 * 60 * 1000;       // un bus prévu il y a moins d'1 h peut encore passer (retard)
@@ -44,9 +46,10 @@ export default class BusWidget extends Widget {
         h('div', { className: 'bus-title', text: s.title || table.stopName }),
         this.liveEl),
       this.listEl,
-      this.noteEl));
+      this.noteEl),
+      focusHint('OK : tous les horaires'));
 
-    this.every(15 * 1000, () => this.render());
+    this.every(15 * 1000, () => this.update());
     if (s.realtime && this.feeds.tripUpdates) {
       this.every(s.refreshSeconds * 1000, () => this.refreshRealtime());
     }
@@ -65,7 +68,18 @@ export default class BusWidget extends Widget {
       jobs.push(get(this.feeds.alerts).then((feed) => { this.alerts = feed.alerts; }));
     }
     return Promise.all(jobs.map((p) => p.catch((e) => console.warn('Bus, temps réel : ' + e.message))))
-      .then(() => this.render());
+      .then(() => this.update());
+  }
+
+  update() {
+    this.render();
+    if (this.list) this.list.refresh();
+  }
+
+  /** Départs (temps réel appliqué s'il est récent) entre now - BACK et now + ahead. */
+  departures(now, aheadMs) {
+    const live = this.rt && now - this.rtAt < STALE;
+    return { live, deps: applyRealtime(scheduledBetween(this.table, now, this.routeIds, BACK, aheadMs), live ? this.rt : null) };
   }
 
   render() {
@@ -76,10 +90,9 @@ export default class BusWidget extends Widget {
       throw new Error('Horaires expirés : dans l’admin, « Mettre à jour les horaires » puis envoyez sur la TV');
     }
 
-    const live = this.rt && now - this.rtAt < STALE;
-    const deps = pickNext(
-      applyRealtime(scheduledBetween(table, now, this.routeIds, BACK, AHEAD), live ? this.rt : null),
-      now, s.count, s.walkMinutes);
+    const next = this.departures(now, AHEAD);
+    const live = next.live;
+    const deps = pickNext(next.deps, now, s.count, s.walkMinutes);
 
     this.liveEl.className = 'bus-live' + (live ? ' is-on' : '');
     this.liveEl.textContent = live ? 'temps réel' : '';
@@ -104,5 +117,62 @@ export default class BusWidget extends Widget {
     if (left <= 7) notes.push('Horaires valables encore ' + left + ' jour(s) : mettez-les à jour dans l’admin');
     this.noteEl.textContent = notes.join('  ·  ');
     this.noteEl.style.display = notes.length ? '' : 'none';
+  }
+
+  // ---- Panneau « tous les horaires » (OK sur le widget) : jusqu'à demain soir, une ligne par onglet ----
+  onKey(key) {
+    if (this.list) return this.list.onKey(key);
+    if (key === 'enter') { this.openList(); return true; }
+    return false;
+  }
+
+  onPanelClose() { this.list = null; }
+
+  routeName(id) { return (this.table.routes[id] || [id])[0]; }
+
+  openList() {
+    const tabs = this.routeIds.length > 1
+      ? [{ id: null, label: 'Toutes les lignes' }].concat(this.routeIds.map((id) => ({ id, label: 'Ligne ' + this.routeName(id) })))
+      : [];
+    this.list = new ListPanel(this, {
+      className: 'w-bus-panel',
+      title: '🚌 ' + (this.settings.title || this.table.stopName) + ' · tous les horaires',
+      tabs,
+      tabsHint: 'choisir la ligne',
+      rows: (ctx) => this.panelRows(ctx.tab ? ctx.tab.id : null),
+      empty: 'Aucun départ d’ici demain soir',
+    });
+  }
+
+  panelRows(only) {
+    const s = this.settings;
+    const now = Date.now();
+    if (tableExpired(this.table, now)) throw new Error('Horaires expirés : mettez-les à jour dans l’admin');
+    const all = this.departures(now, endOfTomorrow(now) - now).deps.filter((d) => !only || d.route === only);
+    const deps = pickNext(all, now, Infinity, 0);
+    const catchable = now + (s.walkMinutes || 0) * 60 * 1000 - 30 * 1000;
+    const rows = [];
+    departuresByDay(deps, now).forEach((g) => {
+      rows.push({ header: g.label + ' · ' + g.items.length + ' départ' + (g.items.length > 1 ? 's' : '') });
+      g.items.forEach((d) => {
+        const r = this.table.routes[d.route] || [d.route, '', ''];
+        const at = d.canceled ? d.scheduled : d.expected;
+        const delay = d.live && !d.canceled ? formatDelay(d.delay) : null;
+        const soon = at - now < 60 * 60 * 1000;
+        const missed = !d.canceled && at < catchable;
+        rows.push({
+          key: d.tripId + '|' + d.date,
+          className: (d.canceled ? 'is-canceled' : '') + (d.live ? ' is-live' : '') + (missed ? ' is-missed' : ''),
+          el: h('div', { className: 'busp-row' },
+            h('div', { className: 'busp-time', text: formatClock(at) }),
+            h('div', { className: 'busp-line', text: r[0], style: { background: r[1] || '', color: r[1] ? (r[2] || '#FFFFFF') : '' } }),
+            h('div', { className: 'busp-dest ellipsis', text: d.dest }),
+            d.delay && Math.abs(d.delay) >= 60 ? h('div', { className: 'busp-planned', text: 'prévu ' + formatClock(d.scheduled) }) : null,
+            delay ? h('div', { className: 'busp-delay' + (d.delay > 90 ? ' is-late' : ''), text: delay }) : null,
+            h('div', { className: 'busp-wait', text: d.canceled ? 'supprimé' : missed ? 'trop tard' : soon ? formatWait(at, now) : '' })),
+        });
+      });
+    });
+    return rows;
   }
 }

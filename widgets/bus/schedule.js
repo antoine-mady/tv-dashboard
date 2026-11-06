@@ -159,3 +159,41 @@ export function daysLeft(table, nowMs) {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return Math.round((end.getTime() - t0.getTime()) / (24 * 3600 * 1000));
 }
+
+/** Heure « 14:05 ». */
+export function formatClock(ms) {
+  const d = new Date(ms);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+/** Fin de la journée de demain (le panneau « tous les horaires » va jusque-là). */
+export function endOfTomorrow(nowMs) {
+  const d = new Date(nowMs);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 2).getTime();
+}
+
+/** Libellé de jour : « Aujourd’hui », « Demain », sinon « Samedi 8 novembre ». */
+export function dayTitle(ms, nowMs) {
+  const d = new Date(ms);
+  const n = new Date(nowMs);
+  const diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / (24 * 3600 * 1000));
+  if (diff === 0) return 'Aujourd’hui';
+  if (diff === 1) return 'Demain';
+  const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Départs (triés) regroupés par jour de passage → [{ label, items }]. */
+export function departuresByDay(deps, nowMs) {
+  const groups = [];
+  let cur = null;
+  deps.forEach((d) => {
+    const label = dayTitle(d.canceled ? d.scheduled : d.expected, nowMs);
+    if (!cur || cur.label !== label) {
+      cur = { label, items: [] };
+      groups.push(cur);
+    }
+    cur.items.push(d);
+  });
+  return groups;
+}

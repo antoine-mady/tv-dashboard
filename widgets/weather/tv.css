@@ -107,3 +107,18 @@
 .w-weather.wx-stacked .wx-day { font-size: calc(var(--h) * 0.042); }
 .w-weather.wx-stacked .wx-day-icon { width: calc(var(--h) * 0.085); height: calc(var(--h) * 0.085); }
 .w-weather.wx-stacked .wx-day-rain { font-size: calc(var(--h) * 0.035); }
+
+/* ---- Panneau « heure par heure / jour par jour » (app/list-panel.js) ---- */
+.w-weather-panel .lp-row { padding-top: 8px; padding-bottom: 8px; }
+.w-weather-panel .wxp-row { display: flex; align-items: center; }
+.w-weather-panel .wxp-when { flex: none; width: 200px; font-weight: 700; white-space: nowrap; }
+.w-weather-panel .wxp-day .wxp-when { width: 420px; }
+.w-weather-panel .lp-row.is-now .wxp-when { color: var(--accent); }
+.w-weather-panel .wxp-icon { flex: none; width: 64px; height: 64px; margin-right: 28px; }
+.w-weather-panel .wxp-icon svg { width: 100%; height: 100%; }
+.w-weather-panel .wxp-desc { flex: 1; min-width: 0; }
+.w-weather-panel .wxp-sub { font-size: 26px; }
+.w-weather-panel .wxp-temp { flex: none; width: 190px; text-align: right; font-weight: 700; white-space: nowrap; }
+.w-weather-panel .wxp-feels { flex: none; width: 190px; text-align: right; font-size: 28px; white-space: nowrap; }
+.w-weather-panel .wxp-rain { flex: none; width: 300px; margin-left: 24px; color: #9fd2ff; white-space: nowrap; }
+.w-weather-panel .wxp-wind { flex: none; width: 340px; margin-left: 24px; white-space: nowrap; }

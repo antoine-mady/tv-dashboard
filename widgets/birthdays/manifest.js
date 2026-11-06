@@ -2,9 +2,9 @@ export default {
   type: 'birthdays',
   name: 'Anniversaires',
   icon: '🎂',
-  description: 'Prochains anniversaires importés de vos contacts Google ou lus dans des agendas iCal, avec l’âge quand l’année est connue.',
+  description: 'Prochains anniversaires importés de vos contacts Google ou lus dans des agendas iCal, avec l’âge quand l’année est connue. OK sur la télécommande : tous les anniversaires, recherche par nom.',
   size: { default: { w: 3, h: 3 }, min: { w: 2, h: 2 } },
-  focusable: false,
+  focusable: true, // OK : panneau plein écran (tous les anniversaires, recherche)
   schema: [
     { key: 'title', label: 'Titre', type: 'text', default: 'Anniversaires' },
     { key: 'source', label: 'Source des anniversaires', type: 'select', default: 'ical', options: [

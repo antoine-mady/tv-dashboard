@@ -2,9 +2,9 @@ export default {
   type: 'bus',
   name: 'Horaires de bus',
   icon: '🚌',
-  description: 'Prochains départs à votre arrêt (Alternéo, Car Jaune, Citalis, Kar’Ouest), avec les retards en temps réel quand le réseau les publie.',
+  description: 'Prochains départs à votre arrêt (Alternéo, Car Jaune, Citalis, Kar’Ouest), avec les retards en temps réel quand le réseau les publie. OK sur la télécommande : tous les horaires jusqu’à demain soir.',
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
-  focusable: false,
+  focusable: true, // OK : panneau plein écran avec tous les horaires
   schema: [
     { key: 'network', label: 'Réseau', type: 'select', default: 'alterneo', options: [
       { value: 'alterneo', label: 'Alternéo (Saint-Pierre, Saint-Louis…) · temps réel' },

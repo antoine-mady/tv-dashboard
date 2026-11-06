@@ -79,7 +79,7 @@ export function upcoming(occurrences, now, opts) {
     const year = o.showAge === false ? null : birthYear(occ.summary, now);
     const age = year ? day.getFullYear() - year : null;
     list.push({
-      name, days, today: days === 0,
+      name, days, today: days === 0, day, year,
       when: whenLabel(days, day), date: dateLabel(day),
       age: age && age > 0 ? age : null,
     });
@@ -183,4 +183,69 @@ export function contactOccurrences(list, from, to) {
     }
   });
   return out;
+}
+
+// ---- Panneau « tout voir » : recherche et tri ---------------------------------------
+
+/** Minuscules sans accents : « Hélène » → « helene ». */
+export function normalize(text) {
+  return String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Tous les mots de la recherche apparaissent dans le nom (sans tenir compte des accents ni de la casse). */
+export function matchesQuery(name, query) {
+  const n = normalize(name);
+  return normalize(query).split(/\s+/).filter(Boolean).every((w) => n.indexOf(w) >= 0);
+}
+
+/**
+ * Liste du panneau : une seule fois chaque personne (la prochaine date), filtrée par la recherche,
+ * triée par date ('date') ou par nom ('name').
+ */
+export function searchBirthdays(list, query, sort) {
+  const seen = {};
+  const out = list.filter((b) => {
+    const key = normalize(b.name) + '|' + b.day.getMonth() + '-' + b.day.getDate();
+    if (seen[key]) return false;
+    seen[key] = true;
+    return matchesQuery(b.name, query);
+  });
+  if (sort === 'name') {
+    out.sort((a, b) => {
+      const x = normalize(a.name);
+      const y = normalize(b.name);
+      return x < y ? -1 : x > y ? 1 : a.days - b.days;
+    });
+  } else {
+    out.sort((a, b) => a.days - b.days);
+  }
+  return out;
+}
+
+/** Groupes du panneau : par mois (« Novembre 2026 ») ou par initiale (« H »). → [{ label, items }] */
+export function groupBirthdays(list, sort) {
+  const groups = [];
+  let cur = null;
+  list.forEach((b) => {
+    let label;
+    if (sort === 'name') {
+      const c = normalize(b.name).charAt(0).toUpperCase();
+      label = /[A-Z]/.test(c) ? c : '#';
+    } else {
+      const m = b.day.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      label = m.charAt(0).toUpperCase() + m.slice(1);
+    }
+    if (!cur || cur.label !== label) {
+      cur = { label, items: [] };
+      groups.push(cur);
+    }
+    cur.items.push(b);
+  });
+  return groups;
+}
+
+/** Phrase sur l'âge pour le détail : « Fêtera ses 36 ans », « A 36 ans aujourd’hui ! ». */
+export function ageSentence(b) {
+  if (!b.age) return '';
+  return b.today ? 'A ' + b.age + ' ans aujourd’hui !' : 'Fêtera ses ' + b.age + ' ans';
 }

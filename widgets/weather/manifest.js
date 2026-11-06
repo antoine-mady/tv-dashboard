@@ -2,9 +2,9 @@ export default {
   type: 'weather',
   name: 'Météo',
   icon: '⛅',
-  description: 'Météo actuelle, heures à venir, prévisions, soleil, UV et qualité de l’air (Open-Meteo, sans clé API).',
+  description: 'Météo actuelle, heures à venir, prévisions, soleil, UV et qualité de l’air (Open-Meteo, sans clé API). OK sur la télécommande : prévisions heure par heure et jour par jour.',
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
-  focusable: false,
+  focusable: true, // OK : panneau plein écran heure par heure / jour par jour
   schema: [
     { key: 'label', label: 'Nom du lieu', type: 'text', default: 'Saint-Denis' },
     { key: 'latitude', label: 'Latitude', type: 'number', step: 0.0001, min: -90, max: 90, default: -20.8823,

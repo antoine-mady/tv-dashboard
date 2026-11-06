@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { extractTimetable } from './gtfs.js';
 import {
   ymd, runsOn, parseRouteFilter, selectRoutes, scheduledBetween, applyRealtime, pickNext,
-  formatWait, formatDelay, relevantAlerts, tableExpired, daysLeft,
+  formatWait, formatDelay, relevantAlerts, tableExpired, daysLeft, formatClock, endOfTomorrow, departuresByDay,
 } from './schedule.js';
 import { FILES } from './fixture.js';
 
@@ -123,4 +123,14 @@ test('validité de la table', () => {
   assert.equal(tableExpired(table, at(2027, 3, 1, 0, 1)), true);
   assert.equal(tableExpired({}, Date.now()), true);
   assert.equal(daysLeft(table, at(2027, 2, 21, 12, 0)), 7);
+});
+
+test('panneau : tous les horaires jusqu’à demain soir, regroupés par jour', () => {
+  const now = at(2026, 11, 9, 22, 0);
+  assert.equal(endOfTomorrow(now), at(2026, 11, 11, 0, 0));
+  assert.equal(formatClock(at(2026, 11, 9, 7, 5)), '07:05');
+  const dep = (h, m, canceled) => ({ scheduled: at(2026, 11, 9, h, m), expected: at(2026, 11, 9, h, m) + (canceled ? 3 * H : 0), canceled });
+  const groups = departuresByDay([dep(22, 30), dep(23, 50, true), dep(24, 10), dep(31, 0), dep(48, 5)], now);
+  assert.deepEqual(groups.map((g) => g.label), ['Aujourd’hui', 'Demain', 'Mercredi 11 novembre']);
+  assert.deepEqual(groups.map((g) => g.items.length), [2, 2, 1], 'un bus supprimé reste à son heure prévue');
 });

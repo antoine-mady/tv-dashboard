@@ -57,9 +57,32 @@ export function groupByDay(occurrences, now, max) {
       location: o.location,
       calendar: o.calendar || 0,
       now: !o.allDay && o.start <= now && o.end > now,
+      start: o.start, end: o.end, allDay: !!o.allDay, description: o.description || '',
     });
   }
   return groups;
+}
+
+function shortDate(d) {
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
+}
+
+/** Date complète : « Samedi 7 novembre 2026 ». */
+export function fullDate(d) {
+  const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Horaire complet d'une occurrence : « 18:30 – 19:30 », « Toute la journée », « Du 3 au 7 nov ». */
+export function rangeLabel(o) {
+  if (o.allDay) {
+    const last = addDays(o.end, -1);
+    if (startOfDay(last) > startOfDay(o.start)) return 'Du ' + shortDate(o.start) + ' au ' + shortDate(last);
+    return 'Toute la journée';
+  }
+  if (!o.end || o.end <= o.start) return formatHour(o.start);
+  const sameDay = startOfDay(o.end).getTime() === startOfDay(o.start).getTime();
+  return formatHour(o.start) + ' – ' + (sameDay ? '' : shortDate(o.end) + ' ') + formatHour(o.end);
 }
 
 /** Fenêtre affichée : de maintenant à la fin du jour `now + days - 1`. */

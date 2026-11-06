@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 process.env.TZ = 'Indian/Reunion';
 
 const { cleanName, birthYear, upcoming, windowFor, parseFilter, whenLabel, parseBday, parseVcard, formatContacts,
-  parseContacts, contactOccurrences } = await import('./birthdays.js');
+  parseContacts, contactOccurrences, normalize, matchesQuery, searchBirthdays, groupBirthdays, ageSentence } = await import('./birthdays.js');
 const { parseIcs, expandEvents } = await import('../agenda/ical.js');
 
 const now = new Date(2026, 10, 5, 21, 0); // jeudi 5 novembre 2026, 21:00
@@ -117,4 +117,29 @@ test('anniversaires des contacts : âge, passage d’année, 29 février', () =>
   assert.equal(items[1].age, null);
   assert.equal(items[2].date, '28 février'); // 2027 n’est pas bissextile
   assert.equal(items[2].age, 11);
+});
+
+test('panneau : une année complète, recherche sans accents, tri par nom, groupes', () => {
+  const win = windowFor(now, 365);
+  const all = upcoming(expandEvents(parseIcs(ICS), win.from, win.to), now, { max: Infinity });
+  // Marie apparaît aujourd'hui et dans un an : une seule fois dans le panneau.
+  const byDate = searchBirthdays(all, '', 'date');
+  assert.deepEqual(byDate.map((b) => b.name), ['Marie', 'Paul', 'Lucie']);
+  assert.equal(byDate[2].days, 364);
+  assert.deepEqual(searchBirthdays(all, '', 'name').map((b) => b.name), ['Lucie', 'Marie', 'Paul']);
+  assert.deepEqual(searchBirthdays(all, 'MAR', 'date').map((b) => b.name), ['Marie']);
+  assert.deepEqual(searchBirthdays(all, 'zz', 'date'), []);
+  assert.deepEqual(groupBirthdays(byDate, 'date').map((g) => g.label), ['Novembre 2026', 'Janvier 2027', 'Novembre 2027']);
+  assert.deepEqual(groupBirthdays(byDate, 'name').map((g) => g.label), ['M', 'P', 'L']);
+  assert.equal(ageSentence(byDate[0]), 'A 36 ans aujourd’hui !');
+  assert.equal(ageSentence({ age: 40, today: false }), 'Fêtera ses 40 ans');
+  assert.equal(ageSentence({ age: null }), '');
+});
+
+test('recherche : accents, casse, plusieurs mots', () => {
+  assert.equal(normalize('Hélène'), 'helene');
+  assert.ok(matchesQuery('Hélène Dupont', 'helene'));
+  assert.ok(matchesQuery('Hélène Dupont', 'dup HEL'));
+  assert.ok(!matchesQuery('Hélène Dupont', 'martin'));
+  assert.ok(matchesQuery('Paul', '  '));
 });
