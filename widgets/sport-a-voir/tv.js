@@ -158,7 +158,11 @@ export default class SportAvoirWidget extends Widget {
       empty: 'Aucune ligue disponible',
       onActivate: (row) => {
         if (row.action === 'all') this.toggleAll();
-        else if (row.action === 'league') this.toggleLeague(row.leagueId);
+        else if (row.action === 'sport') {
+          if (this.expandedSports.has(row.sportId)) this.expandedSports.delete(row.sportId);
+          else this.expandedSports.add(row.sportId);
+          this.list.refresh();
+        } else if (row.action === 'league') this.toggleLeague(row.leagueId);
       },
     });
     this.list.showTab(0);
@@ -171,16 +175,47 @@ export default class SportAvoirWidget extends Widget {
       action: 'all',
       className: 'sav-select-all',
       el: h('div', { className: 'sav-select-row' },
-        h('div', { className: 'sav-select-name', text: all ? '☐ Tout désélectionner' : '☑ Tout sélectionner' }),
-        h('div', { className: 'sav-select-state', text: all ? 'Toutes les ligues actives' : this.selectedLeagues.length + ' / ' + LEAGUES.length })),
-    }, { header: 'Sélectionner les ligues à afficher' }];
+        h('span', { className: 'sav-check' + (all ? ' is-checked' : ''), 'aria-hidden': 'true', text: all ? '✓' : '' }),
+        h('span', { className: 'sav-select-name', text: all ? 'Tout désélectionner' : 'Tout sélectionner' }),
+        h('span', { className: 'sav-select-state', text: this.selectedLeagues.length + ' sur ' + LEAGUES.length + ' ligues actives' })),
+    }];
+
+    const sports = [];
     LEAGUES.forEach((league) => {
-      const selected = this.selectedLeagues.indexOf(league.id) !== -1;
+      let sport = sports.find((item) => item.id === league.sportId);
+      if (!sport) {
+        sport = { id: league.sportId, name: league.sportName, leagues: [] };
+        sports.push(sport);
+      }
+      sport.leagues.push(league);
+    });
+
+    if (!this.expandedSports) this.expandedSports = new Set(sports.length ? [sports[0].id] : []);
+    sports.forEach((sport) => {
+      const expanded = this.expandedSports.has(sport.id);
+      const active = sport.leagues.filter((league) => this.selectedLeagues.indexOf(league.id) !== -1).length;
       rows.push({
-        key: league.id, action: 'league', leagueId: league.id,
+        key: 'sport:' + sport.id,
+        action: 'sport',
+        sportId: sport.id,
+        className: 'sav-sport-accordion' + (expanded ? ' is-open' : ''),
         el: h('div', { className: 'sav-select-row' },
-          h('div', { className: 'sav-select-name', text: (selected ? '☑ ' : '☐ ') + league.name }),
-          h('div', { className: 'sav-select-state', text: league.sportName })),
+          h('span', { className: 'sav-sport-mark', 'aria-hidden': 'true', text: sport.name.indexOf('Esport') === 0 ? 'E' : sport.name.charAt(0) }),
+          h('span', { className: 'sav-sport-name', text: sport.name }),
+          h('span', { className: 'sav-select-state', text: active + ' / ' + sport.leagues.length + ' ligues' }),
+          h('span', { className: 'sav-chevron', 'aria-hidden': 'true', text: expanded ? '−' : '+' })),
+      });
+      if (!expanded) return;
+      sport.leagues.forEach((league) => {
+        const selected = this.selectedLeagues.indexOf(league.id) !== -1;
+        rows.push({
+          key: league.id, action: 'league', leagueId: league.id,
+          className: 'sav-league-row',
+          el: h('div', { className: 'sav-select-row' },
+            h('span', { className: 'sav-check' + (selected ? ' is-checked' : ''), 'aria-hidden': 'true', text: selected ? '✓' : '' }),
+            h('span', { className: 'sav-select-name', text: league.name }),
+            h('span', { className: 'sav-select-state', text: selected ? 'Activée' : 'Désactivée' })),
+        });
       });
     });
     return rows;
