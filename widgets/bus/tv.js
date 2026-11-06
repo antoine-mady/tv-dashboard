@@ -106,7 +106,7 @@ export default class BusWidget extends Widget {
       const delay = d.live && !d.canceled ? formatDelay(d.delay) : null;
       this.listEl.appendChild(h('div', { className: 'bus-row' + (d.canceled ? ' is-canceled' : '') + (d.live ? ' is-live' : '') },
         h('div', { className: 'bus-line', text: r[0], style: { background: r[1] || '', color: r[1] ? (r[2] || '#FFFFFF') : '' } }),
-        h('div', { className: 'bus-dest', text: d.dest }),
+        h('div', { className: 'bus-dest', text: this.stopAndDestination(d) }),
         delay ? h('div', { className: 'bus-delay' + (d.delay > 90 ? ' is-late' : ''), text: delay }) : null,
         h('div', { className: 'bus-wait', text: d.canceled ? 'supprimé' : formatWait(d.expected, now) })));
     });
@@ -129,6 +129,12 @@ export default class BusWidget extends Widget {
   onPanelClose() { this.list = null; }
 
   routeName(id) { return (this.table.routes[id] || [id])[0]; }
+  
+  stopAndDestination(departure) {
+    const stop = this.table.stopCount > 1 && this.table.stopNames
+      ? this.table.stopNames[departure.stopId] : '';
+    return stop ? stop + ' · ' + departure.dest : departure.dest;
+  }
 
   openList() {
     const tabs = this.routeIds.length > 1
@@ -166,7 +172,7 @@ export default class BusWidget extends Widget {
           el: h('div', { className: 'busp-row' },
             h('div', { className: 'busp-time', text: formatClock(at) }),
             h('div', { className: 'busp-line', text: r[0], style: { background: r[1] || '', color: r[1] ? (r[2] || '#FFFFFF') : '' } }),
-            h('div', { className: 'busp-dest ellipsis', text: d.dest }),
+            h('div', { className: 'busp-dest ellipsis', text: this.stopAndDestination(d) }),
             d.delay && Math.abs(d.delay) >= 60 ? h('div', { className: 'busp-planned', text: 'prévu ' + formatClock(d.scheduled) }) : null,
             delay ? h('div', { className: 'busp-delay' + (d.delay > 90 ? ' is-late' : ''), text: delay }) : null,
             h('div', { className: 'busp-wait', text: d.canceled ? 'supprimé' : missed ? 'trop tard' : soon ? formatWait(at, now) : '' })),
