@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   deviceCodeRequest, devicePollRequest, refreshRequest, parseDeviceCode, tokenFromResponse,
   myPlaylistsUrl, searchUrl, likedUrl, playlistItemsUrl,
-  mapPlaylists, mapPlaylistItems, mapVideos, mapSearch, cleanArtist, apiErrorMessage,
+  mapPlaylists, mapPlaylistItems, mapVideos, mapSearch, cleanArtist, apiErrorMessage, webSignInUrl,
 } from './google.js';
 
 test('requêtes OAuth (device flow + refresh)', () => {
@@ -56,4 +56,14 @@ test('messages d’erreur API', () => {
   assert.match(apiErrorMessage(403, { error: { errors: [{ reason: 'quotaExceeded' }] } }), /Quota/);
   assert.match(apiErrorMessage(403, { error: { errors: [{ reason: 'accessNotConfigured' }] } }), /non activée/);
   assert.match(apiErrorMessage(500, { error: { message: 'Boom' } }), /Boom/);
+});
+
+test('connexion web Google : retour sur youtube.com pour y ouvrir la session', () => {
+  const u = new URL(webSignInUrl());
+  assert.equal(u.origin, 'https://accounts.google.com');
+  assert.equal(u.searchParams.get('service'), 'youtube');
+  const back = new URL(u.searchParams.get('continue'));
+  assert.equal(back.origin, 'https://www.youtube.com');
+  assert.equal(back.pathname, '/signin');
+  assert.equal(back.searchParams.get('action_handle_signin'), 'true');
 });

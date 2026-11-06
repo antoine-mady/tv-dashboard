@@ -6,6 +6,7 @@ import { h } from '../../app/dom.js';
 import { qrSvg } from '../../app/qr.js';
 import { parsePlaylistId, formatDuration, shuffleQueue } from './playlist.js';
 import { createAuth, createLibrary } from './auth.js';
+import { webSignInUrl } from './google.js';
 import { MusicBrowser } from './browser.js';
 import { PlayerBridge } from './bridge.js';
 
@@ -98,6 +99,19 @@ export default class MusicWidget extends Widget {
     this.queue = { tracks: [], label: '' };
     this.closePanel();
     this.showLogin('Compte déconnecté.');
+  }
+
+  /**
+   * Ouvre la connexion Google « web » pour créer une session youtube.com dans l'app : c'est elle (et non le
+   * jeton OAuth) qui permet au lecteur intégré de reconnaître un compte Premium. Sur la TV, l'app quitte le
+   * dashboard (navigation de la page entière, autorisée par <tizen:allow-navigation>) ; on y revient en
+   * relançant l'app. Dans l'aperçu, le navigateur du PC a déjà sa propre session : nouvel onglet.
+   */
+  openGoogleSignIn() {
+    const url = webSignInUrl();
+    if (this.platform.isPreview || !this.platform.isTizen) { window.open(url, '_blank'); return; }
+    if (this.player && this.player.pauseVideo) this.player.pauseVideo();
+    window.location.href = url;
   }
 
   /** La connexion a expiré ou a été révoquée : retour à l'écran de connexion. */

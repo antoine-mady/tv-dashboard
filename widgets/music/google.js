@@ -6,6 +6,17 @@ export const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
 export const API = 'https://www.googleapis.com/youtube/v3/';
 
+/**
+ * Page de connexion Google « web » qui ouvre une session youtube.com (cookies) dans le navigateur de l'app.
+ * Le jeton OAuth ne sert qu'à l'API : c'est cette session que le lecteur YouTube intégré utilise pour
+ * reconnaître un compte Premium (sans elle, il affiche des pubs).
+ */
+export function webSignInUrl(lang) {
+  const back = 'https://www.youtube.com/signin?action_handle_signin=true&app=desktop&hl=' + encodeURIComponent(lang || 'fr') + '&next=%2F';
+  return 'https://accounts.google.com/ServiceLogin?service=youtube&uilel=3&passive=true&hl=' + encodeURIComponent(lang || 'fr') +
+    '&continue=' + encodeURIComponent(back);
+}
+
 export function formBody(params) {
   return Object.keys(params)
     .map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))

@@ -24,7 +24,7 @@ export class MusicBrowser {
       { id: 'search', label: 'Rechercher', icon: '🔍' },
     ];
     if (this.quick.length) this.tabs.push({ id: 'quick', label: 'Recherches rapides', icon: '⚡' });
-    this.tabs.push({ id: 'queue', label: 'File en cours', icon: '🎶' }, { id: 'logout', label: 'Se déconnecter', icon: '⎋' });
+    this.tabs.push({ id: 'queue', label: 'File en cours', icon: '🎶' }, { id: 'premium', label: 'Lecture sans pub', icon: '⭐' }, { id: 'logout', label: 'Se déconnecter', icon: '⎋' });
     this.loadToken = 0;
 
     root.classList.add('w-music-panel');
@@ -153,6 +153,17 @@ export class MusicBrowser {
         this.render();
         break;
       }
+      case 'premium':
+        this.titleEl.textContent = 'Lecture sans pub (YouTube Premium)';
+        this.setItems([
+          { kind: 'info', id: 'why', icon: 'ℹ', title: 'Le lecteur ne voit pas votre abonnement',
+            sub: 'La connexion ci-dessus sert aux playlists ; le lecteur, lui, a besoin d’une session YouTube dans l’app.' },
+          { kind: 'signin', id: 'signin', icon: '🔑', title: 'Se connecter à Google sur cette TV',
+            sub: 'Saisie e-mail + mot de passe au clavier de la TV (une seule fois).' },
+          { kind: 'info', id: 'after', icon: '↻', title: 'Ensuite : quittez l’app (touche Home) et relancez-la',
+            sub: 'La session est conservée. Si Google refuse ce navigateur, utilisez la touche rouge (app YouTube).' },
+        ]);
+        break;
       case 'logout':
         this.titleEl.textContent = 'Se déconnecter';
         this.setItems([], 'OK pour déconnecter le compte YouTube de cette TV');
@@ -199,6 +210,8 @@ export class MusicBrowser {
       if (this.tab().id === 'queue') this.w.playAt(this.state.item);
       else this.w.playTracks(it.tracks, this.state.item, it.label);
       this.w.closePanel();
+    } else if (it.kind === 'signin') {
+      this.w.openGoogleSignIn();
     } else if (it.kind === 'query') {
       this.searchResultsFor = it.title;
       this.state.menu = this.tabs.findIndex((t) => t.id === 'search');
