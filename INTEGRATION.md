@@ -6,7 +6,7 @@ Le widget est autonome dans `widgets/sport-a-voir/` et détecté automatiquement
 
 - `tv.js` / `tv.css` : interface TV, calendrier unifié et filtre multi-ligues.
 - `sports/catalog.js` : catalogue commun des sports et ligues.
-- `sports/league-of-legends/` : adaptateur LoL Esports (LEC, Worlds).
+- `sports/league-of-legends/` : adaptateur CitoAPI pour les matchs LoL (LEC, Worlds).
 - `sports/espn/api.js` : adaptateur des calendriers football et rugby via l'API publique ESPN.
 
 ## Sports et compétitions inclus
@@ -17,7 +17,7 @@ Le widget est autonome dans `widgets/sport-a-voir/` et détecté automatiquement
 | Football | Premier League, Ligue 1, Liga, Bundesliga, Serie A, Ligue des champions |
 | Rugby à XV | Tournoi des Six Nations, Coupe du monde |
 
-Les calendriers football et rugby utilisent les endpoints ESPN Site API v2. Cette API est publique et ne demande pas de clé, mais elle est non documentée officiellement et peut évoluer. Les calendriers LoL utilisent l'API LoL Esports et nécessitent une clé Riot.
+Les calendriers football et rugby utilisent les endpoints ESPN Site API v2. Cette API est publique et ne demande pas de clé, mais elle est non documentée officiellement et peut évoluer. Pour LoL, le widget combine `GET /api/v1/lol/live` et `GET /api/v1/lol/schedule/upcoming` sur `https://api.citoapi.com`, avec la clé CitoAPI dans l'en-tête `x-api-key`.
 
 ## Calendrier unifié et filtres
 
@@ -27,14 +27,16 @@ Le widget affiche jusqu'à **10 événements**.
 
 ## Configuration
 
-La clé Riot est facultative dans l'administration. Elle est utilisée uniquement pour les compétitions League of Legends sélectionnées. Sans clé, les calendriers football et rugby continuent de fonctionner ; les événements LoL ne peuvent simplement pas être chargés. La clé Riot est embarquée dans la configuration locale de l'application TV : utilisez une clé dédiée et révoquez-la si elle est exposée.
+La clé CitoAPI est facultative dans l'administration et nécessaire uniquement pour afficher les compétitions LoL. Remplacez toute ancienne clé Riot par une clé CitoAPI dans les réglages du widget. Le football et le rugby continuent de fonctionner sans clé. Une clé CitoAPI peut être créée depuis [citoapi.com](https://citoapi.com/).
+
+La configuration locale est embarquée dans le paquet de l'application TV, donc la clé est accessible à toute personne qui peut inspecter ce paquet ou la configuration. CitoAPI recommande de garder les clés côté serveur ; ce widget TV appelle l'API directement et ne fournit pas de proxy serveur.
 
 ## Installation
 
 1. Copier le dossier `widgets/sport-a-voir/` à la racine du dépôt.
 2. Lancer `npm install` si nécessaire.
 3. Lancer `npm run dev`, ouvrir l'admin, puis ajouter **Sport à voir**.
-4. Renseigner une clé Riot uniquement si les événements League of Legends sont souhaités.
+4. Renseigner une clé CitoAPI uniquement si les événements League of Legends sont souhaités.
 5. Vérifier dans l'aperçu, puis exécuter `npm run build` ou utiliser **Envoyer sur la TV**.
 
 ## Ajouter une ligue
