@@ -14,7 +14,7 @@ export default {
       type: 'password',
       default: '',
       required: false,
-      group: 'League of Legends',
+      group: 'Sports & esport',
       help: 'Nécessaire pour League of Legends, CS2, Dota 2 et Call of Duty. Les sports ESPN fonctionnent sans clé.',
     },
     {
