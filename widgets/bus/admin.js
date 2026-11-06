@@ -32,14 +32,23 @@ function combineTables(tables, network) {
   const stopNames = {};
   const deps = [];
   const stopIds = [];
+  const seenRoutes = {};
   tables.forEach((t) => {
-    Object.assign(routes, t.routes || {});
+    const ownRoutes = t.routes || {};
+    Object.assign(routes, ownRoutes);
     Object.assign(services, t.services || {});
+    const firstStopRoutes = {};
+    Object.keys(ownRoutes).forEach((id) => {
+      if (!seenRoutes[id]) firstStopRoutes[id] = true;
+      seenRoutes[id] = true;
+    });
     (t.stopIds || []).forEach((id) => {
       if (stopIds.indexOf(id) < 0) stopIds.push(id);
       stopNames[id] = t.stopName;
     });
-    deps.push(...(t.deps || []));
+    (t.deps || []).forEach((dep) => {
+      if (firstStopRoutes[dep[1]]) deps.push(dep);
+    });
   });
   deps.sort((a, b) => a[0] - b[0] || String(a[1]).localeCompare(String(b[1])));
   const starts = tables.map((t) => t.start).filter(Boolean).sort();
@@ -76,11 +85,12 @@ export function renderEditor(container, settings, onChange, api) {
       el('p', { className: 'help', textContent: 'Arrêts enregistrés :' }));
     tables.forEach((t, index) => {
       status.append(el('div', { className: 'ext-row' },
-        el('span', { textContent: t.stopName + ' · ' + t.deps.length + ' passages' }),
+        el('span', { textContent: t.stopName + ' · ' + t.deps.length + ' passages · lignes : ' + routeNames(t).join(', ') }),
         el('button', { type: 'button', textContent: 'Actualiser', onclick: () => choose(t.stopName, t.stopIds, index) }),
         el('button', { type: 'button', textContent: 'Retirer', onclick: () => saveTables(tables.filter((_, i) => i !== index)) })));
     });
-    status.append(el('p', { className: 'help', textContent: 'Lignes à afficher (disponibles sur les arrêts sélectionnés) :' }));
+    status.append(el('p', { className: 'help', textContent: 'Toutes les lignes de chaque arrêt sont listées. Si une ligne passe par plusieurs arrêts, ses départs sont pris au premier arrêt de la liste.' }));
+    status.append(el('p', { className: 'help', textContent: 'Lignes à afficher :' }));
     const chips = el('div', { className: 'ext-actions' });
     names.forEach((n) => {
       const on = !wanted.length || wanted.indexOf(n.toLowerCase()) >= 0;
