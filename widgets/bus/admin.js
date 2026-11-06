@@ -156,23 +156,101 @@ export function renderEditor(container, settings, onChange, api) {
     }
   };
 
-  const search = async () => {
+  let searchTimer = null;
+  let searchGeneration = 0;
+  out.setAttribute('aria-live', 'polite');
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-controls', 'bus-stop-suggestions');
+  input.setAttribute('aria-expanded', 'false');
+
+  const search = async (generation) => {
     const q = input.value.trim();
-    if (!q) return;
-    message('Téléchargement des horaires du réseau et recherche (la première fois, jusqu’à une minute)…');
+    const current = generation === undefined ? ++searchGeneration : generation;
+    if (q.length < 2) {
+      out.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+      if (q) message('Saisissez au moins 2 caractères pour rechercher.');
+      return;
+    }
+    message('Recherche des arrêts sur ' + networkName(networkSelect.value) + '… (la première fois, le téléchargement peut prendre jusqu’à une minute)');
     try {
       const { stops } = await api.call('stops?' + qs({ network: networkSelect.value, gtfsUrl: networkSelect.value === settings.network ? settings.gtfsUrl : '', q }));
+      if (current !== searchGeneration) return;
       out.innerHTML = '';
-      if (!stops.length) { message('Aucun arrêt trouvé. Essayez un seul mot (ex. « grands bois »).', 'error'); return; }
-      stops.forEach((s) => out.append(el('div', { className: 'ext-row' },
-        el('span', { textContent: networkName(networkSelect.value) + ' · ' + s.name + ' — lignes ' + s.routes.join(', ') }),
-        el('button', { type: 'button', textContent: 'Choisir', onclick: () => choose(s.name, s.ids, networkSelect.value) }))));
+      if (!stops.length) {
+        input.setAttribute('aria-expanded', 'false');
+        message('Aucun arrêt trouvé. Essayez un autre nom.');
+        return;
+      }
+      const list = el('div', { id: 'bus-stop-suggestions', role: 'listbox', className: 'ext-suggestions' });
+      stops.forEach((stop, index) => {
+        const button = el('button', {
+          type: 'button',
+          role: 'option',
+          'aria-selected': 'false',
+          textContent: stop.name + ' — lignes ' + stop.routes.join(', '),
+          onclick: () => {
+            clearTimeout(searchTimer);
+            searchGeneration++;
+            choose(stop.name, stop.ids, networkSelect.value);
+          },
+        });
+        button.onkeydown = (e) => {
+          const options = Array.from(list.querySelectorAll('[role="option"]'));
+          const i = options.indexOf(button);
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            options[(i + (e.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length].focus();
+          } else if (e.key === 'Escape') {
+            out.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+            input.focus();
+          }
+        };
+        list.append(button);
+      });
+      out.append(list);
+      input.setAttribute('aria-expanded', 'true');
+      const first = list.querySelector('[role="option"]');
+      if (first) first.setAttribute('aria-label', stops[0].name + ' — lignes ' + stops[0].routes.join(', ') + ' — choisir');
     } catch (e) {
+      if (current !== searchGeneration) return;
+      input.setAttribute('aria-expanded', 'false');
       message('Erreur : ' + e.message, 'error');
     }
   };
-  btnSearch.onclick = search;
-  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); search(); } };
+
+  const scheduleSearch = () => {
+    clearTimeout(searchTimer);
+    const generation = ++searchGeneration;
+    if (input.value.trim().length < 2) {
+      out.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    searchTimer = setTimeout(() => search(generation), 350);
+  };
+
+  btnSearch.onclick = () => search();
+  networkSelect.onchange = scheduleSearch;
+  input.oninput = scheduleSearch;
+  input.onkeydown = (e) => {
+    if (e.key === 'ArrowDown') {
+      const first = out.querySelector('[role="option"]');
+      if (first) { e.preventDefault(); first.focus(); }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = out.querySelector('[role="option"]');
+      if (first) first.click();
+      else search();
+    } else if (e.key === 'Escape') {
+      clearTimeout(searchTimer);
+      searchGeneration++;
+      out.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+    }
+  };
   btnUpdate.onclick = async () => {
     message('Mise à jour des horaires de tous les arrêts…');
     try {
