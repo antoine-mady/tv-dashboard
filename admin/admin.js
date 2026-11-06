@@ -950,10 +950,8 @@ function renderErrors() {
     box.append(head, list);
   }
   $('#btn-deploy').disabled = errors.length > 0;
-  $('#btn-wgt').classList.toggle('disabled', errors.length > 0);
   const why = errors.length ? 'Complétez d’abord les réglages signalés sous l’écran' : '';
   $('#btn-deploy').title = why;
-  $('#btn-wgt').title = why || 'Paquet à installer avec Apps2Samsung';
   // Les repères ⚠ des cadres suivent les corrections.
   const problems = errorsByWidget();
   document.querySelectorAll('#editor .box[data-id]').forEach((el) => {
@@ -993,7 +991,7 @@ async function sendToTv() {
     log.textContent = 'Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible.\n'
       + 'La TV doit être en Developer mode avec l’IP de ce PC (Apps → 1 2 3 4 5, voir README.md).\n\n'
       + '── Option A : Apps2Samsung (le plus simple) ──\n'
-      + '1. Cliquez sur « ⬇ Télécharger le .wgt » ci-dessous\n'
+      + '1. Cliquez sur « Télécharger le .wgt » ci-dessous\n'
       + '2. Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez TVDashboard.wgt\n'
       + '3. Choisissez la TV détectée et lancez l’installation\n'
       + '→ À refaire après chaque modification.\n\n'
