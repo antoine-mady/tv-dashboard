@@ -81,7 +81,9 @@ export default class SportAvoirWidget extends Widget {
       this.render();
       if (this.list && this.panelOpen) this.list.refresh();
     });
-    const wrapped = task.finally(() => { if (this.refreshPromise === wrapped) this.refreshPromise = null; });
+    let wrapped;
+    const clearRefreshPromise = () => { if (this.refreshPromise === wrapped) this.refreshPromise = null; };
+    wrapped = task.then(clearRefreshPromise, (error) => { clearRefreshPromise(); throw error; });
     this.refreshPromise = wrapped;
     return wrapped;
   }
