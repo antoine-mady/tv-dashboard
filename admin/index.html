@@ -19,6 +19,9 @@
     <button id="btn-global" type="button" class="ghost" data-icon="sliders">Réglages généraux</button>
     <button id="btn-deploy" type="button" class="primary" data-icon="send">Envoyer sur la TV</button>
   </header>
+  <div id="offline" class="offline-banner" role="alert" hidden>
+    <strong>L’admin ne répond plus.</strong> Relancez <code>npm run dev</code> : vos modifications seront enregistrées à son retour.
+  </div>
 
   <main class="layout">
     <section class="center">
@@ -101,12 +104,49 @@
     </aside>
   </main>
 
-  <dialog id="deploy-dialog">
-    <h2 class="dialog-title">Envoi sur la TV</h2>
-    <pre id="deploy-log"></pre>
+  <dialog id="deploy-dialog" aria-labelledby="deploy-title">
+    <h2 class="dialog-title" id="deploy-title">Envoi sur la TV</h2>
+    <ol id="deploy-steps" class="deploy-steps" hidden></ol>
+    <div id="deploy-result" class="deploy-result" role="status" hidden></div>
+
+    <div class="deploy-guide" data-guide="no-tizen" hidden>
+      <p>Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible. La TV doit être en mode développeur avec l’IP de ce PC (Apps, puis 1 2 3 4 5 sur la télécommande ; voir README.md).</p>
+      <section>
+        <h3>Option A : Apps2Samsung (le plus simple)</h3>
+        <ol>
+          <li>Cliquez sur « Télécharger le .wgt » ci-dessous.</li>
+          <li>Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez <code>TVDashboard.wgt</code>.</li>
+          <li>Choisissez la TV détectée et lancez l’installation. À refaire après chaque modification.</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Option B : Tizen Studio (envoi en un clic ensuite)</h3>
+        <ol>
+          <li>Téléchargez Tizen Studio et installez la version « CLI » (ou complète).</li>
+          <li>Dans son Package Manager, onglet « Extension SDK », installez « TV Extensions » et « Samsung Certificate Extension ».</li>
+          <li>Tools › Certificate Manager › « + » › Samsung › TV : créez les certificats auteur et distributeur (compte Samsung requis) avec le DUID de la TV. Notez le nom du profil.</li>
+          <li>Copiez <code>.env.example</code> en <code>.env.local</code> et renseignez <code>TV_IP</code> (Paramètres › Général › Réseau › État du réseau), <code>TIZEN_PROFILE</code> et <code>TIZEN_HOME</code>.</li>
+          <li>Cliquez à nouveau sur « Envoyer sur la TV », sans relancer l’admin.</li>
+        </ol>
+      </section>
+    </div>
+    <div class="deploy-guide" data-guide="no-config" hidden>
+      <p>La TV n’est pas encore configurée.</p>
+      <ol>
+        <li>Copiez <code>.env.example</code> en <code>.env.local</code> à la racine du projet.</li>
+        <li>Renseignez <code>TV_IP</code> et <code>TIZEN_PROFILE</code> (README.md, section « Préparer la TV »).</li>
+        <li>Cliquez sur « Réessayer ».</li>
+      </ol>
+    </div>
+
+    <details id="deploy-details" class="deploy-details" hidden>
+      <summary>Journal détaillé</summary>
+      <pre id="deploy-log"></pre>
+    </details>
     <div class="dialog-actions">
       <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" data-icon="download" hidden>Télécharger Tizen Studio</a>
       <a id="deploy-wgt" class="button primary" href="/api/wgt" data-icon="download" hidden>Télécharger le .wgt</a>
+      <button id="deploy-retry" type="button" data-icon="refresh" hidden>Réessayer</button>
       <button id="deploy-close" type="button">Fermer</button>
     </div>
   </dialog>

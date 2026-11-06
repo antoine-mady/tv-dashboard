@@ -6,6 +6,7 @@ import { renderForm } from '/admin/form.js';
 import { createHistory } from '/admin/history.js';
 import { gridGeometry, STAGE_W, STAGE_H } from '/app/grid.js';
 import { icon, iconLabel, applyIcons } from '/admin/icons.js';
+import { parseDeployLog } from '/admin/deploy-steps.js';
 
 const $ = (sel) => document.querySelector(sel);
 const state = {
@@ -127,9 +128,22 @@ function notifyUndoable(message) {
   notify(message, { action: { label: 'Annuler', fn: () => { if (hist.index === at) undo(); } } });
 }
 
+let retryTimer = null;
+
 async function save() {
+  clearTimeout(retryTimer);
+  let r;
   try {
-    const r = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.config) });
+    r = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.config) });
+  } catch (e) {
+    // Serveur injoignable (npm run dev arrêté) : on réessaie tout seul, rien n'est perdu tant que la page reste ouverte.
+    setOffline(true);
+    setStatus('Non enregistré', 'error');
+    retryTimer = setTimeout(save, 3000);
+    return;
+  }
+  setOffline(false);
+  try {
     if (!r.ok) throw new Error((await r.json()).error);
     setStatus('Enregistré', 'ok');
     // Réglages généraux / grille modifiés : l'aperçu est reconstruit avec la config enregistrée.
@@ -141,6 +155,14 @@ async function save() {
   } catch (e) {
     setStatus('Erreur : ' + e.message, 'error');
   }
+}
+
+function setOffline(on) {
+  const banner = $('#offline');
+  if (banner.hidden === !on) return;
+  banner.hidden = !on;
+  document.body.classList.toggle('is-offline', on);
+  if (!on) notify('L’admin est de nouveau joignable : modifications enregistrées.');
 }
 
 // ---- Aperçu en direct ---------------------------------------------------------------
@@ -991,9 +1013,13 @@ function renderErrors() {
     });
     box.append(head, list);
   }
-  $('#btn-deploy').disabled = errors.length > 0;
-  const why = errors.length ? 'Complétez d’abord les réglages signalés sous l’écran' : '';
-  $('#btn-deploy').title = why;
+  // Le bouton reste cliquable : avec des réglages manquants, il montre où ils sont au lieu d'envoyer.
+  const deploy = $('#btn-deploy');
+  deploy.classList.toggle('has-problems', errors.length > 0);
+  deploy.innerHTML = iconLabel('send', 'Envoyer sur la TV')
+    + (errors.length ? '<span class="badge">' + errors.length + ' à compléter</span>' : '');
+  deploy.title = errors.length ? 'Complétez d’abord les réglages signalés sous l’écran' : '';
+  deploy.setAttribute('aria-describedby', errors.length ? 'errors' : '');
   // Les repères ⚠ des cadres suivent les corrections.
   const problems = errorsByWidget();
   document.querySelectorAll('#editor .box[data-id]').forEach((el) => {
@@ -1018,58 +1044,93 @@ function renderAll() {
 
 // ---- Envoi sur la TV ---------------------------------------------------------------
 
+const STEP_ICONS = { pending: '', active: '', done: 'check', error: 'x' };
+
+/** Affiche l'état de l'envoi (étapes, résultat) d'après le journal reçu. */
+function renderDeploy(text, finished) {
+  const r = parseDeployLog(text, finished);
+  const list = $('#deploy-steps');
+  list.hidden = false;
+  list.innerHTML = '';
+  r.steps.forEach((s) => {
+    const li = document.createElement('li');
+    li.className = 'step is-' + s.state;
+    li.innerHTML = '<span class="step-mark" aria-hidden="true"></span><span class="step-label"></span>';
+    li.querySelector('.step-mark').innerHTML = icon(STEP_ICONS[s.state]);
+    li.querySelector('.step-label').textContent = s.label;
+    if (s.state === 'active') li.setAttribute('aria-current', 'step');
+    list.append(li);
+  });
+  const res = $('#deploy-result');
+  res.hidden = r.status === 'running';
+  res.className = 'deploy-result is-' + r.status;
+  if (r.status === 'success') {
+    res.innerHTML = '<strong>Le dashboard est installé et lancé sur la TV.</strong>';
+  } else if (r.status === 'error') {
+    const step = r.steps.find((s) => s.key === r.failedStep);
+    res.innerHTML = '<strong></strong><p class="deploy-error"></p><p class="deploy-hint"></p>';
+    res.querySelector('strong').textContent = 'Échec à l’étape « ' + (step ? step.label : '?') + ' »';
+    res.querySelector('.deploy-error').textContent = r.error;
+    res.querySelector('.deploy-hint').textContent = r.hint || '';
+    $('#deploy-details').open = true;
+  }
+  $('#deploy-retry').hidden = r.status !== 'error';
+  return r;
+}
+
 async function sendToTv() {
   const dialog = $('#deploy-dialog');
   const log = $('#deploy-log');
   log.textContent = '';
-  $('#deploy-wgt').hidden = true;
-  $('#deploy-tizen').hidden = true;
-  dialog.showModal();
-  const env = await (await fetch('/api/env')).json();
+  ['#deploy-wgt', '#deploy-tizen', '#deploy-retry', '#deploy-steps', '#deploy-result', '#deploy-details'].forEach((sel) => { $(sel).hidden = true; });
+  dialog.querySelectorAll('[data-guide]').forEach((g) => { g.hidden = true; });
+  $('#deploy-details').open = false;
+  if (!dialog.open) dialog.showModal();
+  let env;
+  try {
+    env = await (await fetch('/api/env')).json();
+  } catch (e) {
+    setOffline(true);
+    dialog.close();
+    return;
+  }
   if (!env.hasTizen) {
     // Sans Tizen Studio, impossible de signer et d'installer d'ici : paquet à installer avec Apps2Samsung.
     clearTimeout(saveTimer);
     await save();
-    log.textContent = 'Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible.\n'
-      + 'La TV doit être en Developer mode avec l’IP de ce PC (Apps → 1 2 3 4 5, voir README.md).\n\n'
-      + '── Option A : Apps2Samsung (le plus simple) ──\n'
-      + '1. Cliquez sur « Télécharger le .wgt » ci-dessous\n'
-      + '2. Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez TVDashboard.wgt\n'
-      + '3. Choisissez la TV détectée et lancez l’installation\n'
-      + '→ À refaire après chaque modification.\n\n'
-      + '── Option B : installer Tizen Studio (envoi direct en un clic ensuite) ──\n'
-      + '1. Cliquez sur « ⬇ Télécharger Tizen Studio » et installez la version « CLI » (ou complète)\n'
-      + '2. Ouvrez le Package Manager de Tizen Studio → onglet « Extension SDK » → installez\n'
-      + '   « TV Extensions » et « Samsung Certificate Extension »\n'
-      + '3. Tools → Certificate Manager → « + » → Samsung → TV : créez le certificat auteur et le\n'
-      + '   certificat distributeur (compte Samsung requis), avec le DUID de la TV. Notez le nom du profil.\n'
-      + '4. Copiez .env.example en .env.local à la racine du projet et renseignez :\n'
-      + '     TV_IP=<IP de la TV>        (Paramètres → Général → Réseau → État du réseau)\n'
-      + '     TIZEN_PROFILE=<nom du profil de certificat>\n'
-      + '     TIZEN_HOME=<dossier d’installation, ex. ~/tizen-studio ou C:\\tizen-studio>\n'
-      + '5. Cliquez à nouveau sur « Envoyer sur la TV » (pas besoin de relancer l’admin).';
+    dialog.querySelector('[data-guide="no-tizen"]').hidden = false;
     $('#deploy-wgt').hidden = false;
     $('#deploy-tizen').hidden = false;
     return;
   }
   if (!env.configured) {
-    log.textContent = 'La TV n’est pas encore configurée.\n\n'
-      + '1. Copiez .env.example en .env.local à la racine du projet\n'
-      + '2. Renseignez TV_IP et TIZEN_PROFILE (voir README.md, section « Préparer la TV »)\n'
-      + '3. Relancez cet envoi.';
+    dialog.querySelector('[data-guide="no-config"]').hidden = false;
+    $('#deploy-retry').hidden = false;
     return;
   }
   clearTimeout(saveTimer);
   await save();
-  const r = await fetch('/api/deploy', { method: 'POST' });
-  const reader = r.body.getReader();
-  const decoder = new TextDecoder();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    log.textContent += decoder.decode(value, { stream: true });
-    log.scrollTop = log.scrollHeight;
+  $('#deploy-details').hidden = false;
+  renderDeploy('', false);
+  let text = '';
+  try {
+    const r = await fetch('/api/deploy', { method: 'POST' });
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      text += decoder.decode(value, { stream: true });
+      log.textContent = text;
+      log.scrollTop = log.scrollHeight;
+      renderDeploy(text, false);
+    }
+  } catch (e) {
+    text += '\n❌ Connexion à l’admin perdue (' + e.message + ')\n';
+    log.textContent = text;
   }
+  const result = renderDeploy(text, true);
+  if (result.status === 'success') notify('Dashboard envoyé sur la TV');
 }
 
 // ---- Raccourcis clavier ---------------------------------------------------------------
@@ -1165,9 +1226,20 @@ async function init() {
 
   $('#btn-global').onclick = toggleGlobalSettings;
   $('#drawer-close').onclick = closeDrawer;
-  $('#btn-deploy').onclick = sendToTv;
+  $('#btn-deploy').onclick = () => {
+    const box = $('#errors');
+    if (box.hidden) return sendToTv();
+    // Réglages manquants : on les montre (et on ouvre le premier widget concerné).
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    box.classList.remove('flash');
+    void box.offsetWidth;
+    box.classList.add('flash');
+    const first = box.querySelector('li button');
+    if (first) first.focus({ preventScroll: true });
+  };
   $('#btn-reload').onclick = reloadPreview;
   $('#deploy-close').onclick = () => $('#deploy-dialog').close();
+  $('#deploy-retry').onclick = sendToTv;
   $('#btn-history').onclick = openHistory;
   $('#history-close').onclick = () => $('#history-dialog').close();
   $('#backup-now').onclick = backupNow;
