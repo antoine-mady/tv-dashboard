@@ -909,6 +909,9 @@ function renderLibrary() {
 
 function widgetApi(type) {
   return {
+    // Icônes de l'admin pour les boutons des éditeurs de widgets : api.iconLabel('search', 'Chercher').
+    icon,
+    iconLabel,
     call: async (route, opts) => {
       const r = await fetch('/api/widgets/' + type + '/' + route, opts);
       const data = await r.json();

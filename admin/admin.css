@@ -582,6 +582,7 @@ kbd {
 .field-label { font-weight: 500; font-size: 13.5px; }
 .field-bool { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; cursor: pointer; }
 .field-bool .help { flex-basis: 100%; margin-left: 26px; }
+.field-bool .field-label { flex: 1; min-width: 0; }
 input, select, textarea {
   font: inherit;
   color: var(--ink);
@@ -811,3 +812,19 @@ body.drawer-open .offline-banner { padding-right: calc(var(--drawer) + 20px); }
 .deploy-guide h3 { margin: 0 0 6px; font-size: 14px; }
 .deploy-guide ol { margin: 0; padding-left: 20px; }
 .deploy-guide li + li { margin-top: 4px; }
+
+/* ---- Champs : curseur, vignettes, couleurs proposées (admin/form.js) ---- */
+.slider { display: flex; align-items: center; gap: 12px; }
+.slider input[type="range"] { flex: 1; padding: 0; border: 0; background: transparent; accent-color: var(--action); box-shadow: none; }
+.slider output { min-width: 52px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.swatch { flex-direction: column; gap: 6px; padding: 6px 6px 7px; font-size: 12px; font-weight: 500; }
+.swatch-preview { display: block; width: 100%; height: 38px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.swatch[aria-checked="true"] { border-color: var(--action); box-shadow: 0 0 0 2px var(--action-soft); color: var(--action); font-weight: 650; }
+.color-field { display: flex; flex-direction: column; gap: 8px; }
+.presets { display: flex; flex-wrap: wrap; }
+.preset { width: 26px; height: 26px; padding: 0; margin: 0 6px 6px 0; border-radius: 50%; border: 2px solid var(--field); box-shadow: 0 0 0 1px var(--line-strong); }
+.preset:hover:not(:disabled) { border-color: var(--field); box-shadow: 0 0 0 2px var(--line-strong); }
+.preset[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--action); }
+.ext-folder { display: inline-flex; align-items: center; gap: 8px; }
+.ext summary svg.i { vertical-align: -3px; margin-right: 4px; }

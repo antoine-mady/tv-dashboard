@@ -19,7 +19,7 @@ export default {
       when: { startSource: 'playlist' }, placeholder: 'https://music.youtube.com/playlist?list=PL…' },
     { key: 'autoplay', label: 'Lancer la lecture automatiquement au démarrage', type: 'bool', default: true },
     { key: 'shuffle', label: 'Lecture aléatoire', type: 'bool', default: false },
-    { key: 'volume', label: 'Volume (%)', type: 'number', min: 0, max: 100, default: 60 },
+    { key: 'volume', label: 'Volume', type: 'number', min: 0, max: 100, step: 5, default: 60, slider: true, unit: '%' },
     { key: 'quickSearches', label: 'Recherches rapides (une par ligne)', type: 'textarea', default: 'Lofi hip hop\nDaft Punk\nMusique réunionnaise',
       help: 'Proposées dans l’onglet « Rechercher » de la TV, sans clavier.' },
     { key: 'showVideo', label: 'Afficher la vidéo (sinon la pochette)', type: 'bool', default: false },

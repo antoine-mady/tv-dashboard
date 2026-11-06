@@ -70,7 +70,8 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    ```
    Types de champ : `text`, `password`, `number` (`min`/`max`/`step`), `bool`, `select` (`options`:
    `[{ value, label }]`), `color`, `time` (`HH:MM`), `textarea`. Options : `required`, `help`, `placeholder`,
-   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas), `group: 'Titre'` (titre de section dans le formulaire).
+   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas), `group: 'Titre'` (titre de section dans le formulaire). Présentation : `number` + `slider: true` (+ `unit`) = curseur ;
+   `select` dont chaque option a un `swatch` (fond CSS) = vignettes ; `color` + `presets: ['#…']` = pastilles proposées.
    L'admin génère le formulaire tout seul ; les valeurs par défaut sont appliquées partout (`app/config.js`).
 3. **`tv.js`** — `export default class extends Widget` (`app/Widget.js`) :
    - `mount(el, settings)` : construire le rendu **dans `el` uniquement** (peut être `async`). Lever une erreur
@@ -107,7 +108,8 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
 5. **Logique pure** dans un fichier à part (ex. `codes.js`, `dlna.js`) + **test** `<nom>.test.js` à côté.
 6. Optionnel :
    - `admin.js` : `export function renderEditor(container, settings, onChange, api)` — complète le formulaire
-     auto (boutons, assistants). `onChange(patch)` fusionne des réglages ; `api.call(route)` appelle le
+     auto (boutons, assistants). `onChange(patch)` fusionne des réglages ; `api.iconLabel('search', 'Chercher')` / `api.icon(nom)` = icônes de l'admin
+     (`admin/icons.js`) pour les boutons ; `api.call(route)` appelle le
      `server.js` du widget ; `api.fetchText(url, opts)` passe par le proxy de l'admin.
    - `server.js` : `export default { routes: { 'GET /route': async ({ body, query }) => data } }`, exposé sous
      `/api/widgets/<type>/route`. **Tourne sur le PC, uniquement dans l'admin** (jamais sur la TV).

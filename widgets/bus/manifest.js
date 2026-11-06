@@ -17,7 +17,7 @@ export default {
     { key: 'title', label: 'Titre affiché', type: 'text', default: '', placeholder: 'Nom de l’arrêt par défaut' },
     { key: 'routes', label: 'Lignes à afficher', type: 'text', default: '', placeholder: 'ex. 11, Lit2',
       help: 'Séparées par des virgules. Vide = toutes les lignes de l’arrêt.' },
-    { key: 'count', label: 'Nombre de départs affichés', type: 'number', min: 1, max: 8, default: 4 },
+    { key: 'count', label: 'Nombre de départs affichés', type: 'number', min: 1, max: 8, default: 4, slider: true },
     { key: 'walkMinutes', label: 'Temps de marche jusqu’à l’arrêt (min)', type: 'number', min: 0, max: 30, default: 0,
       help: 'Les bus qu’on ne peut plus attraper ne sont pas affichés.' },
     { key: 'realtime', label: 'Retards en temps réel', type: 'bool', default: true },

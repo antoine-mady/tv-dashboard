@@ -1,15 +1,16 @@
 // Réglages généraux du dashboard (même format que le `schema` des widgets).
 export default [
   { key: 'background', group: 'Apparence', label: 'Fond d’écran', type: 'select', default: 'night', options: [
-    { value: 'night', label: 'Dégradé nuit' },
-    { value: 'ocean', label: 'Dégradé océan' },
-    { value: 'slate', label: 'Ardoise' },
-    { value: 'black', label: 'Noir' },
+    { value: 'night', label: 'Nuit', swatch: 'radial-gradient(ellipse at 20% 0%, #24305e 0%, #121833 45%, #070a17 100%)' },
+    { value: 'ocean', label: 'Océan', swatch: 'radial-gradient(ellipse at 80% 0%, #0f5b6e 0%, #0b2f45 50%, #051320 100%)' },
+    { value: 'slate', label: 'Ardoise', swatch: 'linear-gradient(160deg, #2b3038 0%, #16191e 100%)' },
+    { value: 'black', label: 'Noir', swatch: '#000' },
   ] },
-  { key: 'accent', group: 'Apparence', label: 'Couleur d’accent', type: 'color', default: '#7cc4ff' },
-  { key: 'padding', group: 'Apparence', label: 'Marge autour de l’écran (px)', type: 'number', min: 0, max: 160, default: 48,
+  { key: 'accent', group: 'Apparence', label: 'Couleur d’accent', type: 'color', default: '#7cc4ff',
+    presets: ['#7cc4ff', '#5fd08f', '#ffb347', '#ff7a8a', '#c49bff', '#ffd84d', '#f2f5f9'] },
+  { key: 'padding', group: 'Apparence', label: 'Marge autour de l’écran', type: 'number', min: 0, max: 160, step: 4, default: 48, slider: true, unit: 'px',
     help: 'Augmenter si les bords sont coupés par la TV (overscan).' },
-  { key: 'gap', group: 'Apparence', label: 'Espace entre les widgets (px)', type: 'number', min: 0, max: 80, default: 24 },
+  { key: 'gap', group: 'Apparence', label: 'Espace entre les widgets', type: 'number', min: 0, max: 80, step: 2, default: 24, slider: true, unit: 'px' },
   { key: 'animations', group: 'Apparence', label: 'Animations', type: 'select', default: 'full', options: [
     { value: 'full', label: 'Complètes' },
     { value: 'reduced', label: 'Réduites (fondus simples)' },
@@ -23,7 +24,7 @@ export default [
   { key: 'nightMode', group: 'Veille et protection de l’écran', label: 'Veille la nuit', type: 'bool', default: false },
   { key: 'nightStart', group: 'Veille et protection de l’écran', label: 'Début de la veille de nuit', type: 'time', default: '23:00', when: { nightMode: true } },
   { key: 'nightEnd', group: 'Veille et protection de l’écran', label: 'Fin de la veille de nuit', type: 'time', default: '07:00', when: { nightMode: true } },
-  { key: 'sleepDim', group: 'Veille et protection de l’écran', label: 'Assombrissement en veille (%)', type: 'number', min: 0, max: 100, default: 90,
+  { key: 'sleepDim', group: 'Veille et protection de l’écran', label: 'Assombrissement en veille', type: 'number', min: 0, max: 100, step: 5, default: 90, slider: true, unit: '%',
     help: 'La nuit, une touche réveille le dashboard pour 5 minutes. Sur une TV LCD, assombrir ne réduit presque pas la consommation : l’économie vient de l’économiseur et de l’arrêt auto. de la TV (Paramètres › Général), réautorisés pendant la veille.' },
   { key: 'pageKey', group: 'Pages', label: 'Touche couleur pour changer de page', type: 'select', default: 'none', options: [
     { value: 'none', label: 'Aucune (CH▲ / CH▼ seulement)' },
