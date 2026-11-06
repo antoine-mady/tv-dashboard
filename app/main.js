@@ -109,7 +109,8 @@ function start() {
    * Affiche la page `index`. Les widgets identiques sur les deux pages (même id, place et réglages)
    * sont conservés tels quels (la musique continue) ; les autres sont arrêtés puis recréés.
    */
-  function showPage(index, dir) {
+  /** `quiet` : sans animation d'entrée (mise à jour en direct depuis l'admin). */
+  function showPage(index, dir, quiet) {
     const page = pages[index];
     const kept = [];
     instances.forEach((it) => {
@@ -123,7 +124,7 @@ function start() {
     const base = dir ? Math.round(timing.leave / 2) : 0;
     instances = page.widgets.map((w) => {
       for (let i = 0; i < kept.length; i++) if (sameWidget(w, kept[i].conf)) return kept[i];
-      return mountWidget(w, { cls: enterClass(dir || 0), delay: base + (delays[w.id] || 0) });
+      return mountWidget(w, quiet ? null : { cls: enterClass(dir || 0), delay: base + (delays[w.id] || 0) });
     });
     pageIndex = index;
     updateFocusables();
@@ -185,6 +186,24 @@ function start() {
     const info = document.getElementById('boot-info'); // diagnostic de démarrage : concerne l'ancienne page
     if (info && info.parentNode) info.parentNode.removeChild(info);
     showPageName();
+  }
+
+  // ---- Aperçu de l'admin : config mise à jour en direct ---------------------------
+  // L'admin envoie la config à chaque modification des pages / widgets : seuls les widgets modifiés sont
+  // recréés (les autres continuent, ex. la musique). Les réglages généraux, eux, rechargent l'aperçu.
+  if (platform.isPreview) {
+    window.addEventListener('message', (e) => {
+      const d = e.data;
+      if (e.origin !== window.location.origin || !d || d.type !== 'tvdash:config' || !d.config) return;
+      const next = getPages(d.config);
+      pages.length = 0;
+      next.forEach((p) => pages.push(p));
+      let index = 0;
+      for (let i = 0; i < pages.length; i++) if (pages[i].id === d.page) index = i;
+      const changedPage = index !== pageIndex;
+      showPage(index, 0, !changedPage);
+      if (changedPage) showPageName();
+    });
   }
 
   // Dictée vocale dans les champs de saisie (bouton micro Samsung, touche de couleur, F2 dans l'aperçu).

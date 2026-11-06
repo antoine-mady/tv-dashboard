@@ -392,6 +392,8 @@ body.is-testing .editor { display: none; }
   transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
 }
 .box:hover { border-color: #fff; background: rgba(10, 16, 28, 0.08); }
+.box:focus { outline: none; }
+.box:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(29, 95, 209, 0.6); z-index: 2; }
 .box.selected {
   border: 2.5px solid var(--action);
   background: rgba(29, 95, 209, 0.12);

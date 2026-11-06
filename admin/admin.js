@@ -48,6 +48,7 @@ function scheduleSave(mergeKey) {
   if (hist) hist.commit(JSON.stringify(state.config), mergeKey);
   updateHistoryButtons();
   renderErrors();
+  schedulePush();
 }
 
 // ---- Annuler / Rétablir --------------------------------------------------------------
@@ -61,7 +62,6 @@ function updateHistoryButtons() {
 
 function restore(snap, label) {
   if (snap === null) return;
-  const pageBefore = state.page;
   state.config = JSON.parse(snap);
   if (!state.config.pages.some((p) => p.id === state.page)) state.page = state.config.pages[0].id;
   if (state.selected && !findWidget(state.selected)) closeDrawer();
@@ -70,7 +70,7 @@ function restore(snap, label) {
   saveTimer = setTimeout(save, 400);
   updateHistoryButtons();
   renderAll();
-  if (state.page !== pageBefore) reloadPreview();
+  schedulePush();
 }
 
 function undo() { if (hist) restore(hist.undo(), 'Annulé'); }
@@ -132,14 +132,39 @@ async function save() {
     const r = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.config) });
     if (!r.ok) throw new Error((await r.json()).error);
     setStatus('Enregistré', 'ok');
-    clearTimeout(previewTimer);
-    previewTimer = setTimeout(reloadPreview, 300);
+    // Réglages généraux / grille modifiés : l'aperçu est reconstruit avec la config enregistrée.
+    if (preview.needsReload) {
+      preview.needsReload = false;
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(reloadPreview, 150);
+    }
   } catch (e) {
     setStatus('Erreur : ' + e.message, 'error');
   }
 }
 
+// ---- Aperçu en direct ---------------------------------------------------------------
+// Les pages et widgets sont envoyés à l'aperçu sans le recharger (seuls les widgets modifiés y sont recréés) ;
+// un changement des réglages généraux ou de la grille demande un rechargement après l'enregistrement.
+
+const preview = { base: null, needsReload: false, timer: null };
+
+function previewKey() { return JSON.stringify({ g: globalSettings(), grid: grid() }); }
+
+function pushPreview() {
+  if (previewKey() !== preview.base) { preview.needsReload = true; return; }
+  const win = $('#preview').contentWindow;
+  if (win) win.postMessage({ type: 'tvdash:config', config: state.config, page: currentPage().id }, window.location.origin);
+}
+
+function schedulePush() {
+  clearTimeout(preview.timer);
+  preview.timer = setTimeout(pushPreview, 120);
+}
+
 function reloadPreview() {
+  preview.base = previewKey();
+  preview.needsReload = false;
   $('#preview').src = '/preview/?t=' + Date.now() + '&page=' + encodeURIComponent(currentPage().id);
 }
 
@@ -191,6 +216,9 @@ function renderEditor() {
   const g = grid();
   const geo = geometry();
   const problems = errorsByWidget();
+  // Le cadre qui avait le focus clavier le retrouve après le re-rendu (ex. déplacement aux flèches).
+  const active = document.activeElement;
+  const focusedId = active && active.classList && active.classList.contains('box') ? active.dataset.id : null;
   editor.innerHTML = '';
 
   // Emplacements de la grille : visibles pendant un déplacement.
@@ -231,7 +259,23 @@ function renderEditor() {
       pb.textContent = '⚠ ' + problems[w.id] + ' réglage' + (problems[w.id] > 1 ? 's' : '') + ' à compléter';
     }
     placeBox(box, w, geo);
+    // Accessible au clavier : Tab pour aller d'un widget à l'autre, Entrée pour ouvrir ses réglages,
+    // puis flèches / Maj+flèches pour le déplacer / redimensionner.
+    box.tabIndex = 0;
+    box.setAttribute('role', 'button');
+    box.setAttribute('aria-label', m.name + ', ' + w.w + ' × ' + w.h + ' cases'
+      + (problems[w.id] ? ', réglages à compléter' : '') + '. Entrée pour régler, flèches pour déplacer.');
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        select(w.id);
+        openDrawer();
+      }
+    });
+    box.addEventListener('focus', () => { if (state.selected && state.selected !== w.id) select(w.id); });
     editor.append(box);
+    if (w.id === focusedId) box.focus({ preventScroll: true });
 
     box.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
@@ -523,9 +567,8 @@ function replaceConfig(raw, message) {
   state.config = config;
   state.page = config.pages[0].id;
   state.selected = null;
-  scheduleSave();
+  scheduleSave(); // met aussi l'aperçu à jour (rechargé après enregistrement si les réglages généraux changent)
   renderAll();
-  reloadPreview();
   notifyUndoable(message);
 }
 
@@ -569,7 +612,7 @@ function showPage(id) {
   state.page = id;
   if (state.selected) closeDrawer(); // le widget réglé n'est pas sur l'autre page
   renderAll();
-  reloadPreview();
+  pushPreview(); // l'aperçu change de page sans se recharger
 }
 
 function newPageId() {
@@ -1150,6 +1193,8 @@ async function init() {
   document.addEventListener('keydown', onKeyDown);
   initRemote();
   new ResizeObserver(fitPreview).observe($('#screen'));
+  // Après chaque chargement de l'aperçu : lui envoyer l'état courant (modifications faites pendant le chargement).
+  $('#preview').addEventListener('load', () => { if (previewKey() === preview.base) pushPreview(); });
 
   renderAll();
   // Après le premier rendu : l'inspecteur complète les réglages par défaut, qui ne comptent pas comme une modification.
