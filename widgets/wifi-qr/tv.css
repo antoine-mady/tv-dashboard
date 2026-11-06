@@ -25,5 +25,4 @@
   border-radius: 12px;
 }
 .w-wifi-qr .wq-info { max-width: 100%; }
-.w-wifi-qr .wq-ssid { font-size: calc(var(--h) * 0.075); font-weight: 600; }
 .w-wifi-qr .wq-pass { font-size: calc(var(--h) * 0.06); font-family: monospace; }
