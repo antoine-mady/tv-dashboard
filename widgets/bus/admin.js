@@ -74,7 +74,7 @@ function combineTables(tables, defaultNetwork) {
   return {
     v: 1, networks, stopName: tables.map((t) => networkName(t.network || defaultNetwork) + ' · ' + t.stopName).join(' / '),
     stopNames, stopIds, stopCount: tables.length,
-    generated: new Date().toISOString(), start: starts[0] || '', end: ends[ends.length - 1] || '',
+    generated: new Date().toISOString(), start: starts[0] || '', end: ends[0] || '',
     routes, services, deps,
   };
 }
@@ -93,8 +93,8 @@ export function renderEditor(container, settings, onChange, api) {
 
   // ---- État actuel
   const tables = readTables(settings);
-  const networkMismatch = tables.some((t) => t.network && t.network !== settings.network);
-  const table = networkMismatch ? null : combineTables(tables, settings.network);
+  const networkMismatch = false;
+  const table = combineTables(tables, settings.network);
   if (tables.length && table) {
     const names = routeNames(table);
     const wanted = (settings.routes || '').split(/[,;\s]+/).map((s) => s.toLowerCase()).filter(Boolean);
@@ -153,7 +153,7 @@ export function renderEditor(container, settings, onChange, api) {
     try {
       const { timetable } = await api.call('timetable?' + qs({ network, gtfsUrl: network === settings.network ? settings.gtfsUrl : '', ids: ids.join(','), name }));
       const next = networkMismatch ? [] : tables.slice();
-      const existing = next.findIndex((t) => (t.stopIds || []).some((id) => ids.indexOf(id) >= 0));
+      const existing = next.findIndex((t) => (t.network || settings.network) === network && (t.stopIds || []).some((id) => ids.indexOf(id) >= 0));
       const index = replaceIndex === undefined ? existing : replaceIndex;
       if (index >= 0) next[index] = timetable;
       else next.push(timetable);
