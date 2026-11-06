@@ -35,6 +35,25 @@ test('le voisin dépend de la géométrie, pas de l’ordre des identifiants', (
   assert.equal(findNeighbor(layout.slice().reverse(), 'current', 'right'), 'near-below');
 });
 
+test('le widget juste au-dessus prime sur un widget plus éloigné mais aligné', () => {
+  const layout = [
+    { id: 'agenda', col: 4, row: 4, w: 2, h: 2 },
+    { id: 'creole', col: 1, row: 2, w: 2, h: 2 },
+    { id: 'bus', col: 4, row: 1, w: 2, h: 1 },
+  ];
+  assert.equal(findNeighbor(layout, 'agenda', 'up'), 'creole');
+});
+
+test('un widget qui chevauche sur l’axe de déplacement n’est pas un voisin vertical', () => {
+  const layout = [
+    { id: 'agenda', col: 3, row: 4, w: 3, h: 2 },
+    { id: 'photos', col: 6, row: 1, w: 7, h: 6 },
+  ];
+  assert.equal(findNeighbor(layout, 'agenda', 'up'), null);
+  assert.equal(findNeighbor(layout, 'photos', 'down'), null);
+  assert.equal(findNeighbor(layout, 'agenda', 'right'), 'photos');
+});
+
 test('plages horaires du mode nuit', () => {
   assert.equal(parseTime('07:30'), 450);
   assert.ok(isNaN(parseTime('nope')));
