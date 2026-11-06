@@ -199,15 +199,9 @@ body:not(.rail-pinned) .rail:hover, body:not(.rail-pinned) .rail:has(:focus-visi
 .rail-fade, .rail-head h2 { transition: opacity 0.15s; }
 body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .rail-fade,
 body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .rail-head h2,
-body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .lib-name,
-body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .wi-name,
-body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .widget-list .empty { opacity: 0; }
-.lib-name, .wi-name, .widget-list .empty { transition: opacity 0.15s; }
+body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .lib-name { opacity: 0; }
+.lib-name { transition: opacity 0.15s; }
 .rail .help { margin: 0 0 10px 54px; }
-.rail-title-2 { margin: 22px 0 4px; padding-left: 12px; white-space: nowrap; }
-/* Colonne réduite : il reste le filet qui sépare la bibliothèque des widgets de la page. */
-body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .rail-title-2 { opacity: 1; color: transparent; }
-.rail-title-2::before { content: ""; display: block; width: 20px; height: 1px; background: var(--line-strong); margin: 0 0 12px 0; }
 
 /* Bibliothèque : une ligne par widget, icône dans la colonne visible */
 .library-list { display: flex; flex-direction: column; }
@@ -225,27 +219,6 @@ body:not(.rail-pinned) .rail:not(:hover):not(:has(:focus-visible)) .rail-title-2
 .lib-item:active { cursor: grabbing; }
 .lib-icon { width: 20px; flex: none; font-size: 19px; line-height: 1; text-align: center; }
 .lib-name { overflow: hidden; text-overflow: ellipsis; }
-
-/* Widgets de la page */
-.widget-list { list-style: none; margin: 0; padding: 0; }
-.widget-list .empty { color: var(--muted); font-size: 12.5px; padding: 4px 12px 4px 54px; white-space: nowrap; }
-.widget-item {
-  position: relative;
-  width: 100%;
-  justify-content: flex-start;
-  gap: 14px;
-  padding: 7px 12px;
-  background: transparent;
-  border-color: transparent;
-  text-align: left;
-  white-space: nowrap;
-}
-.widget-item:hover:not(:disabled) { background: var(--action-soft); border-color: transparent; }
-.widget-item.selected { background: var(--action-soft); color: var(--action); font-weight: 600; }
-.wi-icon { width: 20px; flex: none; text-align: center; font-size: 17px; }
-.wi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-/* Repère « à compléter » : posé sur l'icône, visible même colonne réduite. */
-.wi-flag { position: absolute; left: 28px; top: 3px; font-size: 11px; color: var(--warn); }
 
 /* ---- Panneau de réglages (droite) : glisse par-dessus la page, sans la bloquer ---- */
 .drawer {

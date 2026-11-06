@@ -797,30 +797,6 @@ function renderLibrary() {
     lib.append(b);
   });
 
-  const list = $('#widget-list');
-  list.innerHTML = '';
-  const problems = errorsByWidget();
-  if (!pageWidgets().length) {
-    list.innerHTML = '<li class="empty">Aucun widget pour l’instant.</li>';
-  }
-  pageWidgets().forEach((w) => {
-    const m = state.widgets[w.type] ? state.widgets[w.type].manifest : { icon: '❓', name: w.type };
-    const li = document.createElement('li');
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'widget-item' + (w.id === state.selected ? ' selected' : '');
-    b.innerHTML = '<span class="wi-icon" aria-hidden="true"></span><span class="wi-name"></span><span class="wi-flag"></span>';
-    b.querySelector('.wi-icon').textContent = m.icon;
-    b.querySelector('.wi-name').textContent = m.name;
-    if (problems[w.id]) {
-      b.querySelector('.wi-flag').textContent = '⚠';
-      b.querySelector('.wi-flag').title = 'Réglages à compléter';
-    }
-    b.title = w.id + ' · ' + w.w + '×' + w.h;
-    b.onclick = () => select(w.id);
-    li.append(b);
-    list.append(li);
-  });
 }
 
 function widgetApi(type) {
@@ -938,7 +914,7 @@ function renderErrors() {
   const why = errors.length ? 'Complétez d’abord les réglages signalés sous l’écran' : '';
   $('#btn-deploy').title = why;
   $('#btn-wgt').title = why || 'Paquet à installer avec Apps2Samsung';
-  // Les repères ⚠ des cadres et de la liste suivent les corrections.
+  // Les repères ⚠ des cadres suivent les corrections.
   const problems = errorsByWidget();
   document.querySelectorAll('#editor .box[data-id]').forEach((el) => {
     if (el.classList.contains('ghost')) return;
@@ -949,11 +925,6 @@ function renderErrors() {
       pb.hidden = !n;
       pb.textContent = n ? '⚠ ' + n + ' réglage' + (n > 1 ? 's' : '') + ' à compléter' : '';
     }
-  });
-  document.querySelectorAll('#widget-list .widget-item').forEach((el, i) => {
-    const w = pageWidgets()[i];
-    const flag = el.querySelector('.wi-flag');
-    if (w && flag) flag.textContent = problems[w.id] ? '⚠' : '';
   });
 }
 
