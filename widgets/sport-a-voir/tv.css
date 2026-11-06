@@ -1,0 +1,56 @@
+/* Tous les sélecteurs sont limités au widget sport-a-voir.
+   Tailles en pixels fixes : plafond volontaire pour les grands écrans TV (Tizen/Chrome 56). */
+.w-sport-a-voir {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 14px;
+}
+.w-sport-a-voir .sav-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 10px 12px;
+}
+.w-sport-a-voir .sav-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.w-sport-a-voir .sav-title { min-width:0; color:var(--accent); font-size:18px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+.w-sport-a-voir .sav-status { flex:none; margin-left:8px; color:#ffbd66; font-size:13px; font-weight:700; }
+.w-sport-a-voir .sav-status.is-live { color:#ff6666; }
+.w-sport-a-voir .sav-matches { flex:1; min-height:0; overflow:hidden; }
+.w-sport-a-voir .sav-match { display:flex; align-items:center; min-height:0; margin-bottom:5px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.055); }
+.w-sport-a-voir .sav-match.is-live { background:rgba(220,55,55,0.16); }
+.w-sport-a-voir .sav-match-time { flex:0 0 22%; display:flex; flex-direction:column; min-width:0; }
+.w-sport-a-voir .sav-date { color:var(--muted); font-size:11px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.w-sport-a-voir .sav-time { margin-top:2px; font-size:15px; line-height:1.2; font-weight:700; font-variant-numeric:tabular-nums; }
+.w-sport-a-voir .sav-team { flex:1 1 0; display:flex; flex-direction:column; min-width:0; text-align:left; }
+.w-sport-a-voir .sav-team-right { text-align:right; }
+.w-sport-a-voir .sav-team-code { font-size:15px; line-height:1.2; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.w-sport-a-voir .sav-team-name { max-width:100%; margin-top:2px; color:var(--muted); font-size:11px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.w-sport-a-voir .sav-vs { flex:0 0 8%; color:var(--muted); font-size:11px; text-align:center; }
+.w-sport-a-voir .sav-format { flex:0 0 7%; margin-left:5px; color:var(--muted); font-size:10px; text-align:right; }
+.w-sport-a-voir .sav-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:14px; line-height:1.35; text-align:center; }
+.w-sport-a-voir .sav-meta { margin-top:5px; color:var(--muted); font-size:10px; line-height:1.2; text-align:right; }
+.w-sport-a-voir .lp-hint { margin-top:4px; font-size:11px; }
+
+/* Le panneau partagé ListPanel a ses propres tailles : plafonds explicites également ici. */
+.w-sport-a-voir-panel { font-size:14px; }
+.w-sport-a-voir-panel .lp-title { font-size:20px; }
+.w-sport-a-voir-panel .lp-count { font-size:13px; }
+.w-sport-a-voir-panel .lp-tabs { font-size:14px; }
+.w-sport-a-voir-panel .lp-group { font-size:12px; }
+.w-sport-a-voir-panel .lp-row { font-size:14px; }
+.w-sport-a-voir-panel .lp-status { font-size:14px; line-height:1.35; }
+.w-sport-a-voir-panel .lp-foot { font-size:11px; }
+.w-sport-a-voir-panel .sav-panel-row { display:flex; align-items:center; width:100%; min-width:0; }
+.w-sport-a-voir-panel .sav-panel-time { flex:0 0 90px; color:var(--accent); font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+.w-sport-a-voir-panel .sav-panel-teams { flex:1; min-width:0; font-size:15px; font-weight:600; }
+.w-sport-a-voir-panel .sav-panel-vs { margin:3px 0; color:var(--muted); font-size:11px; font-weight:400; }
+.w-sport-a-voir-panel .sav-panel-bo { flex:0 0 55px; color:var(--muted); font-size:12px; text-align:right; }
+.w-sport-a-voir-panel .sav-panel-live .sav-panel-time { color:#ff6b6b; }
+.w-sport-a-voir-panel .sav-select-row { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:38px; }
+.w-sport-a-voir-panel .sav-select-name { min-width:0; font-size:15px; line-height:1.25; font-weight:600; }
+.w-sport-a-voir-panel .sav-select-state { margin-left:12px; color:var(--muted); font-size:12px; text-align:right; }
+.w-sport-a-voir-panel .sav-select-all { border:1px solid var(--accent); border-radius:6px; }

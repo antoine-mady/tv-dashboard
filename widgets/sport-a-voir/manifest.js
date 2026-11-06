@@ -1,0 +1,40 @@
+// Métadonnées du widget, chargées par Node et par l'admin : aucun import ni accès au DOM.
+export default {
+  type: 'sport-a-voir',
+  name: 'Sport à voir',
+  icon: '🏆',
+  description: 'Tous les événements des sports et ligues sélectionnés, réunis dans un calendrier unique.',
+  size: { default: { w: 5, h: 3 }, min: { w: 3, h: 2 } },
+  focusable: true,
+  remoteHelp: [['OK', 'Filtrer les ligues'], ['Retour', 'Fermer les filtres']],
+  schema: [
+    {
+      key: 'apiKey',
+      label: 'Clé API CitoAPI (facultative)',
+      type: 'password',
+      default: '',
+      required: false,
+      group: 'League of Legends',
+      help: 'Nécessaire uniquement pour afficher League of Legends. Remplacez ici toute ancienne clé Riot par votre clé CitoAPI. Le football et le rugby fonctionnent sans clé.',
+    },
+    {
+      key: 'maxMatches',
+      label: 'Événements visibles',
+      type: 'number',
+      min: 1,
+      max: 10,
+      default: 10,
+      slider: true,
+    },
+    {
+      key: 'refreshMinutes',
+      label: 'Actualisation',
+      type: 'number',
+      min: 5,
+      max: 120,
+      default: 15,
+      slider: true,
+      unit: 'min',
+    },
+  ],
+};

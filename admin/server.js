@@ -60,11 +60,15 @@ function serveStatic(res, baseDir, relPath, allowedExt) {
 // ---- Routes API ----------------------------------------------------------------
 
 async function apiProxy(req, res, url) {
-  // Utilisé uniquement par l'aperçu et l'admin pour joindre la box (pas de CORS côté box).
+  // Utilisé par l'aperçu pour joindre la box et l'API CitoAPI sans exposer de proxy cross-origin.
   const target = url.searchParams.get('url') || '';
   if (!/^https?:\/\//i.test(target)) return send(res, 400, 'URL invalide');
   const headers = {};
   for (const h of ['content-type', 'soapaction', 'accept', 'authorization']) if (req.headers[h]) headers[h] = req.headers[h];
+  // La clé LoL est destinée à CitoAPI uniquement : ne jamais la relayer vers une URL arbitraire du proxy.
+  if (new URL(target).origin === 'https://api.citoapi.com' && req.headers['x-api-key']) {
+    headers['x-api-key'] = req.headers['x-api-key'];
+  }
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await readBody(req);
   try {
     const r = await fetch(target, { method: req.method, headers, body, signal: AbortSignal.timeout(30000) });

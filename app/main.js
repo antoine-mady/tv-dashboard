@@ -1,5 +1,6 @@
 // Point d'entrée de l'app TV : lit la config embarquée, crée les widgets, gère la télécommande.
 import './styles.css'; // en premier : les styles des widgets passent après
+import { limitTextSizes } from './font-limits.js';
 import registry from '../.generated/tv-registry.js'; // généré par tools/build.js (tous les widgets/*)
 import { applyDefaults, getPages, DEFAULT_GRID } from './config.js';
 import { stepPage, initialPage, sameWidget } from './pages.js';
@@ -38,6 +39,8 @@ function start() {
 
   platform.disableScreenSaver();
   const stage = createStage(root, grid, global);
+  // Plafond typographique commun à tous les widgets et panneaux, après application de leurs CSS.
+  limitTextSizes(root);
   const mode = animMode(global.animations);
   const timing = animTiming(mode);
   root.classList.add('anim-' + mode);
