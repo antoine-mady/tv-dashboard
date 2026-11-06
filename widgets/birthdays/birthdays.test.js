@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 
 process.env.TZ = 'Indian/Reunion';
 
-const { cleanName, birthYear, upcoming, windowFor, parseFilter, whenLabel } = await import('./birthdays.js');
+const { cleanName, birthYear, upcoming, windowFor, parseFilter, whenLabel, parseBday, parseVcard, formatContacts,
+  parseContacts, contactOccurrences } = await import('./birthdays.js');
 const { parseIcs, expandEvents } = await import('../agenda/ical.js');
 
 const now = new Date(2026, 10, 5, 21, 0); // jeudi 5 novembre 2026, 21:00
@@ -68,4 +69,52 @@ test('agenda iCal : tri, âge, passage d’année, doublons, passé ignoré', ()
   assert.equal(items[1].age, null);
   assert.equal(upcoming(occ, now, { showAge: false })[0].age, null);
   assert.equal(upcoming(occ, now, { max: 1 }).length, 1);
+});
+
+test('dates de naissance vCard', () => {
+  assert.deepEqual(parseBday('1990-05-12'), { year: 1990, month: 5, day: 12 });
+  assert.deepEqual(parseBday('19900512'), { year: 1990, month: 5, day: 12 });
+  assert.deepEqual(parseBday('--05-12'), { year: null, month: 5, day: 12 });
+  assert.deepEqual(parseBday('--0512'), { year: null, month: 5, day: 12 });
+  assert.deepEqual(parseBday('1604-05-12'), { year: null, month: 5, day: 12 });
+  assert.deepEqual(parseBday('1985-01-03T00:00:00Z'), { year: 1985, month: 1, day: 3 });
+  assert.equal(parseBday('1990-13-40'), null);
+  assert.equal(parseBday(''), null);
+});
+
+const VCF = [
+  'BEGIN:VCARD', 'VERSION:3.0', 'FN:Marie Dupont', 'N:Dupont;Marie;;;', 'BDAY:1990-11-05', 'END:VCARD',
+  'BEGIN:VCARD', 'VERSION:3.0', 'N:Payet;Paul;;;', 'item1.BDAY;VALUE=date:--01-03', 'END:VCARD',
+  'BEGIN:VCARD', 'VERSION:3.0', 'FN:Sans Date', 'TEL:0262', 'END:VCARD',
+  'BEGIN:VCARD', 'VERSION:3.0', 'FN:Jean-Fran\\, çois', 'BDAY:2016-02-29', 'NOTE:une note', '  pliée', 'END:VCARD',
+].join('\r\n');
+
+test('import vCard → lignes « JJ/MM/AAAA Nom »', () => {
+  const list = parseVcard(VCF);
+  assert.deepEqual(list.map((c) => c.name), ['Marie Dupont', 'Paul Payet', 'Jean-Fran\\, çois'.replace('\\', '')]);
+  const text = formatContacts(list);
+  assert.equal(text, '03/01 Paul Payet\n29/02/2016 Jean-Fran, çois\n05/11/1990 Marie Dupont');
+  assert.deepEqual(parseContacts(text).list, formatContacts(list) && parseContacts(text).list);
+  assert.equal(parseContacts(text).list.length, 3);
+});
+
+test('saisie à la main : lignes invalides signalées, commentaires ignorés', () => {
+  const r = parseContacts('# famille\n12/05/1990 Marie\n\n3/1 Paul\n31/02 Faux\nn’importe quoi');
+  assert.deepEqual(r.list, [
+    { name: 'Marie', day: 12, month: 5, year: 1990 },
+    { name: 'Paul', day: 3, month: 1, year: null },
+  ]);
+  assert.equal(r.errors.length, 2);
+});
+
+test('anniversaires des contacts : âge, passage d’année, 29 février', () => {
+  const { list } = parseContacts('05/11/1990 Marie Dupont\n03/01 Paul\n04/11/2010 Lucie\n29/02/2016 Léo');
+  const win = windowFor(now, 120);
+  const items = upcoming(contactOccurrences(list, win.from, win.to), now, { max: 10 });
+  assert.deepEqual(items.map((i) => i.name), ['Marie Dupont', 'Paul', 'Léo']);
+  assert.equal(items[0].today, true);
+  assert.equal(items[0].age, 36);
+  assert.equal(items[1].age, null);
+  assert.equal(items[2].date, '28 février'); // 2027 n’est pas bissextile
+  assert.equal(items[2].age, 11);
 });
