@@ -37,11 +37,17 @@ export default class SportAvoirWidget extends Widget {
     this.render();
   }
 
+  refreshAfterCurrent() {
+    const pending = this.refreshPromise;
+    if (pending) pending.then(() => this.refresh()).catch(() => {});
+    else this.refresh().catch(() => {});
+  }
+
   toggleAll() {
     this.selectedLeagues = this.selectedLeagues.length === LEAGUES.length
       ? [] : LEAGUES.map((league) => league.id);
     this.saveSelection();
-    this.refresh().catch(() => {});
+    this.refreshAfterCurrent();
     if (this.list) this.list.refresh();
   }
 
@@ -50,7 +56,7 @@ export default class SportAvoirWidget extends Widget {
     if (index === -1) this.selectedLeagues.push(id);
     else this.selectedLeagues.splice(index, 1);
     this.saveSelection();
-    this.refresh().catch(() => {});
+    this.refreshAfterCurrent();
     if (this.list) this.list.refresh();
   }
 
@@ -87,7 +93,7 @@ export default class SportAvoirWidget extends Widget {
       .sort((a, b) => {
         if (a.state === 'inProgress' && b.state !== 'inProgress') return -1;
         if (b.state === 'inProgress' && a.state !== 'inProgress') return 1;
-        return Date.parse(a.startAt) - Date.parse(b.startAt);
+        return Number(a.startAt) - Number(b.startAt);
       });
   }
 
@@ -118,10 +124,11 @@ export default class SportAvoirWidget extends Widget {
     const live = event.state === 'inProgress';
     const teams = event.teams || [{}, {}];
     const teamLabel = (team) => team.code || team.name || 'À confirmer';
+    const timestamp = Number(event.startAt);
     return h('div', { className: 'sav-match' + (live ? ' is-live' : '') },
       h('div', { className: 'sav-match-time' },
         h('span', { className: 'sav-date', text: (event.sportName || 'Sport') + ' · ' + (event.leagueName || '') }),
-        h('span', { className: 'sav-time', text: live ? 'EN DIRECT' : formatMatchDate(Date.parse(event.startAt)) + ' ' + formatMatchTime(Date.parse(event.startAt)) })),
+        h('span', { className: 'sav-time', text: live ? 'EN DIRECT' : formatMatchDate(timestamp) + ' ' + formatMatchTime(timestamp) })),
       h('div', { className: 'sav-team' },
         h('span', { className: 'sav-team-code', text: teamLabel(teams[0]) }),
         h('span', { className: 'sav-team-name', text: teams[0].name || 'Équipe à confirmer' })),
