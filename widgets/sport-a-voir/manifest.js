@@ -15,7 +15,7 @@ export default {
       default: '',
       required: false,
       group: 'League of Legends',
-      help: 'Nécessaire uniquement pour afficher les événements League of Legends. Le football et le rugby fonctionnent sans cette clé.',
+      help: 'Nécessaire uniquement pour afficher League of Legends. Remplacez ici toute ancienne clé Riot par votre clé CitoAPI. Le football et le rugby fonctionnent sans clé.',
     },
     {
       key: 'maxMatches',
@@ -32,7 +32,7 @@ export default {
       type: 'number',
       min: 5,
       max: 120,
-      default: 10,
+      default: 15,
       slider: true,
       unit: 'min',
     },
