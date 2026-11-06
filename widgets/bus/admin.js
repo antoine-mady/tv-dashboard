@@ -45,7 +45,7 @@ function combineTables(tables, network) {
   const starts = tables.map((t) => t.start).filter(Boolean).sort();
   const ends = tables.map((t) => t.end).filter(Boolean).sort();
   return {
-    v: 1, network, stopName: tables.map((t) => t.stopName).join(' / '), stopNames, stopIds,
+    v: 1, network, stopName: tables.map((t) => t.stopName).join(' / '), stopNames, stopIds, stopCount: tables.length,
     generated: new Date().toISOString(), start: starts[0] || '', end: ends[ends.length - 1] || '',
     routes, services, deps,
   };
@@ -79,7 +79,7 @@ export function renderEditor(container, settings, onChange, api) {
         el('button', { type: 'button', textContent: 'Actualiser', onclick: () => choose(t.stopName, t.stopIds, index) }),
         el('button', { type: 'button', textContent: 'Retirer', onclick: () => saveTables(tables.filter((_, i) => i !== index)) })));
     });
-    status.append(el('p', { className: 'help', textContent: 'Lignes à afficher (communes aux arrêts sélectionnés) :' }));
+    status.append(el('p', { className: 'help', textContent: 'Lignes à afficher (disponibles sur les arrêts sélectionnés) :' }));
     const chips = el('div', { className: 'ext-actions' });
     names.forEach((n) => {
       const on = !wanted.length || wanted.indexOf(n.toLowerCase()) >= 0;
