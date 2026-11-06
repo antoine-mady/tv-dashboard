@@ -6,14 +6,9 @@ export default {
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
   focusable: true, // OK : panneau plein écran avec tous les horaires
   schema: [
-    { key: 'network', label: 'Réseau par défaut pour les recherches', type: 'select', default: 'alterneo', options: [
-      { value: 'alterneo', label: 'Alternéo (Saint-Pierre, Saint-Louis…) · temps réel' },
-      { value: 'car-jaune', label: 'Car Jaune (interurbain) · temps réel' },
-      { value: 'citalis', label: 'Citalis (Saint-Denis…) · horaires prévus' },
-      { value: 'karouest', label: 'Kar’Ouest (Saint-Paul, Trois-Bassins…) · horaires prévus' },
-    ], help: 'Choisissez le réseau pour chaque recherche d’arrêt dans l’éditeur du widget. Plusieurs réseaux peuvent être mélangés.' },
-    { key: 'stopName', label: 'Arrêt(s)', type: 'text', default: '', required: true,
-      help: 'Cherchez l’arrêt ci-dessous, puis « Choisir » : les horaires sont téléchargés et envoyés avec la config.' },
+    // Valeurs internes, réglées par l'assistant d'arrêt.
+    { key: 'network', label: 'Réseau de recherche', type: 'text', default: 'alterneo', when: { network: '__jamais__' } },
+    { key: 'stopName', label: 'Arrêt(s)', type: 'text', default: '', when: { network: '__jamais__' } },
     { key: 'title', label: 'Titre affiché', type: 'text', default: '', placeholder: 'Nom de l’arrêt par défaut' },
     { key: 'routes', label: 'Lignes à afficher', type: 'text', default: '', placeholder: 'ex. 11, Lit2',
       help: 'Séparées par des virgules. Vide = toutes les lignes de l’arrêt.' },
