@@ -25,6 +25,16 @@ test('navigation aux flèches', () => {
   assert.equal(firstItem(items.slice().reverse()), 'A');
 });
 
+test('le voisin dépend de la géométrie, pas de l’ordre des identifiants', () => {
+  const layout = [
+    { id: 'current', col: 1, row: 1, w: 1, h: 1 },
+    { id: 'far-aligned', col: 10, row: 1, w: 1, h: 1 },
+    { id: 'near-below', col: 3, row: 2, w: 1, h: 1 },
+  ];
+  assert.equal(findNeighbor(layout, 'current', 'right'), 'near-below');
+  assert.equal(findNeighbor(layout.slice().reverse(), 'current', 'right'), 'near-below');
+});
+
 test('plages horaires du mode nuit', () => {
   assert.equal(parseTime('07:30'), 450);
   assert.ok(isNaN(parseTime('nope')));
