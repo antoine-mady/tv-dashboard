@@ -23,12 +23,17 @@
   </header>
 
   <main class="layout">
-    <aside class="side library" aria-label="Widgets">
-      <h2>Ajouter un widget</h2>
-      <p class="help">Cliquez, ou glissez sur l’écran.</p>
-      <div id="library" class="library-list"></div>
-      <h2 class="side-title-2">Sur cette page</h2>
-      <ul id="widget-list" class="widget-list"></ul>
+    <aside id="rail" class="rail" aria-label="Widgets">
+      <div class="rail-inner">
+        <div class="rail-head">
+          <button id="rail-pin" type="button" class="ghost icon rail-pin" aria-pressed="false" title="Garder la liste ouverte">»</button>
+          <h2>Ajouter un widget</h2>
+        </div>
+        <p class="help rail-fade">Cliquez, ou glissez sur l’écran.</p>
+        <div id="library" class="library-list"></div>
+        <h2 class="rail-title-2 rail-fade">Sur cette page</h2>
+        <ul id="widget-list" class="widget-list"></ul>
+      </div>
     </aside>
 
     <section class="center">
@@ -95,7 +100,10 @@
       <div id="errors" class="errors" hidden></div>
     </section>
 
-    <aside id="inspector" class="side inspector" aria-label="Réglages"></aside>
+    <aside id="drawer" class="drawer" aria-label="Réglages" inert>
+      <button id="drawer-close" type="button" class="ghost icon drawer-close" title="Fermer (Échap)" aria-label="Fermer les réglages">✕</button>
+      <div id="inspector" class="inspector"></div>
+    </aside>
   </main>
 
   <dialog id="deploy-dialog">

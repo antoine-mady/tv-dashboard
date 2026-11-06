@@ -16,7 +16,9 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
   ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs, widgets qui se rallument au réveil. Uniquement `transform` / `opacity`.
 - **Admin** : un seul écran TV où les cadres des widgets sont posés sur l'aperçu en direct, aux positions exactes
   (`gridGeometry` de `app/grid.js`, partagée avec la TV) ; mode **Disposer / Tester** (en test, le clavier pilote l'aperçu) ;
-  pages présentées comme des chaînes (CH 1, CH 2…), renommées dans l'onglet. Thème clair / sombre selon le système. Historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
+  pages présentées comme des chaînes (CH 1, CH 2…), renommées dans l'onglet. Réglages dans un panneau qui glisse depuis la droite
+  (clic sur un widget ou « Réglages généraux », fermé par Échap / ✕ / clic dans le vide) ; bibliothèque en colonne d'icônes
+  à gauche, dépliée au survol ou épinglée. Thème clair / sombre selon le système. Historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
   raccourcis dans l'éditeur (flèches, Maj+flèches, Ctrl+D, Suppr), télécommande cliquable sous l'aperçu
   (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
   Glisser-déposer depuis la bibliothèque. **Historique** (`tools/backups.js`) : copie de la config dans `config/history/`

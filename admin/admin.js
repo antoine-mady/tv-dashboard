@@ -14,6 +14,7 @@ const state = {
   page: null,        // id de la page en cours d'édition
   mode: 'layout',    // 'layout' = disposer les widgets sur l'écran, 'test' = piloter l'aperçu
   renaming: null,    // id de la page dont le nom est en cours de modification
+  drawer: false,     // panneau de réglages (à droite) ouvert
 };
 
 function grid() { return Object.assign({}, DEFAULT_GRID, state.config.grid); }
@@ -62,7 +63,7 @@ function restore(snap, label) {
   const pageBefore = state.page;
   state.config = JSON.parse(snap);
   if (!state.config.pages.some((p) => p.id === state.page)) state.page = state.config.pages[0].id;
-  if (state.selected && !findWidget(state.selected)) state.selected = null;
+  if (state.selected && !findWidget(state.selected)) closeDrawer();
   setStatus(label, 'pending');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(save, 400);
@@ -283,11 +284,53 @@ function renderEditor() {
 
 function setMode(mode) {
   state.mode = mode === 'test' ? 'test' : 'layout';
+  if (state.mode === 'test') closeDrawer();
   try { localStorage.setItem('tvdash-admin-mode', state.mode); } catch (e) { /* stockage indisponible */ }
   document.body.classList.toggle('is-testing', state.mode === 'test');
   document.querySelectorAll('.mode-switch [data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === state.mode)));
   $('#deck-layout').hidden = state.mode === 'test';
   $('#deck-test').hidden = state.mode !== 'test';
+}
+
+// ---- Panneau de réglages (droite) et liste des widgets (gauche) ---------------------------
+
+/** Ouvre le panneau de réglages ; `focus` : place le focus dedans (ouverture au clavier / bouton). */
+function openDrawer(focus) {
+  state.drawer = true;
+  const d = $('#drawer');
+  d.inert = false;
+  document.body.classList.add('drawer-open');
+  if (focus) setTimeout(() => $('#drawer-close').focus(), 0);
+}
+
+/** Ferme le panneau et désélectionne le widget. */
+function closeDrawer() {
+  if (!state.drawer && !state.selected) return;
+  const d = $('#drawer');
+  if (d.contains(document.activeElement)) document.activeElement.blur();
+  state.drawer = false;
+  d.inert = true;
+  document.body.classList.remove('drawer-open');
+  if (state.selected) {
+    state.selected = null;
+    document.querySelectorAll('#editor .box.selected').forEach((b) => b.classList.remove('selected'));
+    renderLibrary();
+    renderInspector();
+  }
+}
+
+function toggleGlobalSettings() {
+  if (state.drawer && !state.selected) return closeDrawer();
+  select(null);
+  openDrawer(true);
+}
+
+function setRailPinned(on) {
+  document.body.classList.toggle('rail-pinned', on);
+  $('#rail-pin').setAttribute('aria-pressed', String(on));
+  $('#rail-pin').textContent = on ? '«' : '»';
+  $('#rail-pin').title = on ? 'Réduire la liste' : 'Garder la liste ouverte';
+  try { localStorage.setItem('tvdash-admin-rail', on ? '1' : '0'); } catch (e) { /* stockage indisponible */ }
 }
 
 // ---- Glisser-déposer depuis la bibliothèque ---------------------------------------------
@@ -485,7 +528,7 @@ async function importConfig(file) {
 function showPage(id) {
   if (state.page === id) return;
   state.page = id;
-  state.selected = null;
+  if (state.selected) closeDrawer(); // le widget réglé n'est pas sur l'autre page
   renderAll();
   reloadPreview();
 }
@@ -658,6 +701,7 @@ function addWidget(type, at) {
   const w = Object.assign({ id: newWidgetId(type), type }, spot, { settings: applyDefaults(m.schema, {}) });
   widgets.push(w);
   state.selected = w.id;
+  openDrawer(); // le nouveau widget est prêt à être réglé
   scheduleSave();
   renderAll();
 }
@@ -680,7 +724,7 @@ function removeWidget(id) {
   const w = findWidget(id);
   if (!w) return;
   page.widgets = page.widgets.filter((o) => o.id !== id);
-  state.selected = null;
+  closeDrawer();
   scheduleSave();
   renderAll();
   notifyUndoable('Widget « ' + widgetLabel(w) + ' » supprimé');
@@ -698,6 +742,7 @@ function duplicateWidget(id) {
   const copy = Object.assign({ id: newWidgetId(w.type), type: w.type }, spot, { settings: JSON.parse(JSON.stringify(w.settings || {})) });
   pageWidgets().push(copy);
   state.selected = copy.id;
+  openDrawer(); // le nouveau widget est prêt à être réglé
   scheduleSave();
   renderAll();
 }
@@ -724,6 +769,7 @@ function select(id) {
   state.selected = id;
   document.querySelectorAll('#editor .box').forEach((b) => b.classList.toggle('selected', b.dataset.id === id));
   if (id && state.mode !== 'layout') setMode('layout');
+  if (id) openDrawer();
   renderLibrary();
   renderInspector();
 }
@@ -992,6 +1038,8 @@ function onKeyDown(e) {
   if (document.querySelector('dialog[open]') || !$('#page-menu').hidden) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  // Échap dans un champ du panneau de réglages : ferme le panneau.
+  if (e.key === 'Escape' && state.drawer && $('#drawer').contains(document.activeElement)) { closeDrawer(); return; }
   // Dans un champ, Ctrl+Z reste l'annulation de la frappe du navigateur.
   if (isTyping(document.activeElement)) return;
   if (mod && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
@@ -1011,6 +1059,7 @@ function onKeyDown(e) {
   }
 
   if (key === 't' && !mod && !e.altKey) { setMode('test'); return; }
+  if (e.key === 'Escape' && state.drawer) { closeDrawer(); return; }
   if (!state.selected) return;
   const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   if (dirs[e.key] && !mod && !e.altKey) {
@@ -1022,8 +1071,6 @@ function onKeyDown(e) {
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && !mod) {
     e.preventDefault();
     removeWidget(state.selected);
-  } else if (e.key === 'Escape') {
-    select(null);
   }
 }
 
@@ -1064,7 +1111,12 @@ async function init() {
     state.widgets[w.type] = { manifest, admin };
   }
 
-  $('#btn-global').onclick = () => select(null);
+  $('#btn-global').onclick = toggleGlobalSettings;
+  $('#drawer-close').onclick = closeDrawer;
+  $('#rail-pin').onclick = () => setRailPinned(!document.body.classList.contains('rail-pinned'));
+  let pinned = false;
+  try { pinned = localStorage.getItem('tvdash-admin-rail') === '1'; } catch (e) { /* stockage indisponible */ }
+  setRailPinned(pinned);
   $('#btn-deploy').onclick = sendToTv;
   $('#btn-reload').onclick = reloadPreview;
   $('#deploy-close').onclick = () => $('#deploy-dialog').close();
@@ -1083,7 +1135,7 @@ async function init() {
   $('#btn-redo').onclick = redo;
   document.querySelectorAll('.mode-switch [data-mode]').forEach((b) => { b.onclick = () => setMode(b.dataset.mode); });
   // Clic sur une zone vide de l'écran : retour aux réglages généraux.
-  $('#editor').addEventListener('pointerdown', (e) => { if (e.target === $('#editor') || e.target.classList.contains('slot')) select(null); });
+  $('#editor').addEventListener('pointerdown', (e) => { if (e.target === $('#editor') || e.target.classList.contains('slot')) closeDrawer(); });
   let mode = 'layout';
   try { mode = localStorage.getItem('tvdash-admin-mode') || 'layout'; } catch (e) { /* stockage indisponible */ }
   setMode(mode);
