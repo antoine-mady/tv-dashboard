@@ -8,9 +8,12 @@ const STREAMS = [
   { key: 'vegetauxDates', label: 'Déchets végétaux', icon: '🌿', className: 'vegetaux' },
 ];
 
+function twoDigits(value) {
+  return ('0' + value).slice(-2);
+}
+
 function dateKey(date) {
-  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' +
-    String(date.getDate()).padStart(2, '0');
+  return date.getFullYear() + '-' + twoDigits(date.getMonth() + 1) + '-' + twoDigits(date.getDate());
 }
 
 function nextDate(text, today) {
