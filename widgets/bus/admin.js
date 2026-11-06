@@ -68,7 +68,7 @@ export function renderEditor(container, settings, onChange, api) {
   const table = combineTables(tables, settings.network);
   if (tables.length && table) {
     const names = routeNames(table);
-    const wanted = (settings.routes || '').split(/[,;\\s]+/).map((s) => s.toLowerCase()).filter(Boolean);
+    const wanted = (settings.routes || '').split(/[,;\s]+/).map((s) => s.toLowerCase()).filter(Boolean);
     const status = el('div', { className: 'ext-out' },
       el('p', { className: 'ok', textContent: '✓ ' + tables.length + ' arrêt' + (tables.length > 1 ? 's' : '') + ' configuré' + (tables.length > 1 ? 's' : '') + ' · horaires valables du '
         + fmtDate(table.start) + ' au ' + fmtDate(table.end) + '.' }),
