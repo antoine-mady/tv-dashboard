@@ -1,0 +1,158 @@
+/* Tous les sélecteurs sont limités au widget sport-a-voir. */
+.w-sport-a-voir {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+}
+.w-sport-a-voir .sav-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: calc(var(--h) * 0.045) calc(var(--w) * 0.035);
+}
+.w-sport-a-voir .sav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: calc(var(--h) * 0.035);
+}
+.w-sport-a-voir .sav-title {
+  min-width: 0;
+  color: var(--accent);
+  font-size: calc(var(--h) * 0.13);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.w-sport-a-voir .sav-status {
+  flex: none;
+  margin-left: 8px;
+  color: #ffbd66;
+  font-size: calc(var(--h) * 0.075);
+  font-weight: 700;
+}
+.w-sport-a-voir .sav-status.is-live { color: #ff6666; }
+.w-sport-a-voir .sav-matches {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.w-sport-a-voir .sav-match {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  margin-bottom: calc(var(--h) * 0.018);
+  padding: calc(var(--h) * 0.025) calc(var(--w) * 0.025);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+.w-sport-a-voir .sav-match.is-live {
+  background: rgba(220, 55, 55, 0.16);
+}
+.w-sport-a-voir .sav-match-time {
+  flex: 0 0 22%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.w-sport-a-voir .sav-date {
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.065);
+  white-space: nowrap;
+}
+.w-sport-a-voir .sav-time {
+  margin-top: 2px;
+  font-size: calc(var(--h) * 0.105);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.w-sport-a-voir .sav-team {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+.w-sport-a-voir .sav-team-right { text-align: right; }
+.w-sport-a-voir .sav-team-code {
+  font-size: calc(var(--h) * 0.105);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-sport-a-voir .sav-team-name {
+  max-width: 100%;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.062);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.w-sport-a-voir .sav-vs {
+  flex: 0 0 8%;
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.065);
+  text-align: center;
+}
+.w-sport-a-voir .sav-format {
+  flex: 0 0 7%;
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.06);
+  text-align: right;
+}
+.w-sport-a-voir .sav-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.09);
+  text-align: center;
+}
+.w-sport-a-voir .sav-meta {
+  margin-top: calc(var(--h) * 0.015);
+  color: var(--muted);
+  font-size: calc(var(--h) * 0.06);
+  text-align: right;
+}
+.w-sport-a-voir .lp-hint { margin-top: calc(var(--h) * 0.012); }
+
+/* ListPanel fournit la structure ; ces règles ne stylent que le contenu propre au widget. */
+.w-sport-a-voir-panel .sav-panel-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.w-sport-a-voir-panel .sav-panel-time {
+  flex: 0 0 105px;
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.w-sport-a-voir-panel .sav-panel-teams {
+  flex: 1;
+  min-width: 0;
+  font-size: 25px;
+  font-weight: 600;
+}
+.w-sport-a-voir-panel .sav-panel-vs {
+  margin: 3px 0;
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 400;
+}
+.w-sport-a-voir-panel .sav-panel-bo {
+  flex: 0 0 70px;
+  color: var(--muted);
+  font-size: 20px;
+  text-align: right;
+}
+.w-sport-a-voir-panel .sav-panel-live .sav-panel-time { color: #ff6b6b; }

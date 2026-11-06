@@ -1,0 +1,50 @@
+// Métadonnées du widget, chargées par Node et par l'admin : aucun import ni accès au DOM.
+export default {
+  type: 'sport-a-voir',
+  name: 'Sport à voir',
+  icon: '🏆',
+  description: 'Prochains matchs esports : LEC et Worlds de League of Legends.',
+  size: { default: { w: 5, h: 3 }, min: { w: 3, h: 2 } },
+  focusable: true,
+  remoteHelp: [['◀ ▶', 'Changer de compétition'], ['OK', 'Tous les matchs'], ['Retour', 'Fermer la liste']],
+  schema: [
+    {
+      key: 'apiKey',
+      label: 'Clé API LoL Esports',
+      type: 'password',
+      default: '',
+      required: true,
+      group: 'Connexion',
+      help: 'Clé x-api-key obtenue via le portail développeur Riot. Elle est enregistrée dans la configuration locale puis embarquée dans l’application TV.',
+    },
+    {
+      key: 'defaultLeague',
+      label: 'Compétition au démarrage',
+      type: 'select',
+      default: 'lec',
+      options: [
+        { value: 'lec', label: 'LEC — Europe' },
+        { value: 'worlds', label: 'Worlds — International' },
+      ],
+    },
+    {
+      key: 'maxMatches',
+      label: 'Matchs visibles',
+      type: 'number',
+      min: 1,
+      max: 6,
+      default: 4,
+      slider: true,
+    },
+    {
+      key: 'refreshMinutes',
+      label: 'Actualisation',
+      type: 'number',
+      min: 5,
+      max: 120,
+      default: 15,
+      slider: true,
+      unit: 'min',
+    },
+  ],
+};
