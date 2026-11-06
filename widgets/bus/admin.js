@@ -124,6 +124,7 @@ export function renderEditor(container, settings, onChange, api) {
 
   // ---- Recherche d'arrêt
   const networkSelect = el('select', {});
+  networkSelect.setAttribute('aria-label', 'Réseau des arrêts à rechercher');
   Object.keys(NETWORKS).forEach((id) => networkSelect.append(new Option(NETWORKS[id].name, id, false, id === settings.network)));
   const input = el('input', { type: 'text', placeholder: 'Nom de l’arrêt, ex. église grands bois', value: settings.stopName || '' });
   const btnSearch = el('button', { type: 'button', className: 'primary', innerHTML: api.iconLabel('search', 'Chercher l’arrêt') });
