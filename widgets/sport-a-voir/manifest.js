@@ -14,8 +14,8 @@ export default {
       type: 'password',
       default: '',
       required: false,
-      group: 'League of Legends',
-      help: 'Nécessaire uniquement pour afficher League of Legends. Remplacez ici toute ancienne clé Riot par votre clé CitoAPI. Le football et le rugby fonctionnent sans clé.',
+      group: 'Sports & esport',
+      help: 'Nécessaire pour League of Legends, CS2, Dota 2 et Call of Duty. Les sports ESPN fonctionnent sans clé.',
     },
     {
       key: 'maxMatches',

@@ -130,6 +130,13 @@
 }
 .w-sport-a-voir-panel .sav-sport-accordion.is-open { border-color: rgba(124, 201, 236, 0.38); }
 .w-sport-a-voir-panel .sav-sport-accordion .sav-select-row { min-height: 54px; }
+.w-sport-a-voir-panel .sav-sport-select-all {
+  margin: 0 0 10px 34px;
+  border-color: rgba(124, 201, 236, 0.3);
+  background: rgba(71, 151, 190, 0.08);
+}
+.w-sport-a-voir-panel .sav-sport-select-all .sav-select-row { min-height: 38px; }
+.w-sport-a-voir-panel .sav-sport-select-all .sav-select-name { font-size: 17px; }
 .w-sport-a-voir-panel .sav-sport-name { min-width: 0; color: #eef5fa; font-size: 22px; font-weight: 700; }
 .w-sport-a-voir-panel .sav-sport-mark {
   display: inline-flex;

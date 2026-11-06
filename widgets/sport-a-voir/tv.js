@@ -15,6 +15,16 @@ export default class SportAvoirWidget extends Widget {
       this.selectedLeagues = LEAGUES.map((league) => league.id);
       this.store.set('selectionInitialized', true);
     }
+    const catalogVersion = Number(this.store.get('catalogVersion', 1));
+    if (catalogVersion < 2) {
+      // Active les nouvelles catégories une fois, tout en conservant les choix déjà enregistrés.
+      ['cs2', 'dota2', 'cod', 'europa-league', 'mls', 'nba', 'wnba', 'ncaa-basketball',
+        'nfl', 'college-football', 'mlb', 'nhl'].forEach((id) => {
+        if (this.selectedLeagues.indexOf(id) === -1) this.selectedLeagues.push(id);
+      });
+      this.store.set('selectedLeagues', this.selectedLeagues);
+      this.store.set('catalogVersion', 2);
+    }
     this.schedules = {};
     this.errors = {};
     this.refreshPromise = null;
@@ -60,12 +70,27 @@ export default class SportAvoirWidget extends Widget {
     if (this.list) this.list.refresh();
   }
 
+  toggleSport(sportId) {
+    const leagues = LEAGUES.filter((league) => league.sportId === sportId);
+    const allSelected = leagues.length > 0 && leagues.every((league) => this.selectedLeagues.indexOf(league.id) !== -1);
+    if (allSelected) {
+      this.selectedLeagues = this.selectedLeagues.filter((id) => !leagues.some((league) => league.id === id));
+    } else {
+      leagues.forEach((league) => {
+        if (this.selectedLeagues.indexOf(league.id) === -1) this.selectedLeagues.push(league.id);
+      });
+    }
+    this.saveSelection();
+    this.refreshAfterCurrent();
+    if (this.list) this.list.refresh();
+  }
+
   refresh() {
     if (this.refreshPromise) return this.refreshPromise;
     const active = LEAGUES.filter((league) => this.selectedLeagues.indexOf(league.id) !== -1);
     const task = Promise.all(active.map((league) => {
-      // Une clé Riot absente ne bloque que les ligues LoL ; les autres sports continuent normalement.
-      const request = league.provider === 'lol'
+      // CitoAPI couvre League of Legends, CS2, Dota 2 et Call of Duty.
+      const request = league.provider === 'cito'
         ? fetchLoLSchedule((url, options) => this.fetchJson(url, options), league, this.settings.apiKey)
         : fetchEspnSchedule((url) => this.fetchJson(url), league);
       return request.then((events) => {
@@ -110,10 +135,10 @@ export default class SportAvoirWidget extends Widget {
     if (!selectedCount) {
       this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Aucune ligue sélectionnée · appuyez sur OK pour filtrer' }));
     } else if (!events.length) {
-      const lolSelected = LEAGUES.some((league) => league.provider === 'lol' && this.selectedLeagues.indexOf(league.id) !== -1);
+      const citoSelected = LEAGUES.some((league) => league.provider === 'cito' && this.selectedLeagues.indexOf(league.id) !== -1);
       const hasErrors = this.selectedLeagues.some((id) => this.errors[id]);
-      const message = lolSelected && !String(this.settings.apiKey || '').trim() && hasErrors
-        ? 'Ajoutez une clé API LoL dans les réglages pour voir League of Legends. Les autres sports restent disponibles.'
+      const message = citoSelected && !String(this.settings.apiKey || '').trim() && hasErrors
+        ? 'Ajoutez votre clé API CitoAPI dans les réglages pour voir les calendriers esport. Les sports ESPN restent disponibles.'
         : (hasErrors ? 'Calendriers momentanément indisponibles' : 'Aucun événement programmé pour le moment');
       this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: message }));
     } else {
@@ -162,7 +187,8 @@ export default class SportAvoirWidget extends Widget {
           if (this.expandedSports.has(row.sportId)) this.expandedSports.delete(row.sportId);
           else this.expandedSports.add(row.sportId);
           this.list.refresh();
-        } else if (row.action === 'league') this.toggleLeague(row.leagueId);
+        } else if (row.action === 'sport-all') this.toggleSport(row.sportId);
+        else if (row.action === 'league') this.toggleLeague(row.leagueId);
       },
     });
     this.list.showTab(0);
@@ -206,6 +232,17 @@ export default class SportAvoirWidget extends Widget {
           h('span', { className: 'sav-chevron', 'aria-hidden': 'true', text: expanded ? '−' : '+' })),
       });
       if (!expanded) return;
+      const allSportSelected = active === sport.leagues.length;
+      rows.push({
+        key: 'sport-all:' + sport.id,
+        action: 'sport-all',
+        sportId: sport.id,
+        className: 'sav-sport-select-all',
+        el: h('div', { className: 'sav-select-row' },
+          h('span', { className: 'sav-check' + (allSportSelected ? ' is-checked' : ''), 'aria-hidden': 'true', text: allSportSelected ? '✓' : '' }),
+          h('span', { className: 'sav-select-name', text: allSportSelected ? 'Tout désélectionner' : 'Tout sélectionner' }),
+          h('span', { className: 'sav-select-state', text: sport.leagues.length + ' ligues' })),
+      });
       sport.leagues.forEach((league) => {
         const selected = this.selectedLeagues.indexOf(league.id) !== -1;
         rows.push({

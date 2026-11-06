@@ -1,12 +1,18 @@
 // Adaptateur CitoAPI pour les calendriers LoL.
-const API_BASE = 'https://api.citoapi.com/api/v1/lol';
+const API_BASE = 'https://api.citoapi.com/api/v1';
 
-export function buildScheduleUrl() {
-  return API_BASE + '/schedule/upcoming';
+export function buildScheduleUrl(game) {
+  const selectedGame = game || 'lol';
+  return selectedGame === 'lol'
+    ? API_BASE + '/lol/schedule/upcoming'
+    : API_BASE + '/' + selectedGame + '/matches/upcoming';
 }
 
-export function buildLiveUrl() {
-  return API_BASE + '/live';
+export function buildLiveUrl(game) {
+  const selectedGame = game || 'lol';
+  return selectedGame === 'lol' || selectedGame === 'cs2'
+    ? API_BASE + '/' + selectedGame + '/live'
+    : API_BASE + '/' + selectedGame + '/matches/live';
 }
 
 function firstValue(object, keys) {
@@ -84,11 +90,12 @@ function leagueText(event) {
 }
 
 function eventBelongsToLeague(event, league) {
+  if (league.apiGame && league.apiGame !== 'lol' && !league.searchTerms) return true;
   const text = leagueText(event);
   if (!text) return false;
-  const terms = league.id === 'worlds'
+  const terms = league.searchTerms || (league.id === 'worlds'
     ? ['worlds', 'world championship', 'worlds championship']
-    : ['lec', 'league of legends european championship', 'european championship'];
+    : ['lec', 'league of legends european championship', 'european championship']);
   return terms.some((term) => text.indexOf(term) !== -1);
 }
 
@@ -150,8 +157,8 @@ export async function fetchLeagueSchedule(fetchJson, league, apiKey, now) {
 
   const headers = { 'x-api-key': String(apiKey).trim() };
   const endpoints = [
-    { url: buildLiveUrl(), state: 'inProgress' },
-    { url: buildScheduleUrl(), state: 'unstarted' },
+    { url: buildLiveUrl(league.apiGame), state: 'inProgress' },
+    { url: buildScheduleUrl(league.apiGame), state: 'unstarted' },
   ];
   const events = [];
   const seen = {};
