@@ -14,12 +14,36 @@ const BACK = 60 * 60 * 1000;       // un bus prévu il y a moins d'1 h peut enco
 const AHEAD = 6 * 60 * 60 * 1000;  // on cherche les départs des 6 prochaines heures
 const STALE = 5 * 60 * 1000;       // au-delà, le temps réel est ignoré
 
+function scopedId(network, id) { return network + '::' + id; }
+
+function scopeRealtimeFeed(feed, network) {
+  const trips = {};
+  Object.keys(feed.trips || {}).forEach((id) => {
+    const trip = Object.assign({}, feed.trips[id], {
+      tripId: scopedId(network, feed.trips[id].tripId || id),
+      routeId: feed.trips[id].routeId ? scopedId(network, feed.trips[id].routeId) : '',
+      stops: (feed.trips[id].stops || []).map((stop) => Object.assign({}, stop, {
+        stopId: stop.stopId ? scopedId(network, stop.stopId) : '',
+      })),
+    });
+    trips[scopedId(network, id)] = trip;
+  });
+  return { timestamp: feed.timestamp, trips, alerts: scopeAlerts(feed.alerts || [], network) };
+}
+
+function scopeAlerts(alerts, network) {
+  return (alerts || []).map((alert) => Object.assign({}, alert, {
+    routes: (alert.routes || []).map((id) => scopedId(network, id)),
+    stops: (alert.stops || []).map((id) => scopedId(network, id)),
+  }));
+}
+
 export default class BusWidget extends Widget {
   mount(el, s) {
     let table = null;
     try { table = s.timetable ? JSON.parse(s.timetable) : null; } catch (e) { table = null; }
     if (!table || !table.deps) throw new Error('Choisissez l’arrêt dans l’admin (recherche d’arrêt du widget)');
-    if (table.network && table.network !== s.network) throw new Error('Réseau modifié : choisissez à nouveau l’arrêt dans l’admin');
+    if (table.network && !table.networks && table.network !== s.network) throw new Error('Réseau modifié : choisissez à nouveau l’arrêt dans l’admin');
     this.table = table;
 
     const sel = selectRoutes(table, parseRouteFilter(s.routes));
@@ -30,10 +54,17 @@ export default class BusWidget extends Widget {
     this.routeIds = sel.ids;
     if (sel.unknown.length) console.warn('Bus : lignes inconnues à cet arrêt : ' + sel.unknown.join(', '));
 
-    this.feeds = feedsFor(s);
-    this.rt = null;       // dernier flux de retards décodé
-    this.rtAt = 0;        // quand il a été reçu
-    this.alerts = [];
+    this.networkIds = table.networks || [table.network || s.network];
+    this.feedsByNetwork = {};
+    this.networkIds.forEach((network) => {
+      this.feedsByNetwork[network] = feedsFor({
+        network,
+        gtfsUrl: network === s.network ? s.gtfsUrl : '',
+        realtimeUrl: network === s.network ? s.realtimeUrl : '',
+      });
+    });
+    this.rtByNetwork = {};
+    this.alertsByNetwork = {};
 
     this.liveEl = h('div', { className: 'bus-live' });
     this.listEl = h('div', { className: 'bus-list' });
@@ -50,23 +81,26 @@ export default class BusWidget extends Widget {
       focusHint('OK : tous les horaires'));
 
     this.every(15 * 1000, () => this.update());
-    if (s.realtime && this.feeds.tripUpdates) {
+    if (s.realtime && this.networkIds.some((network) => this.feedsByNetwork[network].tripUpdates || this.feedsByNetwork[network].alerts)) {
       this.every(s.refreshSeconds * 1000, () => this.refreshRealtime());
     }
   }
 
-  /** Le temps réel est un bonus : en cas d'échec on garde les horaires prévus, sans état d'erreur. */
+  /** Le temps réel est facultatif et chargé indépendamment pour chaque réseau configuré. */
   refreshRealtime() {
     const s = this.settings;
     const get = (url) => this.fetch(url).then((r) => r.arrayBuffer()).then((b) => decodeFeed(new Uint8Array(b)));
-    const jobs = [get(this.feeds.tripUpdates).then((feed) => {
-      this.rt = feed;
-      this.rtAt = Date.now();
-      if (!this.feeds.alerts) this.alerts = feed.alerts;
-    })];
-    if (s.showAlerts && this.feeds.alerts) {
-      jobs.push(get(this.feeds.alerts).then((feed) => { this.alerts = feed.alerts; }));
-    }
+    const jobs = [];
+    this.networkIds.forEach((network) => {
+      const feeds = this.feedsByNetwork[network];
+      if (feeds.tripUpdates) jobs.push(get(feeds.tripUpdates).then((feed) => {
+        this.rtByNetwork[network] = { feed: scopeRealtimeFeed(feed, network), at: Date.now() };
+        if (!feeds.alerts) this.alertsByNetwork[network] = scopeAlerts(feed.alerts, network);
+      }));
+      if (s.showAlerts && feeds.alerts) jobs.push(get(feeds.alerts).then((feed) => {
+        this.alertsByNetwork[network] = scopeAlerts(feed.alerts, network);
+      }));
+    });
     return Promise.all(jobs.map((p) => p.catch((e) => console.warn('Bus, temps réel : ' + e.message))))
       .then(() => this.update());
   }
@@ -78,8 +112,15 @@ export default class BusWidget extends Widget {
 
   /** Départs (temps réel appliqué s'il est récent) entre now - BACK et now + ahead. */
   departures(now, aheadMs) {
-    const live = this.rt && now - this.rtAt < STALE;
-    return { live, deps: applyRealtime(scheduledBetween(this.table, now, this.routeIds, BACK, aheadMs), live ? this.rt : null) };
+    const rt = { trips: {} };
+    let live = false;
+    this.networkIds.forEach((network) => {
+      const entry = this.rtByNetwork[network];
+      if (!entry || now - entry.at >= STALE) return;
+      live = true;
+      Object.assign(rt.trips, entry.feed.trips);
+    });
+    return { live, deps: applyRealtime(scheduledBetween(this.table, now, this.routeIds, BACK, aheadMs), live ? rt : null) };
   }
 
   render() {
@@ -112,7 +153,13 @@ export default class BusWidget extends Widget {
     });
 
     const notes = [];
-    if (s.showAlerts) relevantAlerts(this.alerts, table, this.routeIds, now).forEach((a) => notes.push('⚠ ' + a.header));
+    if (s.showAlerts) {
+      const alerts = [];
+      Object.keys(this.alertsByNetwork).forEach((network) => {
+        this.alertsByNetwork[network].forEach((alert) => alerts.push(alert));
+      });
+      relevantAlerts(alerts, table, this.routeIds, now).forEach((a) => notes.push('⚠ ' + a.header));
+    }
     const left = daysLeft(table, now);
     if (left <= 7) notes.push('Horaires valables encore ' + left + ' jour(s) : mettez-les à jour dans l’admin');
     this.noteEl.textContent = notes.join('  ·  ');
