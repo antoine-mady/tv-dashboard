@@ -90,6 +90,7 @@ function leagueText(event) {
 }
 
 function eventBelongsToLeague(event, league) {
+  if (league.apiGame && league.apiGame !== 'lol' && !league.searchTerms) return true;
   const text = leagueText(event);
   if (!text) return false;
   const terms = league.searchTerms || (league.id === 'worlds'
