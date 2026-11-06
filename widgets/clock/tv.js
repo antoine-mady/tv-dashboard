@@ -14,7 +14,7 @@ export default class ClockWidget extends Widget {
 
     this.render();
     // Démarre pile sur la seconde suivante pour rester synchronisé.
-    this.after(1000 - (Date.now() % 1000), () => this.every(1000, () => this.render()));
+    this.after(1000 - (Date.now() % 1000), () => this.every(1000, () => this.render(), { whileAsleep: true }));
   }
 
   render() {

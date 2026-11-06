@@ -10,7 +10,7 @@ import { createPanelHost } from './panel.js';
 import { initRemote, isEditable } from './remote.js';
 import { initDictation, DICTATION_KEYS } from './dictation.js';
 import { findNeighbor, firstItem } from './focus.js';
-import { parseTime, isInRange } from './schedule.js';
+import { shouldSleep, sleepEnabled } from './sleep.js';
 import * as platform from './platform.js';
 import { h } from './dom.js';
 
@@ -38,6 +38,8 @@ function start() {
   const stage = createStage(root, grid, global);
   const panels = createPanelHost(root);
   let instances = []; // widgets de la page affichée : { conf, inst, cell, focusable }
+  let asleep = false; // mode veille (voir plus bas)
+  let lastActivity = Date.now();
   let pageIndex = initialPage(pages, {
     requested: platform.isPreview ? queryParam('page') : null, // l'admin affiche la page en cours d'édition
     saved: appStore.get('page', null),
@@ -146,6 +148,13 @@ function start() {
   const dictation = initDictation(root, { lang: 'fr-FR', preview: platform.isPreview });
 
   initRemote((key) => {
+    // En veille, une touche réveille le dashboard sans rien faire d'autre (sauf les touches média :
+    // « pause » doit marcher du premier coup quand la musique joue).
+    lastActivity = Date.now();
+    if (asleep) {
+      setAsleep(false);
+      if (MEDIA_KEYS.indexOf(key) === -1) return;
+    }
     if (DICTATION_KEYS.indexOf(key) !== -1 && isEditable(document.activeElement) && dictation.start(document.activeElement)) return;
     // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
     const owner = panels.owner();
@@ -179,17 +188,30 @@ function start() {
     }, 60 * 60 * 1000);
   }
 
-  // ---- Mode nuit ----------------------------------------------------------------
-  if (global.nightMode) {
-    const overlay = h('div', { id: 'night' });
-    document.body.appendChild(overlay);
-    const startMin = parseTime(global.nightStart);
-    const endMin = parseTime(global.nightEnd);
+  // ---- Mode veille ---------------------------------------------------------------
+  // Après N minutes sans touche (ou la nuit) : écran assombri, widgets en pause (timers suspendus)
+  // et économiseur d'écran de la TV réautorisé, pour qu'elle applique sa protection et son arrêt auto.
+  let overlay = null;
+  function setAsleep(on) {
+    if (on === asleep) return;
+    asleep = on;
+    if (!overlay) {
+      overlay = h('div', { id: 'sleep' });
+      document.body.appendChild(overlay);
+    }
+    overlay.style.opacity = on ? String(global.sleepDim / 100) : '0';
+    platform.setScreenSaver(on);
+    instances.forEach((it) => { if (it.inst) (on ? it.inst._sleep() : it.inst._wake()); });
+  }
+  if (sleepEnabled(global)) {
     const check = () => {
       const now = new Date();
-      const on = isInRange(now.getHours() * 60 + now.getMinutes(), startMin, endMin);
-      overlay.style.opacity = on ? String(global.nightDim / 100) : '0';
+      setAsleep(shouldSleep(global, now.getHours() * 60 + now.getMinutes(), Date.now() - lastActivity));
     };
+    // Souris (pointeur de la télécommande, aperçu) : compte comme une activité.
+    const poke = () => { lastActivity = Date.now(); if (asleep) setAsleep(false); };
+    document.addEventListener('mousedown', poke);
+    document.addEventListener('mousemove', poke);
     check();
     setInterval(check, 30 * 1000);
   }

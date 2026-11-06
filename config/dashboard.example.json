@@ -9,10 +9,11 @@
     "padding": 48,
     "gap": 24,
     "antiBurnIn": true,
+    "idleMinutes": 0,
     "nightMode": false,
     "nightStart": "23:00",
     "nightEnd": "07:00",
-    "nightDim": 75,
+    "sleepDim": 90,
     "pageKey": "none",
     "rememberPage": true
   },

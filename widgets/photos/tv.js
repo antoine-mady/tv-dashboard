@@ -52,7 +52,7 @@ export default class PhotosWidget extends Widget {
     if (!this.started) {
       this.started = true;
       this.next();
-      this.restartTimer();
+      if (!this.asleep) this.restartTimer(); // sinon : relancé au réveil (onSleep)
     }
   }
 
@@ -88,6 +88,17 @@ export default class PhotosWidget extends Widget {
   onKey(key) {
     if (key === 'enter') { this.next(); this.restartTimer(); return true; }
     return false;
+  }
+
+  /** En veille : plus de diaporama (ni téléchargement de photos) ; il reprend au réveil. */
+  onSleep(asleep) {
+    if (asleep) {
+      if (this.timer) clearInterval(this.timer);
+      this.timer = null;
+    } else if (this.started) {
+      this.next();
+      this.restartTimer();
+    }
   }
 
   destroy() {

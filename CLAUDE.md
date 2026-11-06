@@ -9,6 +9,8 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
 - **Pages** : `config.pages = [{ id, name, widgets: [...] }]` (ex. « Moi » / « Invités »), CH▲ / CH▼ pour en changer
   (`app/pages.js`). Un widget identique (même id, place et réglages) sur deux pages reste affiché sans être recréé ;
   les autres sont détruits (`destroy()`) puis recréés. L'ancien format `config.widgets` = une seule page (`getPages`).
+- **Veille** (`app/sleep.js`, réglages généraux `idleMinutes`, `nightMode`…) : après N minutes sans touche ou la nuit,
+  écran assombri, timers des widgets suspendus et économiseur d'écran de la TV réautorisé ; une touche réveille.
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes
@@ -62,9 +64,12 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    - `onKey(key)` → `true` si gérée. Touches : `left right up down enter back playpause play pause stop next prev
      red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
      widget focalisé sont proposées aux autres widgets.
-   - `onFocus(focused)`, `destroy()` (optionnels).
-   - Utilitaires : `this.every(ms, fn)` (timer auto-nettoyé ; une erreur/promesse rejetée affiche l'état
-     d'erreur, effacé au succès suivant), `this.after(ms, fn)`, `this.listen(target, type, fn)`,
+   - `onFocus(focused)`, `destroy()` (optionnels). `onSleep(asleep)` : veille / réveil du dashboard — les timers de
+     `this.every` sont déjà suspendus puis rattrapés au réveil ; ne surcharger que pour un `setInterval` maison, une
+     vidéo… (`this.asleep` indique l'état).
+   - Utilitaires : `this.every(ms, fn, opts)` (timer auto-nettoyé ; une erreur/promesse rejetée affiche l'état
+     d'erreur, effacé au succès suivant ; suspendu pendant la veille sauf `{ whileAsleep: true }`, réservé à un rendu
+     local très léger comme l'horloge ; `{ immediate: false }` pour ne pas l'exécuter tout de suite), `this.after(ms, fn)`, `this.listen(target, type, fn)`,
      `this.fetchJson/fetchText(url, opts)` (timeout, erreurs HTTP, proxy automatique dans l'aperçu),
      `this.fetchRaw(url, opts)` (idem mais renvoie la réponse quel que soit le statut, ex. pour OAuth),
      `this.showError(msg)` / `this.clearError()`, `this.size` (`{ width, height }` en px),

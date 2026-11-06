@@ -26,6 +26,12 @@ export function createStore(prefix, storage) {
   };
 }
 
+function stopTimer(t) {
+  // clearTimeout et clearInterval sont interchangeables (même liste d'identifiants).
+  if (t.id !== null) { clearTimeout(t.id); clearInterval(t.id); }
+  t.id = null;
+}
+
 export default class Widget {
   /** Appelé par l'app avant mount(). Ne pas surcharger. */
   _init(ctx) {
@@ -37,6 +43,8 @@ export default class Widget {
     this.size = ctx.size;        // { width, height } en px de this.el
     this.platform = ctx.platform; // { isTizen, isPreview, launchApp… }
     this._cleanups = [];
+    this._timers = [];           // timers de this.every(), suspendus pendant la veille
+    this.asleep = false;         // true pendant la veille du dashboard
     this._errorEl = null;
     this._panels = ctx.panels;   // hôte des panneaux plein écran (géré par l'app)
     this._panel = null;
@@ -54,6 +62,12 @@ export default class Widget {
   destroy() {}
   /** Appelé quand le panneau plein écran du widget se ferme (Retour, ou closePanel()). */
   onPanelClose() {}
+  /**
+   * Appelé quand le dashboard se met en veille (true) ou se réveille (false). Les timers de this.every()
+   * sont déjà suspendus puis relancés (rattrapés au réveil s'ils sont en retard) : ne surcharger que pour
+   * ce qui est démarré autrement (setInterval maison, vidéo…).
+   */
+  onSleep(asleep) {}
 
   // ---- Panneau plein écran ----------------------------------------------------
   /**
@@ -79,10 +93,14 @@ export default class Widget {
   /**
    * Exécute fn toutes les `ms` millisecondes. Si fn lève une erreur (ou renvoie une promesse rejetée),
    * le widget affiche un état d'erreur ; il est effacé au prochain succès.
+   * Pendant la veille du dashboard, le timer est suspendu (sauf `{ whileAsleep: true }`, pour un rendu
+   * local très léger comme l'horloge) ; au réveil, fn est exécutée tout de suite si son tour est passé.
    */
   every(ms, fn, opts) {
-    const immediate = !opts || opts.immediate !== false;
-    const run = () => {
+    const o = opts || {};
+    const t = { ms, id: null, last: Date.now(), whileAsleep: !!o.whileAsleep };
+    t.run = () => {
+      t.last = Date.now();
       try {
         const r = fn();
         if (r && typeof r.then === 'function') {
@@ -94,10 +112,10 @@ export default class Widget {
         this.showError(e && e.message ? e.message : String(e));
       }
     };
-    if (immediate) run();
-    const id = setInterval(run, ms);
-    this._cleanups.push(() => clearInterval(id));
-    return id;
+    if (o.immediate !== false) t.run();
+    if (!this.asleep || t.whileAsleep) t.id = setInterval(t.run, ms);
+    this._timers.push(t);
+    this._cleanups.push(() => stopTimer(t));
   }
 
   after(ms, fn) {
@@ -155,11 +173,35 @@ export default class Widget {
     }
   }
 
+  /** Appelé par l'app à la mise en veille. Ne pas surcharger (surcharger onSleep()). */
+  _sleep() {
+    if (this.asleep) return;
+    this.asleep = true;
+    this._timers.forEach((t) => { if (!t.whileAsleep) stopTimer(t); });
+    try { this.onSleep(true); } catch (e) { console.error(e); }
+  }
+
+  /** Appelé par l'app au réveil : relance les timers suspendus (ceux en retard s'exécutent tout de suite). */
+  _wake() {
+    if (!this.asleep) return;
+    this.asleep = false;
+    this._timers.forEach((t) => {
+      if (t.id !== null) return;
+      const wait = Math.max(0, t.ms - (Date.now() - t.last));
+      t.id = setTimeout(() => {
+        t.id = setInterval(t.run, t.ms);
+        t.run();
+      }, wait);
+    });
+    try { this.onSleep(false); } catch (e) { console.error(e); }
+  }
+
   /** Appelé par l'app. Ne pas surcharger (surcharger destroy()). */
   _destroy() {
     this.closePanel();
     this._cleanups.forEach((fn) => { try { fn(); } catch (e) { /* ignore */ } });
     this._cleanups = [];
+    this._timers = [];
     try { this.destroy(); } catch (e) { /* ignore */ }
   }
 }

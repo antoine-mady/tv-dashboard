@@ -4,12 +4,19 @@
 export const isTizen = typeof window !== 'undefined' && typeof window.tizen !== 'undefined';
 export const isPreview = typeof window !== 'undefined' && !!window.__PREVIEW__;
 
-/** Empêche l'économiseur d'écran de la TV de se déclencher sur le dashboard. */
-export function disableScreenSaver() {
+/**
+ * Autorise (true) ou empêche (false) l'économiseur d'écran de la TV. Bloqué en temps normal sur le dashboard,
+ * réautorisé pendant la veille : la TV applique alors sa « Protection auto. » puis son « Arrêt auto. ».
+ */
+export function setScreenSaver(on) {
   try {
-    webapis.appcommon.setScreenSaver(webapis.appcommon.AppCommonScreenSaverState.SCREEN_SAVER_OFF);
+    const s = webapis.appcommon.AppCommonScreenSaverState;
+    webapis.appcommon.setScreenSaver(on ? s.SCREEN_SAVER_ON : s.SCREEN_SAVER_OFF);
   } catch (e) { /* hors TV ou API absente */ }
 }
+
+/** Empêche l'économiseur d'écran de la TV de se déclencher sur le dashboard. */
+export function disableScreenSaver() { setScreenSaver(false); }
 
 /**
  * Dans l'aperçu navigateur, les requêtes cross-origin (DLNA de la box…) passent par le proxy
