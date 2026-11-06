@@ -52,7 +52,7 @@ a.button {
 a.button.disabled { opacity: 0.45; pointer-events: none; }
 button:hover:not(:disabled), a.button:hover { border-color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.primary, a.button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 button.ghost { background: transparent; border-color: transparent; padding: 4px 8px; }
 button.danger { margin-top: 20px; width: 100%; color: var(--error); background: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -260,7 +260,8 @@ dialog pre {
   white-space: pre-wrap;
   font-size: 12.5px;
 }
-.dialog-actions { display: flex; justify-content: flex-end; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dialog-actions [hidden] { display: none; }
 
 @media (max-width: 1100px) {
   .layout { grid-template-columns: 1fr; }

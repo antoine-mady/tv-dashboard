@@ -129,7 +129,10 @@ async function handle(req, res) {
   if (p === '/api/env') {
     const t = resolveTools();
     const env = readEnv();
-    return sendJson(res, 200, { tvIp: t.tvIp, profile: t.profile, configured: !!(t.tvIp && t.profile), hasEnvFile: Object.keys(env).length > 0 });
+    return sendJson(res, 200, {
+      tvIp: t.tvIp, profile: t.profile, hasTizen: t.hasTizen,
+      configured: !!(t.tvIp && t.profile), hasEnvFile: Object.keys(env).length > 0,
+    });
   }
   if (p === '/api/deploy' && req.method === 'POST') return apiDeploy(req, res);
   if (p === '/api/wgt') {

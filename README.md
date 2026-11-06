@@ -80,6 +80,9 @@ npm run deploy
 
 L'app est buildée, signée, installée puis lancée sur la TV (environ 10 s). À refaire après chaque modification.
 
+**Sans Tizen Studio**, le bouton et `npm run deploy` ne peuvent pas signer ni installer l'app eux-mêmes : ils
+produisent alors `TVDashboard.wgt` et indiquent comment l'installer avec Apps2Samsung (voir plus haut).
+
 ## Widgets fournis
 
 | Widget | Remarques |

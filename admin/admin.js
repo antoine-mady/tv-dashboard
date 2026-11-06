@@ -408,8 +408,36 @@ async function sendToTv() {
   const dialog = $('#deploy-dialog');
   const log = $('#deploy-log');
   log.textContent = '';
+  $('#deploy-wgt').hidden = true;
+  $('#deploy-tizen').hidden = true;
   dialog.showModal();
   const env = await (await fetch('/api/env')).json();
+  if (!env.hasTizen) {
+    // Sans Tizen Studio, impossible de signer et d'installer d'ici : paquet à installer avec Apps2Samsung.
+    clearTimeout(saveTimer);
+    await save();
+    log.textContent = 'Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible.\n'
+      + 'La TV doit être en Developer mode avec l’IP de ce PC (Apps → 1 2 3 4 5, voir README.md).\n\n'
+      + '── Option A : Apps2Samsung (le plus simple) ──\n'
+      + '1. Cliquez sur « ⬇ Télécharger le .wgt » ci-dessous\n'
+      + '2. Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez TVDashboard.wgt\n'
+      + '3. Choisissez la TV détectée et lancez l’installation\n'
+      + '→ À refaire après chaque modification.\n\n'
+      + '── Option B : installer Tizen Studio (envoi direct en un clic ensuite) ──\n'
+      + '1. Cliquez sur « ⬇ Télécharger Tizen Studio » et installez la version « CLI » (ou complète)\n'
+      + '2. Ouvrez le Package Manager de Tizen Studio → onglet « Extension SDK » → installez\n'
+      + '   « TV Extensions » et « Samsung Certificate Extension »\n'
+      + '3. Tools → Certificate Manager → « + » → Samsung → TV : créez le certificat auteur et le\n'
+      + '   certificat distributeur (compte Samsung requis), avec le DUID de la TV. Notez le nom du profil.\n'
+      + '4. Copiez .env.example en .env.local à la racine du projet et renseignez :\n'
+      + '     TV_IP=<IP de la TV>        (Paramètres → Général → Réseau → État du réseau)\n'
+      + '     TIZEN_PROFILE=<nom du profil de certificat>\n'
+      + '     TIZEN_HOME=<dossier d’installation, ex. ~/tizen-studio ou C:\\tizen-studio>\n'
+      + '5. Cliquez à nouveau sur « Envoyer sur la TV » (pas besoin de relancer l’admin).';
+    $('#deploy-wgt').hidden = false;
+    $('#deploy-tizen').hidden = false;
+    return;
+  }
   if (!env.configured) {
     log.textContent = 'La TV n’est pas encore configurée.\n\n'
       + '1. Copiez .env.example en .env.local à la racine du projet\n'
