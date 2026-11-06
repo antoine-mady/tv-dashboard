@@ -8,56 +8,175 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="logo">▦</span> TV Dashboard</div>
-    <span id="status" class="status"></span>
+    <div class="brand"><span class="logo" aria-hidden="true"></span>TV Dashboard</div>
+    <span id="status" class="status" role="status"></span>
     <div class="spacer"></div>
-    <button id="btn-global" type="button">⚙ Réglages généraux</button>
-    <a id="btn-wgt" class="button" href="/api/wgt" title="Paquet à installer avec Apps2Samsung">⬇ Télécharger le .wgt</a>
-    <button id="btn-deploy" type="button" class="primary">📺 Envoyer sur la TV</button>
+    <div class="history-buttons">
+      <button id="btn-undo" type="button" class="ghost icon" title="Annuler (Ctrl+Z)" aria-label="Annuler" data-icon="undo" disabled></button>
+      <button id="btn-redo" type="button" class="ghost icon" title="Rétablir (Ctrl+Y)" aria-label="Rétablir" data-icon="redo" disabled></button>
+    </div>
+    <button id="btn-history" type="button" class="ghost" data-icon="history" title="Versions envoyées sur la TV, export / import">Historique</button>
+    <button id="btn-global" type="button" class="ghost" data-icon="sliders">Réglages généraux</button>
+    <button id="btn-deploy" type="button" class="primary" data-icon="send">Envoyer sur la TV</button>
   </header>
+  <div id="offline" class="offline-banner" role="alert" hidden>
+    <strong>L’admin ne répond plus.</strong> Relancez <code>npm run dev</code> : vos modifications seront enregistrées à son retour.
+  </div>
 
   <main class="layout">
-    <aside class="panel library">
-      <h2>Ajouter un widget</h2>
-      <div id="library" class="library-list"></div>
-      <h2>Sur cette page</h2>
-      <ul id="widget-list" class="widget-list"></ul>
-    </aside>
-
     <section class="center">
-      <div class="section-head">
-        <h2>Pages</h2>
-        <span id="pages-hint" class="hint"></span>
+      <div class="screen-bar">
+        <nav id="pages" class="channels" aria-label="Pages (chaînes CH▲ / CH▼ sur la TV)"></nav>
+        <div class="picker-anchor">
+          <button id="btn-add" type="button" class="add-widget" aria-haspopup="dialog" aria-expanded="false" aria-controls="picker" title="Ajouter un widget (A)" data-icon="plus">
+            Ajouter un widget
+          </button>
+          <div id="picker" class="picker" role="dialog" aria-label="Ajouter un widget" hidden>
+            <p class="picker-help">Cliquez pour l’ajouter à la première place libre, ou glissez-le où vous voulez sur l’écran.</p>
+            <div id="library" class="library-list"></div>
+          </div>
+        </div>
+        <div class="mode-switch" role="radiogroup" aria-label="Mode de l’écran">
+          <button type="button" role="radio" data-mode="layout" aria-checked="true" data-icon="layout">Disposer</button>
+          <button type="button" role="radio" data-mode="test" aria-checked="false" data-icon="remote">Tester</button>
+        </div>
       </div>
-      <div id="pages" class="pages"></div>
 
-      <div class="section-head">
-        <h2>Disposition</h2>
-        <span class="hint">Glissez pour déplacer · coin ↘ pour redimensionner · clic pour régler</span>
+      <div class="tv">
+        <div id="screen" class="screen">
+          <iframe id="preview" title="Aperçu du dashboard" src="about:blank" tabindex="-1"></iframe>
+          <div id="editor" class="editor" aria-label="Disposition des widgets"></div>
+        </div>
       </div>
-      <div id="editor" class="editor"></div>
-      <div id="errors" class="errors"></div>
+      <div class="tv-stand" aria-hidden="true"></div>
 
-      <div class="section-head">
-        <h2>Aperçu</h2>
-        <button id="btn-reload" type="button" class="ghost" title="Recharger l’aperçu">↻</button>
-        <span class="hint">Cliquez dans l’aperçu puis : flèches, Entrée, P = lecture/pause, N/B = piste, R = touche rouge, Page↑/↓ = page suivante/précédente</span>
+      <div id="deck-layout" class="deck">
+        <p class="deck-hint">Glissez un widget pour le déplacer, tirez son coin pour le redimensionner, cliquez pour le régler.</p>
+        <div class="shortcuts">
+          <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> déplacer</span>
+          <span><kbd>Maj</kbd> + flèches redimensionner</span>
+          <span><kbd>Ctrl</kbd><kbd>D</kbd> dupliquer</span>
+          <span><kbd>Suppr</kbd> supprimer</span>
+          <span><kbd>Ctrl</kbd><kbd>Z</kbd> annuler</span>
+          <span><kbd>A</kbd> ajouter un widget</span>
+          <span><kbd>T</kbd> passer en test</span>
+        </div>
       </div>
-      <div id="preview-wrap" class="preview-wrap"><iframe id="preview" title="Aperçu du dashboard" src="about:blank"></iframe></div>
+
+      <div id="deck-test" class="deck" hidden>
+        <div class="remote" id="remote" aria-label="Télécommande de l’aperçu">
+          <div class="remote-group dpad">
+            <button type="button" data-key="up" class="k-up" aria-label="Haut">▲</button>
+            <button type="button" data-key="left" class="k-left" aria-label="Gauche">◀</button>
+            <button type="button" data-key="enter" class="k-ok" title="OK (Entrée)">OK</button>
+            <button type="button" data-key="right" class="k-right" aria-label="Droite">▶</button>
+            <button type="button" data-key="down" class="k-down" aria-label="Bas">▼</button>
+          </div>
+          <div class="remote-group">
+            <button type="button" data-key="back" title="Retour (Retour arrière)" data-icon="back">Retour</button>
+          </div>
+          <div class="remote-group">
+            <button type="button" data-key="prev" title="Piste précédente (B)" aria-label="Piste précédente" data-icon="prev"></button>
+            <button type="button" data-key="playpause" title="Lecture / pause (P)" aria-label="Lecture / pause" data-icon="playpause"></button>
+            <button type="button" data-key="next" title="Piste suivante (N)" aria-label="Piste suivante" data-icon="next"></button>
+          </div>
+          <div class="remote-group colors">
+            <button type="button" data-key="red" class="c-red" title="Touche rouge (R)" aria-label="Rouge"></button>
+            <button type="button" data-key="green" class="c-green" title="Touche verte (G)" aria-label="Verte"></button>
+            <button type="button" data-key="yellow" class="c-yellow" title="Touche jaune (Y)" aria-label="Jaune"></button>
+            <button type="button" data-key="blue" class="c-blue" title="Touche bleue (U)" aria-label="Bleue"></button>
+          </div>
+          <div class="remote-group ch">
+            <button type="button" data-key="chup" title="Page suivante (Page↑)">CH ▲</button>
+            <button type="button" data-key="chdown" title="Page précédente (Page↓)">CH ▼</button>
+          </div>
+          <div class="remote-group">
+            <button type="button" data-key="info" title="Aide de la télécommande (I)" data-icon="help">Info</button>
+          </div>
+          <button id="btn-reload" type="button" class="ghost reload" title="Recharger l’aperçu" data-icon="refresh">Recharger</button>
+        </div>
+        <p class="deck-hint">Le clavier pilote aussi la TV : flèches, Entrée, Retour arrière, P, N, B, R G Y U, Page↑ / Page↓, I (aide). <kbd>Échap</kbd> pour revenir à la disposition.</p>
+      </div>
+
+      <div id="errors" class="errors" hidden></div>
     </section>
 
-    <aside id="inspector" class="panel inspector"></aside>
+    <aside id="drawer" class="drawer" aria-label="Réglages" inert>
+      <button id="drawer-close" type="button" class="ghost icon drawer-close" title="Fermer (Échap)" aria-label="Fermer les réglages" data-icon="close"></button>
+      <div id="inspector" class="inspector"></div>
+    </aside>
   </main>
 
-  <dialog id="deploy-dialog">
-    <h2>Envoi sur la TV</h2>
-    <pre id="deploy-log"></pre>
+  <dialog id="deploy-dialog" aria-labelledby="deploy-title">
+    <h2 class="dialog-title" id="deploy-title">Envoi sur la TV</h2>
+    <ol id="deploy-steps" class="deploy-steps" hidden></ol>
+    <div id="deploy-result" class="deploy-result" role="status" hidden></div>
+
+    <div class="deploy-guide" data-guide="no-tizen" hidden>
+      <p>Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible. La TV doit être en mode développeur avec l’IP de ce PC (Apps, puis 1 2 3 4 5 sur la télécommande ; voir README.md).</p>
+      <section>
+        <h3>Option A : Apps2Samsung (le plus simple)</h3>
+        <ol>
+          <li>Cliquez sur « Télécharger le .wgt » ci-dessous.</li>
+          <li>Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez <code>TVDashboard.wgt</code>.</li>
+          <li>Choisissez la TV détectée et lancez l’installation. À refaire après chaque modification.</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Option B : Tizen Studio (envoi en un clic ensuite)</h3>
+        <ol>
+          <li>Téléchargez Tizen Studio et installez la version « CLI » (ou complète).</li>
+          <li>Dans son Package Manager, onglet « Extension SDK », installez « TV Extensions » et « Samsung Certificate Extension ».</li>
+          <li>Tools › Certificate Manager › « + » › Samsung › TV : créez les certificats auteur et distributeur (compte Samsung requis) avec le DUID de la TV. Notez le nom du profil.</li>
+          <li>Copiez <code>.env.example</code> en <code>.env.local</code> et renseignez <code>TV_IP</code> (Paramètres › Général › Réseau › État du réseau), <code>TIZEN_PROFILE</code> et <code>TIZEN_HOME</code>.</li>
+          <li>Cliquez à nouveau sur « Envoyer sur la TV », sans relancer l’admin.</li>
+        </ol>
+      </section>
+    </div>
+    <div class="deploy-guide" data-guide="no-config" hidden>
+      <p>La TV n’est pas encore configurée.</p>
+      <ol>
+        <li>Copiez <code>.env.example</code> en <code>.env.local</code> à la racine du projet.</li>
+        <li>Renseignez <code>TV_IP</code> et <code>TIZEN_PROFILE</code> (README.md, section « Préparer la TV »).</li>
+        <li>Cliquez sur « Réessayer ».</li>
+      </ol>
+    </div>
+
+    <details id="deploy-details" class="deploy-details" hidden>
+      <summary>Journal détaillé</summary>
+      <pre id="deploy-log"></pre>
+    </details>
     <div class="dialog-actions">
-      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" hidden>⬇ Télécharger Tizen Studio</a>
-      <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>⬇ Télécharger le .wgt</a>
+      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" data-icon="download" hidden>Télécharger Tizen Studio</a>
+      <a id="deploy-wgt" class="button primary" href="/api/wgt" data-icon="download" hidden>Télécharger le .wgt</a>
+      <button id="deploy-retry" type="button" data-icon="refresh" hidden>Réessayer</button>
       <button id="deploy-close" type="button">Fermer</button>
     </div>
   </dialog>
+
+  <dialog id="history-dialog">
+    <h2 class="dialog-title">Historique de la config</h2>
+    <p class="help">Une copie est gardée à chaque envoi sur la TV ou téléchargement du .wgt (les 30 dernières, dans <code>config/history/</code>). Restaurer remplace la config actuelle ; Ctrl+Z annule.</p>
+    <div id="backup-list" class="backup-list"></div>
+    <div class="dialog-actions">
+      <button id="backup-now" type="button" data-icon="bookmark">Sauvegarder maintenant</button>
+      <button id="config-export" type="button" data-icon="download" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">Exporter</button>
+      <button id="config-import" type="button" data-icon="upload">Importer…</button>
+      <input id="config-file" type="file" accept=".json,application/json" hidden>
+      <span class="spacer"></span>
+      <button id="history-close" type="button">Fermer</button>
+    </div>
+  </dialog>
+
+  <div id="page-menu" class="menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-action="rename" data-icon="pencil">Renommer</button>
+    <button type="button" role="menuitem" data-action="duplicate" data-icon="copy">Dupliquer</button>
+    <button type="button" role="menuitem" data-action="left" data-icon="left">Déplacer vers la gauche</button>
+    <button type="button" role="menuitem" data-action="right" data-icon="right">Déplacer vers la droite</button>
+    <button type="button" role="menuitem" data-action="delete" class="danger-text" data-icon="trash">Supprimer la page</button>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <script type="module" src="/admin/admin.js"></script>
 </body>

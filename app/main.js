@@ -11,6 +11,8 @@ import { initRemote, isEditable } from './remote.js';
 import { initDictation, DICTATION_KEYS } from './dictation.js';
 import { findNeighbor, firstItem } from './focus.js';
 import { shouldSleep, sleepEnabled } from './sleep.js';
+import { animMode, animTiming, staggerDelays, enterClass, leaveClass } from './anim.js';
+import { helpLines } from './help.js';
 import * as platform from './platform.js';
 import { h } from './dom.js';
 
@@ -36,7 +38,10 @@ function start() {
 
   platform.disableScreenSaver();
   const stage = createStage(root, grid, global);
-  const panels = createPanelHost(root);
+  const mode = animMode(global.animations);
+  const timing = animTiming(mode);
+  root.classList.add('anim-' + mode);
+  const panels = createPanelHost(root, { leaveMs: timing.panel });
   let instances = []; // widgets de la page affichée : { conf, inst, cell, focusable }
   let asleep = false; // mode veille (voir plus bas)
   let lastActivity = Date.now();
@@ -46,9 +51,30 @@ function start() {
     remember: global.rememberPage,
   });
 
-  function mountWidget(w) {
+  // ---- Animations d'entrée / sortie (app/anim.js, styles.css) -----------------
+  const ANIM_CLASSES = ['cell-in', 'cell-in-next', 'cell-in-prev', 'cell-wake', 'focus-pop'];
+  function clearAnim(cell) {
+    ANIM_CLASSES.forEach((c) => cell.classList.remove(c));
+    cell.style.animationDelay = '';
+  }
+  /** Lance l'animation `cls` sur la cellule (après `delay` ms), puis retire la classe. */
+  function animate(cell, cls, delay, duration) {
+    if (!duration) return;
+    clearAnim(cell);
+    void cell.offsetWidth; // relance l'animation si la classe vient d'être retirée
+    cell.classList.add(cls);
+    if (delay) cell.style.animationDelay = delay + 'ms';
+    setTimeout(() => {
+      if (!cell.classList.contains(cls)) return;
+      cell.classList.remove(cls);
+      cell.style.animationDelay = '';
+    }, (delay || 0) + duration + 50);
+  }
+
+  function mountWidget(w, anim) {
     const entry = registry[w.type];
     const parts = stage.addCell(w, entry && entry.manifest);
+    if (anim) animate(parts.cell, anim.cls, anim.delay, timing.enter);
     if (!entry) {
       parts.cell.appendChild(h('div', { className: 'cell-error' }, h('div', { className: 'cell-error-msg', text: 'Widget inconnu : ' + w.type })));
       return { conf: w, inst: null, cell: parts.cell, focusable: false };
@@ -58,38 +84,59 @@ function start() {
       id: w.id, cell: parts.cell, el: parts.body, size: parts.size, manifest: entry.manifest,
       settings: applyDefaults(entry.manifest.schema, w.settings), platform, panels,
     });
+    // État « chargement » (styles.css) jusqu'au premier rendu : fin de mount() et des premières requêtes de this.every().
+    parts.cell.classList.add('is-loading');
     try {
       const r = inst.mount(inst.el, inst.settings);
-      if (r && typeof r.then === 'function') r.catch((e) => inst.showError(e.message || String(e)));
+      if (r && typeof r.then === 'function') {
+        r.then(() => inst._mountDone(), (e) => { inst.showError(e.message || String(e)); inst._mountDone(); });
+      } else {
+        inst._mountDone();
+      }
     } catch (e) {
       console.error(e);
       inst.showError(e.message || String(e));
+      inst._mountDone();
     }
     return { conf: w, inst, cell: parts.cell, focusable: !!entry.manifest.focusable };
   }
 
-  function unmount(it) {
+  /** Arrête le widget. `dir` (changement de page) : la cellule disparaît en glissant avant d'être retirée. */
+  function unmount(it, dir) {
     if (it.inst) it.inst._destroy();
-    if (it.cell.parentNode) it.cell.parentNode.removeChild(it.cell);
+    const cell = it.cell;
+    const remove = () => { if (cell.parentNode) cell.parentNode.removeChild(cell); };
+    if (!dir || !timing.leave) return remove();
+    clearAnim(cell);
+    cell.classList.remove('is-focused');
+    cell.classList.add('cell-leaving', leaveClass(dir));
+    setTimeout(remove, timing.leave + 50);
   }
 
   /**
    * Affiche la page `index`. Les widgets identiques sur les deux pages (même id, place et réglages)
    * sont conservés tels quels (la musique continue) ; les autres sont arrêtés puis recréés.
    */
-  function showPage(index) {
+  /** `quiet` : sans animation d'entrée (mise à jour en direct depuis l'admin). */
+  function showPage(index, dir, quiet) {
     const page = pages[index];
     const kept = [];
     instances.forEach((it) => {
       if (page.widgets.some((w) => sameWidget(w, it.conf))) kept.push(it);
-      else unmount(it);
+      else unmount(it, dir);
     });
+    const isKept = (w) => kept.some((k) => sameWidget(w, k.conf));
+    // Les nouveaux widgets apparaissent en cascade (haut à gauche d'abord) ; en changeant de page,
+    // ils commencent pendant que les anciens disparaissent.
+    const delays = staggerDelays(page.widgets.filter((w) => !isKept(w)), timing.stagger);
+    const base = dir ? Math.round(timing.leave / 2) : 0;
     instances = page.widgets.map((w) => {
       for (let i = 0; i < kept.length; i++) if (sameWidget(w, kept[i].conf)) return kept[i];
-      return mountWidget(w);
+      return mountWidget(w, quiet ? null : { cls: enterClass(dir || 0), delay: base + (delays[w.id] || 0) });
     });
     pageIndex = index;
     updateFocusables();
+    renderDots();
   }
 
   // ---- Focus & télécommande ---------------------------------------------------
@@ -99,12 +146,18 @@ function start() {
 
   function byId(id) { return focusables.find((i) => i.conf.id === id); }
 
-  function setFocus(id) {
+  /** `pop` : petit rebond (déplacement du focus à la télécommande), sauf si la cellule est encore en train d'apparaître. */
+  function setFocus(id, pop) {
     const prev = byId(focusedId);
     if (prev) { prev.cell.classList.remove('is-focused'); try { prev.inst.onFocus(false); } catch (e) { /* ignore */ } }
     focusedId = id;
     const next = byId(id);
-    if (next) { next.cell.classList.add('is-focused'); try { next.inst.onFocus(true); } catch (e) { /* ignore */ } }
+    if (next) {
+      next.cell.classList.add('is-focused');
+      const entering = ['cell-in', 'cell-in-next', 'cell-in-prev', 'cell-wake'].some((c) => next.cell.classList.contains(c));
+      if (pop && mode === 'full' && !entering) animate(next.cell, 'focus-pop', 0, 350);
+      try { next.inst.onFocus(true); } catch (e) { /* ignore */ }
+    }
   }
 
   function updateFocusables() {
@@ -117,6 +170,22 @@ function start() {
       focusedId = null;
       if (items.length) setFocus(firstItem(items));
     }
+  }
+
+  // ---- Repère de page : points discrets en bas de l'écran (plusieurs pages seulement) ----
+  let dots = null;
+  function renderDots() {
+    if (pages.length < 2) {
+      if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+      dots = null;
+      return;
+    }
+    if (!dots) {
+      dots = h('div', { id: 'page-dots' });
+      root.appendChild(dots);
+    }
+    dots.innerHTML = '';
+    pages.forEach((p, i) => dots.appendChild(h('span', { className: i === pageIndex ? 'is-current' : '' })));
   }
 
   showPage(pageIndex);
@@ -137,11 +206,29 @@ function start() {
 
   function goToPage(dir) {
     if (pages.length < 2) return;
-    showPage(stepPage(pages.length, pageIndex, dir));
+    showPage(stepPage(pages.length, pageIndex, dir), dir);
     appStore.set('page', pages[pageIndex].id);
     const info = document.getElementById('boot-info'); // diagnostic de démarrage : concerne l'ancienne page
     if (info && info.parentNode) info.parentNode.removeChild(info);
     showPageName();
+  }
+
+  // ---- Aperçu de l'admin : config mise à jour en direct ---------------------------
+  // L'admin envoie la config à chaque modification des pages / widgets : seuls les widgets modifiés sont
+  // recréés (les autres continuent, ex. la musique). Les réglages généraux, eux, rechargent l'aperçu.
+  if (platform.isPreview) {
+    window.addEventListener('message', (e) => {
+      const d = e.data;
+      if (e.origin !== window.location.origin || !d || d.type !== 'tvdash:config' || !d.config) return;
+      const next = getPages(d.config);
+      pages.length = 0;
+      next.forEach((p) => pages.push(p));
+      let index = 0;
+      for (let i = 0; i < pages.length; i++) if (pages[i].id === d.page) index = i;
+      const changedPage = index !== pageIndex;
+      showPage(index, 0, !changedPage);
+      if (changedPage) showPageName();
+    });
   }
 
   // Dictée vocale dans les champs de saisie (bouton micro Samsung, touche de couleur, F2 dans l'aperçu).
@@ -155,6 +242,9 @@ function start() {
       setAsleep(false);
       if (MEDIA_KEYS.indexOf(key) === -1) return;
     }
+    // Aide de la télécommande : Info l'ouvre / la ferme ; ouverte, n'importe quelle touche la ferme.
+    if (key === 'info') { toggleHelp(); return; }
+    if (helpEl) { toggleHelp(false); return; }
     if (DICTATION_KEYS.indexOf(key) !== -1 && isEditable(document.activeElement) && dictation.start(document.activeElement)) return;
     // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
     const owner = panels.owner();
@@ -169,7 +259,7 @@ function start() {
     if (key === global.pageKey && pages.length > 1) { goToPage(1); return; }
     if (key === 'left' || key === 'right' || key === 'up' || key === 'down') {
       const next = findNeighbor(items, focusedId, key);
-      if (next) setFocus(next);
+      if (next) setFocus(next, true);
       return;
     }
     // Les touches média vont au premier widget qui sait les gérer (ex. musique), même sans focus.
@@ -179,6 +269,35 @@ function start() {
       }
     }
   });
+
+  // ---- Aide de la télécommande ----------------------------------------------------
+  let helpEl = null;
+  let helpTimer = null;
+  function toggleHelp(force) {
+    const show = force === undefined ? !helpEl : force;
+    clearTimeout(helpTimer);
+    if (!show) {
+      if (helpEl && helpEl.parentNode) helpEl.parentNode.removeChild(helpEl);
+      helpEl = null;
+      return;
+    }
+    if (helpEl) return;
+    const widgetHelp = [];
+    instances.forEach((it) => {
+      const entry = registry[it.conf.type];
+      const extra = entry && entry.manifest.remoteHelp;
+      if (Array.isArray(extra)) extra.forEach((x) => widgetHelp.push(x));
+    });
+    const lines = helpLines({ pageCount: pages.length, pageKey: global.pageKey, hasFocusables: focusables.length > 0, widgetHelp });
+    const list = h('div', { className: 'help-list' });
+    lines.forEach((l) => list.appendChild(h('div', { className: 'help-row' },
+      h('span', { className: 'help-keys', text: l.keys }), h('span', { className: 'help-text', text: l.text }))));
+    helpEl = h('div', { id: 'remote-help' },
+      h('div', { className: 'help-title', text: 'Télécommande' }), list,
+      h('div', { className: 'help-foot', text: 'Appuyez sur une touche pour fermer' }));
+    root.appendChild(helpEl);
+    helpTimer = setTimeout(() => toggleHelp(false), 15000);
+  }
 
   // ---- Anti-marquage : décale tout de quelques px chaque heure ------------------
   if (global.antiBurnIn) {
@@ -199,9 +318,17 @@ function start() {
       overlay = h('div', { id: 'sleep' });
       document.body.appendChild(overlay);
     }
+    // Endormissement lent (3 s, styles.css), réveil rapide.
+    overlay.style.transition = on ? '' : 'opacity ' + (timing.enter ? 0.8 : 0) + 's ease';
     overlay.style.opacity = on ? String(global.sleepDim / 100) : '0';
+    root.classList.toggle('is-asleep', on); // coupe les animations en boucle pendant la veille
     platform.setScreenSaver(on);
     instances.forEach((it) => { if (it.inst) (on ? it.inst._sleep() : it.inst._wake()); });
+    // Au réveil, les widgets se « rallument » l'un après l'autre (animations complètes seulement).
+    if (!on && mode === 'full') {
+      const delays = staggerDelays(instances.map((it) => it.conf), timing.stagger);
+      instances.forEach((it) => animate(it.cell, 'cell-wake', 150 + (delays[it.conf.id] || 0), 700));
+    }
   }
   if (sleepEnabled(global)) {
     const check = () => {
@@ -216,7 +343,8 @@ function start() {
     setInterval(check, 30 * 1000);
   }
 
-  showStartupInfo(pages, pageIndex, instances.filter((i) => i.inst).length);
+  // Dans l'aperçu de l'admin, le bandeau masquerait l'écran (l'admin affiche déjà ces infos) : seulement si la page est vide.
+  if (!platform.isPreview || !pages[pageIndex].widgets.length) showStartupInfo(pages, pageIndex, instances.filter((i) => i.inst).length);
 
   window.addEventListener('unload', () => instances.forEach((i) => { if (i.inst) i.inst._destroy(); }));
 }

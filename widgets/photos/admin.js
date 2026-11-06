@@ -19,9 +19,9 @@ export function renderEditor(container, settings, onChange, api) {
   }
 
   const out = el('div', { className: 'ext-out' });
-  const btnDiscover = el('button', { type: 'button', textContent: '🔍 Rechercher la box' });
-  const btnBrowse = el('button', { type: 'button', textContent: '📂 Parcourir les dossiers', disabled: !settings.dlnaUrl });
-  const btnTest = el('button', { type: 'button', textContent: '🧪 Tester', disabled: !settings.dlnaUrl });
+  const btnDiscover = el('button', { type: 'button', innerHTML: api.iconLabel('search', 'Rechercher la box') });
+  const btnBrowse = el('button', { type: 'button', innerHTML: api.iconLabel('folder', 'Parcourir les dossiers'), disabled: !settings.dlnaUrl });
+  const btnTest = el('button', { type: 'button', innerHTML: api.iconLabel('test', 'Tester'), disabled: !settings.dlnaUrl });
   container.append(el('div', { className: 'ext-actions' }, btnDiscover, btnBrowse, btnTest), out);
 
   const message = (text, cls) => { out.innerHTML = ''; out.append(el('p', { className: cls || 'help', textContent: text })); };
@@ -52,11 +52,11 @@ export function renderEditor(container, settings, onChange, api) {
       out.innerHTML = '';
       out.append(el('div', { className: 'ext-path', textContent: path.map((p) => p.title).join(' / ') + ' (' + res.items.length + ' photos ici)' }));
       const actions = el('div', { className: 'ext-actions' },
-        el('button', { type: 'button', className: 'primary', textContent: '✓ Utiliser ce dossier', onclick: () => onChange({ rootId: current.id }) }));
-      if (path.length > 1) actions.append(el('button', { type: 'button', textContent: '↑ Dossier parent', onclick: () => { path.pop(); showFolder(); } }));
+        el('button', { type: 'button', className: 'primary', innerHTML: api.iconLabel('check', 'Utiliser ce dossier'), onclick: () => onChange({ rootId: current.id }) }));
+      if (path.length > 1) actions.append(el('button', { type: 'button', innerHTML: api.iconLabel('up', 'Dossier parent'), onclick: () => { path.pop(); showFolder(); } }));
       out.append(actions);
       res.containers.forEach((c) => out.append(el('div', { className: 'ext-row' },
-        el('span', { textContent: '📁 ' + c.title }),
+        el('span', { className: 'ext-folder', innerHTML: api.icon('folder') }, c.title),
         el('button', { type: 'button', textContent: 'Ouvrir', onclick: () => { path.push(c); showFolder(); } }))));
     } catch (e) {
       message('Erreur : ' + e.message, 'error');

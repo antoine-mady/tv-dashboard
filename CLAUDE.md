@@ -11,6 +11,23 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
   les autres sont détruits (`destroy()`) puis recréés. L'ancien format `config.widgets` = une seule page (`getPages`).
 - **Veille** (`app/sleep.js`, réglages généraux `idleMinutes`, `nightMode`…) : après N minutes sans touche ou la nuit,
   écran assombri, timers des widgets suspendus et économiseur d'écran de la TV réautorisé ; une touche réveille.
+- **Animations** (`app/anim.js` + fin de `app/styles.css`, réglage général `animations` : complètes / réduites / aucune →
+  classe `.anim-*` sur `#stage`) : widgets en cascade au démarrage, glissement au changement de page (les widgets conservés
+  ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs, widgets qui se rallument au réveil. Uniquement `transform` / `opacity`.
+- **Admin** : un seul écran TV où les cadres des widgets sont posés sur l'aperçu en direct, aux positions exactes
+  (`gridGeometry` de `app/grid.js`, partagée avec la TV) ; l'aperçu est mis à jour **sans rechargement**
+  (`postMessage({ type: 'tvdash:config', config, page })`, seuls les widgets modifiés sont recréés ; rechargement si les
+  réglages généraux ou la grille changent) ; cadres accessibles au clavier (Tab, Entrée, flèches) ; mode **Disposer / Tester** (en test, le clavier pilote l'aperçu) ;
+  pages présentées comme des chaînes (CH 1, CH 2…), renommées dans l'onglet. Réglages dans un panneau qui glisse depuis la droite
+  (clic sur un widget ou « Réglages généraux », fermé par Échap / ✕ / clic dans le vide) ; bouton « Ajouter un widget » (touche A) :
+  sélecteur avec description, clic = première place libre, ou glisser sur l'écran. Thème clair / sombre selon le système. Historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
+  raccourcis dans l'éditeur (flèches, Maj+flèches, Ctrl+D, Suppr), télécommande cliquable sous l'aperçu
+  (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
+  **Historique** (`tools/backups.js`) : copie de la config dans `config/history/`
+  (ignoré par git) à chaque envoi / .wgt, restauration, export / import JSON.
+- **Interface TV** : état « chargement » au premier rendu (classe `.is-loading`, fin de `mount()` + premières requêtes de
+  `this.every`), erreurs avec conseil (`app/errors.js` : réglage à faire dans l'admin / nouvel essai automatique),
+  points de page en bas, aide de la télécommande (touche Info, `app/help.js`).
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes
@@ -51,18 +68,21 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      size: { default: { w: 3, h: 2 }, min: { w: 2, h: 1 } },   // grille 12×6
      focusable: false,            // true si onKey() est utilisé (télécommande)
      frameless: false,            // true = pas de cadre ni de padding
+     remoteHelp: [['⏯', 'Lecture / pause']], // facultatif : lignes ajoutées à l'aide de la télécommande (touche Info)
      schema: [ { key: 'city', label: 'Ville', type: 'text', default: 'Saint-Denis', required: true } ],
    };
    ```
    Types de champ : `text`, `password`, `number` (`min`/`max`/`step`), `bool`, `select` (`options`:
    `[{ value, label }]`), `color`, `time` (`HH:MM`), `textarea`. Options : `required`, `help`, `placeholder`,
-   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas).
+   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas), `group: 'Titre'` (titre de section dans le formulaire). Présentation : `number` + `slider: true` (+ `unit`) = curseur ;
+   `select` dont chaque option a un `swatch` (fond CSS) = vignettes ; `color` + `presets: ['#…']` = pastilles proposées.
    L'admin génère le formulaire tout seul ; les valeurs par défaut sont appliquées partout (`app/config.js`).
 3. **`tv.js`** — `export default class extends Widget` (`app/Widget.js`) :
    - `mount(el, settings)` : construire le rendu **dans `el` uniquement** (peut être `async`). Lever une erreur
      affiche un message propre dans le widget (ex. `throw new Error('Renseignez la ville')`).
    - `onKey(key)` → `true` si gérée. Touches : `left right up down enter back playpause play pause stop next prev
-     red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
+     red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas ; `info` est gérée par l'app :
+     aide de la télécommande). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
      widget focalisé sont proposées aux autres widgets.
    - `onFocus(focused)`, `destroy()` (optionnels). `onSleep(asleep)` : veille / réveil du dashboard — les timers de
      `this.every` sont déjà suspendus puis rattrapés au réveil ; ne surcharger que pour un `setInterval` maison, une
@@ -72,7 +92,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      local très léger comme l'horloge ; `{ immediate: false }` pour ne pas l'exécuter tout de suite), `this.after(ms, fn)`, `this.listen(target, type, fn)`,
      `this.fetchJson/fetchText(url, opts)` (timeout, erreurs HTTP, proxy automatique dans l'aperçu),
      `this.fetchRaw(url, opts)` (idem mais renvoie la réponse quel que soit le statut, ex. pour OAuth),
-     `this.showError(msg)` / `this.clearError()`, `this.size` (`{ width, height }` en px),
+     `this.showError(msg)` / `this.clearError()`, `this.setText(el, texte)` (remplace le texte ; petit fondu s'il a changé) / `this.refreshed(el)` (fondu « valeur mise à jour », ex. météo), `this.size` (`{ width, height }` en px),
      `this.platform` (`isTizen`, `isPreview`, `launchApp(appId)`). Helper DOM : `h()` de `app/dom.js`.
    - `this.store.get(key, défaut)` / `set(key, valeur)` / `remove(key)` : stockage persistant **sur la TV**
      (localStorage, JSON, propre au widget, ne lève jamais d'erreur). Pour ce qui est appris sur la TV
@@ -99,7 +119,8 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
 5. **Logique pure** dans un fichier à part (ex. `codes.js`, `dlna.js`) + **test** `<nom>.test.js` à côté.
 6. Optionnel :
    - `admin.js` : `export function renderEditor(container, settings, onChange, api)` — complète le formulaire
-     auto (boutons, assistants). `onChange(patch)` fusionne des réglages ; `api.call(route)` appelle le
+     auto (boutons, assistants). `onChange(patch)` fusionne des réglages ; `api.iconLabel('search', 'Chercher')` / `api.icon(nom)` = icônes de l'admin
+     (`admin/icons.js`) pour les boutons ; `api.call(route)` appelle le
      `server.js` du widget ; `api.fetchText(url, opts)` passe par le proxy de l'admin.
    - `server.js` : `export default { routes: { 'GET /route': async ({ body, query }) => data } }`, exposé sous
      `/api/widgets/<type>/route`. **Tourne sur le PC, uniquement dans l'admin** (jamais sur la TV).

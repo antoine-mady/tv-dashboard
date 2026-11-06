@@ -68,11 +68,16 @@ export default class WeatherWidget extends Widget {
     this.renderExtras(data.daily, await air, await vigi);
     const c = data.current;
     const now = describeWeather(c.weather_code, c.is_day === 1);
-    this.iconEl.innerHTML = ICONS[now.icon];
-    this.tempEl.textContent = Math.round(c.temperature_2m) + '°';
-    this.descEl.textContent = now.label;
-    this.metaEl.textContent = 'Ressenti ' + Math.round(c.apparent_temperature) + '° · '
-      + Math.round(c.relative_humidity_2m) + ' % · ' + Math.round(c.wind_speed_10m) + ' km/h';
+    if (this.iconEl.dataset.icon !== now.icon) {
+      if (this.iconEl.dataset.icon) this.refreshed(this.iconEl);
+      this.iconEl.dataset.icon = now.icon;
+      this.iconEl.innerHTML = ICONS[now.icon];
+    }
+    // setText : petit fondu quand la valeur change (pas au premier affichage).
+    this.setText(this.tempEl, Math.round(c.temperature_2m) + '°');
+    this.setText(this.descEl, now.label);
+    this.setText(this.metaEl, 'Ressenti ' + Math.round(c.apparent_temperature) + '° · '
+      + Math.round(c.relative_humidity_2m) + ' % · ' + Math.round(c.wind_speed_10m) + ' km/h');
 
     this.renderHours(data);
 

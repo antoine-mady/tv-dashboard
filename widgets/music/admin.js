@@ -17,11 +17,11 @@ function memoryStore() {
   return { get: (k, d) => (k in m ? m[k] : d), set: (k, v) => { m[k] = v; }, remove: (k) => { delete m[k]; } };
 }
 
-export function renderEditor(container, settings) {
+export function renderEditor(container, settings, onChange, api) {
   container.innerHTML = '';
 
   const guide = el('details', { open: !settings.clientId });
-  guide.append(el('summary', { textContent: '📘 Créer les identifiants Google (une seule fois, ~15 min)' }));
+  guide.append(el('summary', { innerHTML: api.iconLabel('book', 'Créer les identifiants Google (une seule fois, ~15 min)') }));
   const steps = el('ol', { className: 'guide' });
   const step = (...parts) => steps.append(el('li', {}, ...parts));
   step('Ouvrez la ', link('https://console.cloud.google.com/projectcreate', 'Google Cloud Console'), ' et créez un projet (ex. « TV Dashboard »).');
@@ -34,7 +34,7 @@ export function renderEditor(container, settings) {
   container.append(guide);
 
   const out = el('div', { className: 'ext-out' });
-  const btn = el('button', { type: 'button', textContent: '🧪 Tester les identifiants', disabled: !settings.clientId || !settings.clientSecret });
+  const btn = el('button', { type: 'button', innerHTML: api.iconLabel('test', 'Tester les identifiants'), disabled: !settings.clientId || !settings.clientSecret });
   container.append(el('div', { className: 'ext-actions' }, btn), out);
   const message = (text, cls) => { out.innerHTML = ''; out.append(el('p', { className: cls || 'help', textContent: text })); };
 

@@ -40,7 +40,8 @@ l'installation : Tizen Studio n'est pas nécessaire.
 1. **Mode développeur de la TV** : ouvrez *Apps*, tapez `1 2 3 4 5` avec la télécommande, activez
    *Developer mode*, saisissez l'**IP du PC** qui lance Apps2Samsung, puis redémarrez complètement la TV
    (débranchez-la 30 secondes). La TV et le PC doivent être sur le même réseau.
-2. **Créer le paquet** : bouton **⬇ Télécharger le .wgt** dans l'admin, ou :
+2. **Créer le paquet** : dans l'admin, **Envoyer sur la TV** propose **Télécharger le .wgt** quand Tizen Studio
+   n'est pas installé ; ou en ligne de commande :
    ```bash
    npm run wgt
    ```

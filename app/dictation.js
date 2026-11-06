@@ -108,7 +108,7 @@ export function initDictation(root, opts) {
   function currentField() {
     const a = document.activeElement;
     if (isEditable(a) && visible(a)) return a;
-    const layer = root.querySelector('.panel-layer');
+    const layer = root.querySelector('.panel-layer:not(.panel-out)');
     if (!layer) return null;
     const fields = layer.querySelectorAll('input, textarea');
     for (let i = 0; i < fields.length; i++) {

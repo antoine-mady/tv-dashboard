@@ -5,7 +5,7 @@
 const TIZEN_KEYS = {
   MediaPlayPause: 'playpause', MediaPlay: 'play', MediaPause: 'pause', MediaStop: 'stop',
   MediaTrackNext: 'next', MediaTrackPrevious: 'prev', MediaFastForward: 'next', MediaRewind: 'prev',
-  ChannelUp: 'chup', ChannelDown: 'chdown',
+  ChannelUp: 'chup', ChannelDown: 'chdown', Info: 'info',
   ColorF0Red: 'red', ColorF1Green: 'green', ColorF2Yellow: 'yellow', ColorF3Blue: 'blue',
 };
 
@@ -18,10 +18,15 @@ const CODES = {
   403: 'red', 404: 'green', 405: 'yellow', 406: 'blue',
   427: 'chup', 428: 'chdown', 33: 'chup', 34: 'chdown', // CH▲ / CH▼ (Page↑ / Page↓ au clavier)
   113: 'mic', // F2 au clavier : dictée vocale dans un champ de saisie (aperçu)
+  457: 'info', // touche Info : aide de la télécommande
 };
 
 // Raccourcis clavier pour tester dans l'aperçu navigateur.
-const KEYBOARD = { p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue' };
+const KEYBOARD = { p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue', i: 'info' };
+
+/** Touches qu'on peut envoyer depuis la télécommande cliquable de l'admin. */
+export const REMOTE_KEYS = ['left', 'right', 'up', 'down', 'enter', 'back', 'playpause', 'play', 'pause', 'stop',
+  'next', 'prev', 'red', 'green', 'yellow', 'blue', 'chup', 'chdown', 'info'];
 
 export function normalizeKey(keyCode, key, extraCodes) {
   if (extraCodes && extraCodes[keyCode]) return extraCodes[keyCode];
@@ -59,4 +64,12 @@ export function initRemote(onKey) {
     e.preventDefault(); // en particulier : Retour ne quitte pas l'app
     onKey(key);
   });
+  // Aperçu de l'admin : télécommande cliquable sous l'aperçu (message de la page parente, même origine).
+  if (typeof window !== 'undefined' && window.__PREVIEW__) {
+    window.addEventListener('message', (e) => {
+      const d = e.data;
+      if (e.origin !== window.location.origin || !d || d.type !== 'tvdash:key') return;
+      if (REMOTE_KEYS.indexOf(d.key) !== -1) onKey(d.key);
+    });
+  }
 }

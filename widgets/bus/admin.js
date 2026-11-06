@@ -40,7 +40,7 @@ export function renderEditor(container, settings, onChange, api) {
     const chips = el('div', { className: 'ext-actions' });
     names.forEach((n) => {
       const on = !wanted.length || wanted.indexOf(n.toLowerCase()) >= 0;
-      chips.append(el('button', { type: 'button', className: on ? 'primary' : '', textContent: (on ? '✓ ' : '') + n, onclick: () => {
+      chips.append(el('button', { type: 'button', className: on ? 'primary' : '', innerHTML: on ? api.iconLabel('check', n) : api.iconLabel('plus', n), onclick: () => {
         const current = wanted.length ? names.filter((x) => wanted.indexOf(x.toLowerCase()) >= 0) : names.slice();
         const next = on ? current.filter((x) => x !== n) : current.concat([n]);
         onChange({ routes: next.length === names.length || !next.length ? '' : next.join(', ') });
@@ -54,8 +54,8 @@ export function renderEditor(container, settings, onChange, api) {
 
   // ---- Recherche d'arrêt
   const input = el('input', { type: 'text', placeholder: 'Nom de l’arrêt, ex. église grands bois', value: settings.stopName || '' });
-  const btnSearch = el('button', { type: 'button', className: 'primary', textContent: '🔍 Chercher l’arrêt' });
-  const btnUpdate = el('button', { type: 'button', textContent: '🔄 Mettre à jour les horaires', disabled: !settings.stopIds });
+  const btnSearch = el('button', { type: 'button', className: 'primary', innerHTML: api.iconLabel('search', 'Chercher l’arrêt') });
+  const btnUpdate = el('button', { type: 'button', innerHTML: api.iconLabel('refresh', 'Mettre à jour les horaires'), disabled: !settings.stopIds });
   container.append(el('div', { className: 'ext-actions' }, input, btnSearch, btnUpdate), out);
 
   const choose = async (name, ids) => {

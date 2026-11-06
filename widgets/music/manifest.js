@@ -5,6 +5,7 @@ export default {
   description: 'Se connecte à votre compte YouTube : vos playlists, vos « J’aime », la recherche. Boutons ⏮ ⏯ ⏭ ☰ à l’écran (◀ ▶ puis OK), utilisables sans touches média ; ☰ = bibliothèque, rouge = app YouTube.',
   size: { default: { w: 4, h: 3 }, min: { w: 3, h: 2 } },
   focusable: true,
+  remoteHelp: [['⏯ ⏮ ⏭', 'Musique : lecture / pause, piste'], ['Rouge', 'Musique : ouvrir l’app YouTube']],
   schema: [
     { key: 'clientId', label: 'ID client OAuth Google', type: 'text', default: '', required: true,
       placeholder: '1234-abcd.apps.googleusercontent.com',
@@ -19,7 +20,7 @@ export default {
       when: { startSource: 'playlist' }, placeholder: 'https://music.youtube.com/playlist?list=PL…' },
     { key: 'autoplay', label: 'Lancer la lecture automatiquement au démarrage', type: 'bool', default: true },
     { key: 'shuffle', label: 'Lecture aléatoire', type: 'bool', default: false },
-    { key: 'volume', label: 'Volume (%)', type: 'number', min: 0, max: 100, default: 60 },
+    { key: 'volume', label: 'Volume', type: 'number', min: 0, max: 100, step: 5, default: 60, slider: true, unit: '%' },
     { key: 'quickSearches', label: 'Recherches rapides (une par ligne)', type: 'textarea', default: 'Lofi hip hop\nDaft Punk\nMusique réunionnaise',
       help: 'Proposées dans l’onglet « Rechercher » de la TV, sans clavier.' },
     { key: 'showVideo', label: 'Afficher la vidéo (sinon la pochette)', type: 'bool', default: false },
