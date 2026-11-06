@@ -157,6 +157,30 @@ export default class Widget {
   fetchJson(url, opts) { return this.fetch(url, opts).then((r) => r.json()); }
   fetchText(url, opts) { return this.fetch(url, opts).then((r) => r.text()); }
 
+  /**
+   * Petit fondu sur `el` (par défaut tout le widget) pour signaler qu'une valeur vient de changer
+   * (température, horaire, mot du jour…). Sans effet pendant la veille ou si les animations sont coupées.
+   */
+  refreshed(el) {
+    const target = el || this.el;
+    if (this.asleep || !target || !target.classList) return;
+    target.classList.remove('is-refreshed');
+    void target.offsetWidth; // relance l'animation
+    target.classList.add('is-refreshed');
+    clearTimeout(target._refreshTimer);
+    target._refreshTimer = setTimeout(() => target.classList.remove('is-refreshed'), 800);
+  }
+
+  /** Remplace le texte de `el` ; s'il a changé (et n'était pas vide), appelle refreshed(el). Retourne true si changé. */
+  setText(el, text) {
+    const value = text === undefined || text === null ? '' : String(text);
+    const old = el.textContent;
+    if (old === value) return false;
+    el.textContent = value;
+    if (old) this.refreshed(el);
+    return true;
+  }
+
   /** Affiche un message d'erreur par-dessus le widget (sans le détruire). */
   showError(message) {
     if (!this._errorEl) {

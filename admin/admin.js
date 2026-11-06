@@ -104,7 +104,14 @@ function notify(message, opts) {
   x.textContent = '✕';
   x.onclick = close;
   box.append(x);
-  $('#toasts').append(box);
+  const stack = $('#toasts');
+  // Une boîte de dialogue modale passe au-dessus de tout : les notifications vont dedans le temps qu'elle est ouverte.
+  const host = document.querySelector('dialog[open]') || document.body;
+  if (stack.parentNode !== host) host.append(stack);
+  stack.append(box);
+  // Pas plus de 3 notifications à la fois : les plus anciennes partent.
+  const shown = stack.querySelectorAll('.toast:not(.leaving)');
+  for (let i = 0; i < shown.length - 3; i++) shown[i].querySelector('.toast-close').click();
   setTimeout(close, o.duration || (o.action ? 7000 : 4000));
 }
 
@@ -185,6 +192,7 @@ function renderEditor() {
       const liveBox = box;
       liveBox.setPointerCapture(e.pointerId);
       liveBox.classList.add('dragging');
+      editor.classList.add('is-dragging');
 
       const move = (ev) => {
         const dc = Math.round((ev.clientX - start.x) / cw);
@@ -200,6 +208,7 @@ function renderEditor() {
         liveBox.removeEventListener('pointermove', move);
         liveBox.removeEventListener('pointerup', up);
         liveBox.removeEventListener('pointercancel', up);
+        editor.classList.remove('is-dragging');
         if (candidate && isFree(candidate, w.id) &&
             (candidate.col !== w.col || candidate.row !== w.row || candidate.w !== w.w || candidate.h !== w.h)) {
           Object.assign(w, { col: candidate.col, row: candidate.row, w: candidate.w, h: candidate.h });
@@ -212,6 +221,197 @@ function renderEditor() {
       liveBox.addEventListener('pointercancel', up);
     });
   });
+}
+
+// ---- Glisser-déposer depuis la bibliothèque ---------------------------------------------
+
+const drag = { type: null, ghost: null, spot: null };
+
+/**
+ * Place visée sous le pointeur : parmi les positions qui recouvrent la case survolée, la place libre dont
+ * le centre est le plus proche du pointeur (taille par défaut, sinon minimale).
+ */
+function dropSpot(type, clientX, clientY) {
+  const g = grid();
+  const rect = $('#editor').getBoundingClientRect();
+  const x = (clientX - rect.left) / rect.width * g.cols; // en cases, depuis le bord gauche
+  const y = (clientY - rect.top) / rect.height * g.rows;
+  const pc = Math.min(g.cols, Math.max(1, Math.floor(x) + 1));
+  const pr = Math.min(g.rows, Math.max(1, Math.floor(y) + 1));
+  const { def, min } = widgetSizes(type);
+  const clampAt = (size, col, row) => ({
+    col: Math.max(1, Math.min(g.cols - size.w + 1, col)),
+    row: Math.max(1, Math.min(g.rows - size.h + 1, row)),
+    w: size.w, h: size.h,
+  });
+  for (const size of [def, min]) {
+    let best = null;
+    let bestDist = Infinity;
+    for (let row = pr - size.h + 1; row <= pr; row++) {
+      for (let col = pc - size.w + 1; col <= pc; col++) {
+        const c = clampAt(size, col, row);
+        if (!isFree(c)) continue;
+        const d = Math.pow(c.col - 1 + c.w / 2 - x, 2) + Math.pow(c.row - 1 + c.h / 2 - y, 2);
+        if (d < bestDist) { bestDist = d; best = c; }
+      }
+    }
+    if (best) return { spot: best, ok: true };
+  }
+  return { spot: clampAt(def, pc - Math.floor((def.w - 1) / 2), pr - Math.floor((def.h - 1) / 2)), ok: false };
+}
+
+function showGhost(type, target) {
+  const editor = $('#editor');
+  if (!drag.ghost) {
+    const m = state.widgets[type].manifest;
+    drag.ghost = document.createElement('div');
+    drag.ghost.className = 'box ghost';
+    drag.ghost.innerHTML = '<div class="box-icon"></div><div class="box-name"></div><div class="box-size"></div>';
+    drag.ghost.querySelector('.box-icon').textContent = m.icon;
+    drag.ghost.querySelector('.box-name').textContent = m.name;
+  }
+  if (drag.ghost.parentNode !== editor) editor.append(drag.ghost);
+  placeBox(drag.ghost, target.spot);
+  drag.ghost.querySelector('.box-size').textContent = target.ok ? target.spot.w + '×' + target.spot.h : 'pas de place';
+  drag.ghost.classList.toggle('invalid', !target.ok);
+}
+
+function hideGhost() {
+  if (drag.ghost) drag.ghost.remove();
+  drag.ghost = null;
+  drag.spot = null;
+}
+
+function endLibraryDrag() {
+  hideGhost();
+  drag.type = null;
+  $('#editor').classList.remove('is-dragging');
+}
+
+function initLibraryDrop() {
+  const editor = $('#editor');
+  editor.addEventListener('dragover', (e) => {
+    if (!drag.type) return;
+    e.preventDefault();
+    const target = dropSpot(drag.type, e.clientX, e.clientY);
+    e.dataTransfer.dropEffect = target.ok ? 'copy' : 'none';
+    drag.spot = target.ok ? target.spot : null;
+    showGhost(drag.type, target);
+  });
+  editor.addEventListener('dragleave', (e) => {
+    if (drag.type && !editor.contains(e.relatedTarget)) hideGhost();
+  });
+  editor.addEventListener('drop', (e) => {
+    if (!drag.type) return;
+    e.preventDefault();
+    const type = drag.type;
+    const spot = drag.spot;
+    endLibraryDrag();
+    if (spot) addWidget(type, spot);
+    else notify('Pas assez de place à cet endroit pour ce widget.', { kind: 'warn' });
+  });
+}
+
+// ---- Historique des configs, export / import ------------------------------------------
+
+const REASON_ICONS = { deploy: '📺', wgt: '⬇', manual: '📌' };
+
+async function openHistory() {
+  $('#history-dialog').showModal();
+  await renderBackups();
+}
+
+async function renderBackups() {
+  const box = $('#backup-list');
+  box.innerHTML = '<p class="help">Chargement…</p>';
+  let list;
+  try {
+    list = await (await fetch('/api/backups')).json();
+  } catch (e) {
+    box.innerHTML = '<p class="error"></p>';
+    box.firstChild.textContent = 'Impossible de lire l’historique : ' + e.message;
+    return;
+  }
+  box.innerHTML = '';
+  if (!list.length) {
+    box.innerHTML = '<p class="help empty">Aucune sauvegarde pour l’instant : la première sera faite au prochain envoi sur la TV.</p>';
+    return;
+  }
+  const fmt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  list.forEach((b, i) => {
+    const row = document.createElement('div');
+    row.className = 'backup-row';
+    row.innerHTML = '<span class="backup-icon"></span><div class="backup-main"><div class="backup-date"></div><div class="backup-meta"></div></div>';
+    row.querySelector('.backup-icon').textContent = REASON_ICONS[b.reason] || '🕘';
+    row.querySelector('.backup-date').textContent = fmt.format(new Date(b.date)) + (i === 0 ? '  · la plus récente' : '');
+    row.querySelector('.backup-meta').textContent = b.label + ' · ' + b.pages + ' page' + (b.pages > 1 ? 's' : '')
+      + ' · ' + b.widgets + ' widget' + (b.widgets > 1 ? 's' : '') + (b.pageNames.length ? ' · ' + b.pageNames.join(', ') : '');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Restaurer';
+    btn.onclick = () => restoreBackup(b, fmt);
+    row.append(btn);
+    box.append(row);
+  });
+}
+
+async function restoreBackup(b, fmt) {
+  try {
+    const r = await fetch('/api/backups/' + encodeURIComponent(b.name));
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+    replaceConfig(data, 'Config du ' + fmt.format(new Date(b.date)) + ' restaurée');
+    $('#history-dialog').close();
+  } catch (e) {
+    notify('Restauration impossible : ' + e.message, { kind: 'error' });
+  }
+}
+
+/** Remplace toute la config (restauration, import) — annulable. */
+function replaceConfig(raw, message) {
+  if (!raw || typeof raw !== 'object') throw new Error('fichier vide ou invalide');
+  const config = normalizeConfig(raw);
+  if (!config.pages.every((p) => p && Array.isArray(p.widgets))) throw new Error('pages invalides');
+  state.config = config;
+  state.page = config.pages[0].id;
+  state.selected = null;
+  scheduleSave();
+  renderAll();
+  reloadPreview();
+  notifyUndoable(message);
+}
+
+async function backupNow() {
+  clearTimeout(saveTimer);
+  await save(); // la sauvegarde copie le fichier enregistré : on enregistre d'abord les dernières modifications
+  try {
+    const r = await (await fetch('/api/backups', { method: 'POST' })).json();
+    notify(r.unchanged ? 'Déjà sauvegardée : identique à la dernière copie.' : 'Config sauvegardée dans l’historique.');
+    renderBackups();
+  } catch (e) {
+    notify('Sauvegarde impossible : ' + e.message, { kind: 'error' });
+  }
+}
+
+function exportConfig() {
+  const blob = new Blob([JSON.stringify(state.config, null, 2) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a');
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dashboard-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  notify('Config exportée. Elle contient vos mots de passe (Wi-Fi…) : gardez-la pour vous.');
+}
+
+async function importConfig(file) {
+  try {
+    replaceConfig(JSON.parse(await file.text()), 'Config « ' + file.name + ' » importée');
+    $('#history-dialog').close();
+  } catch (e) {
+    notify('Import impossible : ' + e.message, { kind: 'error' });
+  }
 }
 
 // ---- Pages ---------------------------------------------------------------------------
@@ -320,13 +520,18 @@ function renderPages() {
 
 // ---- Bibliothèque, liste, inspecteur ----------------------------------------------
 
-function addWidget(type) {
+function widgetSizes(type) {
+  const m = state.widgets[type].manifest;
+  return { def: (m.size && m.size.default) || { w: 3, h: 2 }, min: (m.size && m.size.min) || { w: 1, h: 1 } };
+}
+
+/** Ajoute un widget : à `at` (glisser-déposer) ou à la première place libre. */
+function addWidget(type, at) {
   const m = state.widgets[type].manifest;
   const g = grid();
-  const def = (m.size && m.size.default) || { w: 3, h: 2 };
-  const min = (m.size && m.size.min) || { w: 1, h: 1 };
+  const { def, min } = widgetSizes(type);
   const widgets = pageWidgets();
-  const spot = findFreeSpot(widgets, g, def.w, def.h) || findFreeSpot(widgets, g, min.w, min.h);
+  const spot = at || findFreeSpot(widgets, g, def.w, def.h) || findFreeSpot(widgets, g, min.w, min.h);
   if (!spot) {
     notify('Plus de place sur cette page : réduisez ou supprimez un widget.', { kind: 'warn' });
     return;
@@ -415,6 +620,14 @@ function renderLibrary() {
     b.querySelector('.lib-icon').textContent = m.icon;
     b.querySelector('.lib-name').textContent = m.name;
     b.onclick = () => addWidget(type);
+    b.draggable = true;
+    b.ondragstart = (e) => {
+      drag.type = type;
+      e.dataTransfer.setData('text/plain', type);
+      e.dataTransfer.effectAllowed = 'copy';
+      $('#editor').classList.add('is-dragging');
+    };
+    b.ondragend = endLibraryDrag;
     lib.append(b);
   });
 
@@ -598,7 +811,7 @@ function isTyping(el) {
 }
 
 function onKeyDown(e) {
-  if ($('#deploy-dialog').open) return;
+  if (document.querySelector('dialog[open]')) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   // Dans un champ, Ctrl+Z reste l'annulation de la frappe du navigateur.
@@ -658,6 +871,17 @@ async function init() {
   $('#btn-deploy').onclick = sendToTv;
   $('#btn-reload').onclick = reloadPreview;
   $('#deploy-close').onclick = () => $('#deploy-dialog').close();
+  $('#btn-history').onclick = openHistory;
+  $('#history-close').onclick = () => $('#history-dialog').close();
+  $('#backup-now').onclick = backupNow;
+  $('#config-export').onclick = exportConfig;
+  $('#config-import').onclick = () => $('#config-file').click();
+  $('#config-file').onchange = (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (f) importConfig(f);
+  };
+  initLibraryDrop();
   $('#btn-undo').onclick = undo;
   $('#btn-redo').onclick = redo;
   $('#btn-shortcuts').onclick = () => {

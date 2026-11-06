@@ -51,7 +51,7 @@ function start() {
   });
 
   // ---- Animations d'entrée / sortie (app/anim.js, styles.css) -----------------
-  const ANIM_CLASSES = ['cell-in', 'cell-in-next', 'cell-in-prev', 'focus-pop'];
+  const ANIM_CLASSES = ['cell-in', 'cell-in-next', 'cell-in-prev', 'cell-wake', 'focus-pop'];
   function clearAnim(cell) {
     ANIM_CLASSES.forEach((c) => cell.classList.remove(c));
     cell.style.animationDelay = '';
@@ -144,7 +144,7 @@ function start() {
     const next = byId(id);
     if (next) {
       next.cell.classList.add('is-focused');
-      const entering = ['cell-in', 'cell-in-next', 'cell-in-prev'].some((c) => next.cell.classList.contains(c));
+      const entering = ['cell-in', 'cell-in-next', 'cell-in-prev', 'cell-wake'].some((c) => next.cell.classList.contains(c));
       if (pop && mode === 'full' && !entering) animate(next.cell, 'focus-pop', 0, 350);
       try { next.inst.onFocus(true); } catch (e) { /* ignore */ }
     }
@@ -242,10 +242,17 @@ function start() {
       overlay = h('div', { id: 'sleep' });
       document.body.appendChild(overlay);
     }
+    // Endormissement lent (3 s, styles.css), réveil rapide.
+    overlay.style.transition = on ? '' : 'opacity ' + (timing.enter ? 0.8 : 0) + 's ease';
     overlay.style.opacity = on ? String(global.sleepDim / 100) : '0';
     root.classList.toggle('is-asleep', on); // coupe les animations en boucle pendant la veille
     platform.setScreenSaver(on);
     instances.forEach((it) => { if (it.inst) (on ? it.inst._sleep() : it.inst._wake()); });
+    // Au réveil, les widgets se « rallument » l'un après l'autre (animations complètes seulement).
+    if (!on && mode === 'full') {
+      const delays = staggerDelays(instances.map((it) => it.conf), timing.stagger);
+      instances.forEach((it) => animate(it.cell, 'cell-wake', 150 + (delays[it.conf.id] || 0), 700));
+    }
   }
   if (sleepEnabled(global)) {
     const check = () => {

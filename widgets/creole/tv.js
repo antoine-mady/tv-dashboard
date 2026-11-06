@@ -18,6 +18,7 @@ export default class CreoleWidget extends Widget {
     const now = new Date();
     const key = now.toDateString();
     if (key === this.shownDay) return;
+    if (this.shownDay) this.refreshed(this.root); // nouveau mot du jour (pas au premier affichage)
     this.shownDay = key;
     const w = wordFor(this.list, now);
     this.root.innerHTML = '';

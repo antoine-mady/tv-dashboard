@@ -13,10 +13,12 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
   écran assombri, timers des widgets suspendus et économiseur d'écran de la TV réautorisé ; une touche réveille.
 - **Animations** (`app/anim.js` + fin de `app/styles.css`, réglage général `animations` : complètes / réduites / aucune →
   classe `.anim-*` sur `#stage`) : widgets en cascade au démarrage, glissement au changement de page (les widgets conservés
-  ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs. Uniquement `transform` / `opacity`.
+  ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs, widgets qui se rallument au réveil. Uniquement `transform` / `opacity`.
 - **Admin** : historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
   raccourcis dans l'éditeur (flèches, Maj+flèches, Ctrl+D, Suppr), télécommande cliquable sous l'aperçu
   (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
+  Glisser-déposer depuis la bibliothèque. **Historique** (`tools/backups.js`) : copie de la config dans `config/history/`
+  (ignoré par git) à chaque envoi / .wgt, restauration, export / import JSON.
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes
@@ -78,7 +80,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      local très léger comme l'horloge ; `{ immediate: false }` pour ne pas l'exécuter tout de suite), `this.after(ms, fn)`, `this.listen(target, type, fn)`,
      `this.fetchJson/fetchText(url, opts)` (timeout, erreurs HTTP, proxy automatique dans l'aperçu),
      `this.fetchRaw(url, opts)` (idem mais renvoie la réponse quel que soit le statut, ex. pour OAuth),
-     `this.showError(msg)` / `this.clearError()`, `this.size` (`{ width, height }` en px),
+     `this.showError(msg)` / `this.clearError()`, `this.setText(el, texte)` (remplace le texte ; petit fondu s'il a changé) / `this.refreshed(el)` (fondu « valeur mise à jour », ex. météo), `this.size` (`{ width, height }` en px),
      `this.platform` (`isTizen`, `isPreview`, `launchApp(appId)`). Helper DOM : `h()` de `app/dom.js`.
    - `this.store.get(key, défaut)` / `set(key, valeur)` / `remove(key)` : stockage persistant **sur la TV**
      (localStorage, JSON, propre au widget, ne lève jamais d'erreur). Pour ce qui est appris sur la TV

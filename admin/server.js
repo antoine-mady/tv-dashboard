@@ -9,10 +9,17 @@ import { ROOT, listWidgets, readConfig, writeConfig, readEnv } from '../tools/wi
 import { buildApp } from '../tools/build.js';
 import { deploy, resolveTools } from '../tools/deploy.js';
 import { buildWgt } from '../tools/wgt.js';
+import { saveBackup, listBackups, readBackup } from '../tools/backups.js';
 
 const PORT = Number(process.env.PORT) || 5173;
 const HOST = process.env.HOST || '127.0.0.1';
 const PREVIEW_DIR = path.join(ROOT, '.cache', 'preview');
+const BACKUP_DIR = path.join(ROOT, 'config', 'history'); // ignoré par git (contient les mots de passe)
+
+/** Copie de la config actuelle dans l'historique (n'empêche jamais l'envoi en cas d'échec). */
+function backup(reason) {
+  try { return saveBackup(BACKUP_DIR, readConfig(), reason); } catch (e) { console.warn('Sauvegarde impossible :', e.message); return null; }
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -71,6 +78,7 @@ async function apiProxy(req, res, url) {
 async function apiDeploy(req, res) {
   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   const log = (line) => res.write(line + '\n');
+  if (backup('deploy')) log('🕘 Config sauvegardée dans l’historique (config/history/)');
   try {
     await deploy({ log });
   } catch (e) {
@@ -125,6 +133,15 @@ async function handle(req, res) {
     writeConfig(config);
     return sendJson(res, 200, { ok: true });
   }
+  if (p === '/api/backups' && req.method === 'GET') return sendJson(res, 200, listBackups(BACKUP_DIR));
+  if (p === '/api/backups' && req.method === 'POST') {
+    const name = backup('manual');
+    return sendJson(res, 200, { name, unchanged: !name });
+  }
+  if (p.startsWith('/api/backups/') && req.method === 'GET') {
+    const data = readBackup(BACKUP_DIR, decodeURIComponent(p.slice(13)));
+    return data ? sendJson(res, 200, data) : sendJson(res, 404, { error: 'Sauvegarde introuvable' });
+  }
   if (p === '/api/widgets') return sendJson(res, 200, listWidgets().map(({ dir, ...w }) => w));
   if (p === '/api/env') {
     const t = resolveTools();
@@ -139,6 +156,7 @@ async function handle(req, res) {
     // Paquet non signé pour Apps2Samsung (qui le signe lui-même).
     try {
       const file = await buildWgt();
+      backup('wgt');
       res.writeHead(200, { 'Content-Type': 'application/widget', 'Content-Disposition': 'attachment; filename="TVDashboard.wgt"', 'Cache-Control': 'no-store' });
       return res.end(fs.readFileSync(file));
     } catch (e) {

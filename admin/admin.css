@@ -420,3 +420,37 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .toast, .toast.leaving, .box.bump, .remote button.pressed, .status.pending::before { animation: none; }
 }
+
+/* ---- Glisser-déposer ---- */
+.lib-help { margin: -4px 0 10px; }
+.lib-item[draggable="true"] { cursor: grab; }
+.editor { transition: background-color 0.2s; }
+.editor.is-dragging {
+  background-image:
+    linear-gradient(to right, rgba(124, 196, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(124, 196, 255, 0.22) 1px, transparent 1px);
+}
+.box.ghost { pointer-events: none; z-index: 3; }
+.box.ghost::before { background: rgba(124, 196, 255, 0.16); border: 2px dashed var(--accent); }
+.box.ghost.invalid::before { background: rgba(255, 143, 128, 0.14); border-color: var(--error); }
+.box.ghost.invalid .box-size { color: var(--error); }
+
+/* ---- Historique ---- */
+.dialog-title { font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text); }
+#history-dialog .help code { font-size: 11px; }
+.backup-list {
+  margin: 14px 0;
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.backup-list .help { padding: 14px; margin: 0; }
+.backup-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.backup-row:last-child { border-bottom: 0; }
+.backup-row:hover { background: var(--panel-2); }
+.backup-icon { font-size: 18px; width: 24px; text-align: center; }
+.backup-main { flex: 1; min-width: 0; }
+.backup-date { font-weight: 600; }
+.backup-meta { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#history-dialog .dialog-actions { align-items: center; flex-wrap: wrap; }

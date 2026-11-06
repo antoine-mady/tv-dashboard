@@ -15,6 +15,7 @@
       <button id="btn-undo" type="button" class="ghost" title="Annuler (Ctrl+Z)" disabled>↶</button>
       <button id="btn-redo" type="button" class="ghost" title="Rétablir (Ctrl+Y)" disabled>↷</button>
     </div>
+    <button id="btn-history" type="button" title="Versions envoyées sur la TV, export / import">🕘 Historique</button>
     <button id="btn-global" type="button">⚙ Réglages généraux</button>
     <a id="btn-wgt" class="button" href="/api/wgt" title="Paquet à installer avec Apps2Samsung">⬇ Télécharger le .wgt</a>
     <button id="btn-deploy" type="button" class="primary">📺 Envoyer sur la TV</button>
@@ -23,6 +24,7 @@
   <main class="layout">
     <aside class="panel library">
       <h2>Ajouter un widget</h2>
+      <p class="help lib-help">Cliquez, ou glissez sur la grille.</p>
       <div id="library" class="library-list"></div>
       <h2>Sur cette page</h2>
       <ul id="widget-list" class="widget-list"></ul>
@@ -96,6 +98,20 @@
       <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" hidden>⬇ Télécharger Tizen Studio</a>
       <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>⬇ Télécharger le .wgt</a>
       <button id="deploy-close" type="button">Fermer</button>
+    </div>
+  </dialog>
+
+  <dialog id="history-dialog">
+    <h2 class="dialog-title">Historique de la config</h2>
+    <p class="help">Une copie est gardée à chaque « Envoyer sur la TV » ou téléchargement du .wgt (les 30 dernières, dans <code>config/history/</code>). Restaurer remplace la config actuelle — c’est annulable (Ctrl+Z).</p>
+    <div id="backup-list" class="backup-list"></div>
+    <div class="dialog-actions">
+      <button id="backup-now" type="button">📌 Sauvegarder maintenant</button>
+      <button id="config-export" type="button" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">⬇ Exporter</button>
+      <button id="config-import" type="button">⬆ Importer…</button>
+      <input id="config-file" type="file" accept=".json,application/json" hidden>
+      <span class="spacer"></span>
+      <button id="history-close" type="button">Fermer</button>
     </div>
   </dialog>
 
