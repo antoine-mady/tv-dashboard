@@ -113,14 +113,14 @@ export default class BusWidget extends Widget {
   /** Départs (temps réel appliqué s'il est récent) entre now - BACK et now + ahead. */
   departures(now, aheadMs) {
     const rt = { trips: {} };
-    let live = false;
+    let liveCount = 0;
     this.networkIds.forEach((network) => {
       const entry = this.rtByNetwork[network];
       if (!entry || now - entry.at >= STALE) return;
-      live = true;
+      liveCount++;
       Object.assign(rt.trips, entry.feed.trips);
     });
-    return { live, deps: applyRealtime(scheduledBetween(this.table, now, this.routeIds, BACK, aheadMs), live ? rt : null) };
+    return { live: liveCount > 0, partial: liveCount < this.networkIds.length, deps: applyRealtime(scheduledBetween(this.table, now, this.routeIds, BACK, aheadMs), liveCount ? rt : null) };
   }
 
   render() {
@@ -136,7 +136,7 @@ export default class BusWidget extends Widget {
     const deps = pickNext(next.deps, now, s.count, s.walkMinutes);
 
     this.liveEl.className = 'bus-live' + (live ? ' is-on' : '');
-    this.liveEl.textContent = live ? 'temps réel' : '';
+    this.liveEl.textContent = live ? (next.partial ? 'temps réel partiel' : 'temps réel') : '';
 
     this.listEl.innerHTML = '';
     if (!deps.length) {
