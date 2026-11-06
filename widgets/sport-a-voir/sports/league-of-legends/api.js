@@ -48,7 +48,7 @@ function normalizeTeam(team) {
   const name = firstValue(team, ['name', 'teamName', 'team_name', 'displayName', 'display_name']);
   const code = firstValue(team, ['code', 'shortName', 'short_name', 'tag', 'acronym']);
   const outcome = firstValue(team, ['outcome', 'winner']) || result.outcome || '';
-  const wins = firstValue(team, ['gameWins', 'game_wins', 'score']) ;
+  const wins = firstValue(team, ['gameWins', 'game_wins', 'score']);
   return {
     name: name || 'Équipe à confirmer',
     code: code || '',
@@ -67,15 +67,18 @@ function normalizeState(value, fallback) {
 
 function leagueText(event) {
   const parts = [];
-  const fields = ['league', 'leagueName', 'league_name', 'leagueSlug', 'league_slug', 'leagueId', 'league_id', 'tournament', 'tournamentName', 'tournament_name', 'competition'];
-  fields.forEach((key) => {
-    const value = event && event[key];
-    if (typeof value === 'string' || typeof value === 'number') parts.push(String(value));
-    else if (value && typeof value === 'object') {
-      ['name', 'slug', 'id', 'title'].forEach((nested) => {
-        if (value[nested] !== undefined && value[nested] !== null) parts.push(String(value[nested]));
-      });
-    }
+  const fields = ['league', 'leagueName', 'league_name', 'leagueSlug', 'league_slug', 'leagueId', 'league_id', 'tournament', 'tournamentName', 'tournament_name', 'competition', 'blockName', 'block_name'];
+  const records = [event, event && event.match];
+  records.forEach((record) => {
+    fields.forEach((key) => {
+      const value = record && record[key];
+      if (typeof value === 'string' || typeof value === 'number') parts.push(String(value));
+      else if (value && typeof value === 'object') {
+        ['name', 'slug', 'id', 'title'].forEach((nested) => {
+          if (value[nested] !== undefined && value[nested] !== null) parts.push(String(value[nested]));
+        });
+      }
+    });
   });
   return parts.join(' ').toLowerCase();
 }
@@ -115,7 +118,8 @@ export function normalizeEvent(event, league, defaultState) {
     region: league.region,
     startAt,
     state: normalizeState(rawState, defaultState),
-    blockName: String(firstValue(event, ['blockName', 'block_name', 'tournamentName', 'tournament_name']) || ''),
+    blockName: String(firstValue(event, ['blockName', 'block_name', 'tournamentName', 'tournament_name'])
+      || firstValue(match, ['blockName', 'block_name', 'tournamentName', 'tournament_name']) || ''),
     bestOf: Number(bestOf) || 0,
     teams: teams.slice(0, 2).map(normalizeTeam),
   };
