@@ -46,5 +46,7 @@ export function buildUrl(s) {
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
     + (s.showSun !== false ? ',sunrise,sunset' : '')
     + (s.showUv !== false ? ',uv_index_max' : '')
-    + '&timezone=auto&forecast_days=' + (Number(s.days) + 1);
+    + (Number(s.hours) > 0 ? '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' : '')
+    // Les heures à venir peuvent déborder sur le lendemain : au moins 2 jours dans ce cas.
+    + '&timezone=auto&forecast_days=' + Math.max(Number(s.days) + 1, Number(s.hours) > 0 ? 2 : 1);
 }

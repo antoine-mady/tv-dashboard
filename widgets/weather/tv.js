@@ -2,6 +2,7 @@ import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 import { describeWeather, buildUrl } from './codes.js';
 import { buildVigilanceUrl, parseVigilance, vigilanceText } from './vigilance.js';
+import { pickHours } from './hourly.js';
 import { formatHour, dayLength, uvLevel, aqiLevel, buildAirUrl } from './extras.js';
 import clearDay from './assets/clear-day.svg';
 import clearNight from './assets/clear-night.svg';
@@ -25,17 +26,23 @@ export default class WeatherWidget extends Widget {
     this.tempEl = h('div', { className: 'wx-temp', text: '--°' });
     this.descEl = h('div', { className: 'wx-desc' });
     this.metaEl = h('div', { className: 'wx-meta muted' });
+    this.hoursEl = h('div', { className: 'wx-hours' });
     this.daysEl = h('div', { className: 'wx-days' });
     this.extraEl = h('div', { className: 'wx-extra' });
     // Widget étroit (3 colonnes) avec la colonne soleil/UV/air : on retire la grande icône pour lui faire de la place.
     const hasExtras = s.showSun || s.showUv || s.showAir || s.showVigilance;
-    if (hasExtras && this.size && this.size.width < this.size.height * 1.7) el.className += ' wx-compact';
+    // Heures ET jours : tout est réduit (~70 %) pour que les deux lignes tiennent sous la météo actuelle.
+    const stacked = s.hours > 0 && s.days > 0;
+    if (stacked) el.className += ' wx-stacked';
+    const unit = this.size ? this.size.height * (stacked ? 0.7 : 1) : 0;
+    if (hasExtras && this.size && this.size.width < unit * 1.7) el.className += ' wx-compact';
     el.appendChild(h('div', { className: 'wx-now' },
       this.iconEl,
       h('div', { className: 'wx-main' },
         h('div', { className: 'wx-place muted', text: s.label }),
         this.tempEl, this.descEl, this.metaEl),
       hasExtras ? this.extraEl : null));
+    if (s.hours > 0) el.appendChild(this.hoursEl);
     if (s.days > 0) el.appendChild(this.daysEl);
 
     this.every(s.refreshMinutes * 60 * 1000, () => this.refresh());
@@ -61,6 +68,8 @@ export default class WeatherWidget extends Widget {
     this.metaEl.textContent = 'Ressenti ' + Math.round(c.apparent_temperature) + '° · '
       + Math.round(c.relative_humidity_2m) + ' % · ' + Math.round(c.wind_speed_10m) + ' km/h';
 
+    this.renderHours(data);
+
     this.daysEl.innerHTML = '';
     const d = data.daily;
     for (let i = 1; i <= this.settings.days && i < d.time.length; i++) {
@@ -75,6 +84,22 @@ export default class WeatherWidget extends Widget {
           h('span', { className: 'muted', text: ' ' + Math.round(d.temperature_2m_min[i]) + '°' })),
         rainProb != null ? h('div', { className: 'wx-day-rain', text: '💧' + rainProb + ' %' }) : null));
     }
+  }
+
+  /** Ligne des heures à venir : heure, icône, température, risque de pluie. */
+  renderHours(data) {
+    const s = this.settings;
+    this.hoursEl.innerHTML = '';
+    if (!(s.hours > 0)) return;
+    const now = data.current && data.current.time;
+    pickHours(data.hourly, now, s.hours, Number(s.hoursStep)).forEach((x) => {
+      const w = describeWeather(x.code, x.isDay);
+      this.hoursEl.appendChild(h('div', { className: 'wx-hour' },
+        h('div', { className: 'wx-hour-name muted', text: x.hour }),
+        h('div', { className: 'wx-hour-icon', html: ICONS[w.icon] }),
+        h('div', { className: 'wx-hour-temp', text: x.temp + '°' }),
+        x.rain != null ? h('div', { className: 'wx-day-rain', text: '💧' + x.rain + ' %' }) : null));
+    });
   }
 
   /** Colonne de droite : vigilance, soleil, UV du jour, qualité de l'air. */
