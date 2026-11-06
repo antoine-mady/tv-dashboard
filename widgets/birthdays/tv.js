@@ -2,17 +2,27 @@ import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 // Lecture iCal partagée avec le widget Agenda (logique pure, sans DOM).
 import { parseIcs, parseUrlList, expandEvents } from '../agenda/ical.js';
-import { upcoming, windowFor } from './birthdays.js';
+import { upcoming, windowFor, parseContacts, contactOccurrences } from './birthdays.js';
 
 export default class BirthdaysWidget extends Widget {
   mount(el, s) {
-    this.urls = parseUrlList(s.urls);
-    if (!this.urls.length) throw new Error('Renseignez au moins une adresse iCal');
+    if (s.source === 'contacts') {
+      this.contacts = parseContacts(s.contacts).list;
+      if (!this.contacts.length) throw new Error('Importez vos contacts dans l’admin');
+    } else {
+      this.urls = parseUrlList(s.urls);
+      if (!this.urls.length) throw new Error('Renseignez au moins une adresse iCal');
+    }
     this.listEl = h('div', { className: 'bd-list' });
     el.appendChild(h('div', { className: 'bd-inner' },
       s.title ? h('div', { className: 'bd-title', text: s.title }) : null,
       this.listEl));
     this.calendars = [];
+    if (this.contacts) {
+      this.loaded = true;
+      this.every(10 * 60 * 1000, () => this.render());
+      return;
+    }
     this.every(s.refreshMinutes * 60 * 1000, () => this.refresh());
     // Recalcul régulier pour passer « Demain » → « Aujourd’hui » à minuit sans retélécharger.
     this.every(10 * 60 * 1000, () => this.render(), { immediate: false });
@@ -34,11 +44,11 @@ export default class BirthdaysWidget extends Widget {
     const s = this.settings;
     const now = new Date();
     const win = windowFor(now, s.daysAhead);
-    let occ = [];
+    let occ = this.contacts ? contactOccurrences(this.contacts, win.from, win.to) : [];
     this.calendars.forEach((events) => {
       if (events) occ = occ.concat(expandEvents(events, win.from, win.to));
     });
-    const items = upcoming(occ, now, { filter: s.filter, max: s.maxItems, showAge: s.showAge });
+    const items = upcoming(occ, now, { filter: this.contacts ? '' : s.filter, max: s.maxItems, showAge: s.showAge });
 
     this.listEl.innerHTML = '';
     if (!items.length) {

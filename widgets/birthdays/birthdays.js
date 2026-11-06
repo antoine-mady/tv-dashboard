@@ -93,3 +93,94 @@ export function windowFor(now, daysAhead) {
   const today = startOfDay(now);
   return { from: today, to: new Date(today.getFullYear(), today.getMonth(), today.getDate() + Math.max(1, daysAhead) + 1) };
 }
+
+// ---------------------------------------------------------------------------
+// Anniversaires saisis à la main / importés des contacts (vCard).
+// L’agenda « Anniversaires » de Google (tiré des contacts) n’a pas d’adresse iCal :
+// on importe donc les contacts (contacts.google.com → Exporter → vCard) dans l’admin,
+// qui n’en garde qu’une ligne par personne : « 12/05/1990 Marie Dupont » (année facultative).
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function validDay(month, day) {
+  return month >= 1 && month <= 12 && day >= 1 && day <= [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+}
+
+/** Valeur BDAY d’une vCard (« 1990-05-12 », « 19900512 », « --05-12 », « --0512 », « 1990-05-12T00:00:00Z »). */
+export function parseBday(value) {
+  const v = String(value || '').trim();
+  let m = /^(\d{4})-?(\d{2})-?(\d{2})/.exec(v);
+  if (m) {
+    const y = +m[1];
+    // Google met parfois une année fictive (1604) quand elle est inconnue.
+    return validDay(+m[2], +m[3]) ? { year: y > 1800 ? y : null, month: +m[2], day: +m[3] } : null;
+  }
+  m = /^--(\d{2})-?(\d{2})/.exec(v);
+  if (m) return validDay(+m[1], +m[2]) ? { year: null, month: +m[1], day: +m[2] } : null;
+  return null;
+}
+
+function unescapeVcard(s) {
+  return s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
+}
+
+/** Contenu d’un fichier .vcf → [{ name, day, month, year }] (contacts sans date de naissance ignorés). */
+export function parseVcard(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n');
+  const out = [];
+  let cur = null;
+  lines.forEach((line) => {
+    const i = line.indexOf(':');
+    if (i < 0) return;
+    const head = line.slice(0, i).toUpperCase();
+    const value = line.slice(i + 1);
+    const prop = head.split(';')[0].replace(/^ITEM\d+\./, '');
+    if (prop === 'BEGIN' && value.trim().toUpperCase() === 'VCARD') cur = {};
+    else if (!cur) return;
+    else if (prop === 'END') {
+      const name = cur.fn || cur.n;
+      if (cur.bday && name) out.push({ name, day: cur.bday.day, month: cur.bday.month, year: cur.bday.year });
+      cur = null;
+    } else if (prop === 'FN') cur.fn = unescapeVcard(value).trim();
+    else if (prop === 'N') {
+      const p = value.split(';').map((s) => unescapeVcard(s).trim());
+      cur.n = [p[1], p[0]].filter(Boolean).join(' ');
+    } else if (prop === 'BDAY') cur.bday = parseBday(value);
+  });
+  return out;
+}
+
+/** [{ name, day, month, year }] → texte « JJ/MM[/AAAA] Nom », trié par date. */
+export function formatContacts(list) {
+  return list.slice().sort((a, b) => (a.month - b.month) || (a.day - b.day) || (a.name < b.name ? -1 : 1))
+    .map((c) => pad2(c.day) + '/' + pad2(c.month) + (c.year ? '/' + c.year : '') + ' ' + c.name)
+    .join('\n');
+}
+
+/** Texte « JJ/MM[/AAAA] Nom » (une ligne par personne, # = commentaire) → { list, errors }. */
+export function parseContacts(text) {
+  const list = [];
+  const errors = [];
+  String(text || '').split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.charAt(0) === '#') return;
+    const m = /^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{4}))?\s+(.+)$/.exec(line);
+    if (!m || !validDay(+m[2], +m[1])) { errors.push('Ligne ' + (i + 1) + ' : « ' + line + ' »'); return; }
+    list.push({ name: m[4].trim(), day: +m[1], month: +m[2], year: m[3] ? +m[3] : null });
+  });
+  return { list, errors };
+}
+
+/** Occurrences annuelles dans [from, to[ au format de expandEvents ({ summary, start }). */
+export function contactOccurrences(list, from, to) {
+  const out = [];
+  list.forEach((c) => {
+    for (let y = from.getFullYear(); y <= to.getFullYear(); y++) {
+      // 29 février fêté le 28 les années non bissextiles.
+      const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+      const start = new Date(y, c.month - 1, c.month === 2 && c.day === 29 && !leap ? 28 : c.day);
+      if (start >= from && start < to) out.push({ summary: c.name + (c.year ? ' (' + c.year + ')' : ''), start });
+    }
+  });
+  return out;
+}
