@@ -64,8 +64,8 @@ export default class SportAvoirWidget extends Widget {
     if (this.refreshPromise) return this.refreshPromise;
     const active = LEAGUES.filter((league) => this.selectedLeagues.indexOf(league.id) !== -1);
     const task = Promise.all(active.map((league) => {
-      // Une clé Riot absente ne bloque que les ligues LoL ; les autres sports continuent normalement.
-      const request = league.provider === 'lol'
+      // CitoAPI couvre League of Legends, CS2, Dota 2 et Call of Duty.
+      const request = league.provider === 'cito'
         ? fetchLoLSchedule((url, options) => this.fetchJson(url, options), league, this.settings.apiKey)
         : fetchEspnSchedule((url) => this.fetchJson(url), league);
       return request.then((events) => {
@@ -110,10 +110,10 @@ export default class SportAvoirWidget extends Widget {
     if (!selectedCount) {
       this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Aucune ligue sélectionnée · appuyez sur OK pour filtrer' }));
     } else if (!events.length) {
-      const lolSelected = LEAGUES.some((league) => league.provider === 'lol' && this.selectedLeagues.indexOf(league.id) !== -1);
+      const citoSelected = LEAGUES.some((league) => league.provider === 'cito' && this.selectedLeagues.indexOf(league.id) !== -1);
       const hasErrors = this.selectedLeagues.some((id) => this.errors[id]);
-      const message = lolSelected && !String(this.settings.apiKey || '').trim() && hasErrors
-        ? 'Ajoutez une clé API LoL dans les réglages pour voir League of Legends. Les autres sports restent disponibles.'
+      const message = citoSelected && !String(this.settings.apiKey || '').trim() && hasErrors
+        ? 'Ajoutez votre clé API CitoAPI dans les réglages pour voir les calendriers esport. Les sports ESPN restent disponibles.'
         : (hasErrors ? 'Calendriers momentanément indisponibles' : 'Aucun événement programmé pour le moment');
       this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: message }));
     } else {
