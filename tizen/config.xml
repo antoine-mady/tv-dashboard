@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
         id="http://tvdashboard.local/TVDashboard" version="1.0.0" viewmodes="maximized">
-  <tizen:application id="TVDashBrd0.TVDashboard" package="TVDashBrd0" required_version="3.0"/>
+  <tizen:application id="TVDashBrd0.TVDashboard" package="TVDashBrd0" required_version="6.0"/>
   <name>TVDashboard</name>
   <content src="index.html"/>
   <icon src="icon.png"/>
@@ -17,6 +17,7 @@
        L'aperçu (npm run dev) applique la même politique. -->
   <tizen:content-security-policy>default-src 'self' file: data: blob:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src * file: data: blob:; media-src * file: blob:; frame-src 'self' https://antoine-mady.github.io; connect-src *</tizen:content-security-policy>
 
+  <tizen:privilege name="http://developer.samsung.com/privilege/voicecontrol"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
