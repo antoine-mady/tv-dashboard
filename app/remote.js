@@ -54,6 +54,18 @@ export function initRemote(onKey) {
         if (k) extra[k.code] = TIZEN_KEYS[name];
       } catch (e) { /* touche absente sur ce modèle */ }
     });
+    // Certains modèles publient le bouton micro avec un nom de touche spécifique au constructeur.
+    try {
+      const keys = tizen.tvinputdevice.getSupportedKeys();
+      keys.forEach((k) => {
+        if (k && /voice|speech|mic/i.test(k.name)) {
+          try {
+            tizen.tvinputdevice.registerKey(k.name);
+            extra[k.code] = 'mic';
+          } catch (e) { /* touche réservée au système ou non enregistrable */ }
+        }
+      });
+    } catch (e) { /* liste de touches indisponible */ }
   }
   document.addEventListener('keydown', (e) => {
     const key = normalizeKey(e.keyCode, e.key, extra);
