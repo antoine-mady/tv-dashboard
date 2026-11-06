@@ -3,10 +3,10 @@ export default {
   type: 'sport-a-voir',
   name: 'Sport à voir',
   icon: '🏆',
-  description: 'Prochains matchs esports : LEC et Worlds de League of Legends.',
+  description: 'Calendriers esports, football et rugby : LoL, grandes compétitions européennes et rugby international.',
   size: { default: { w: 5, h: 3 }, min: { w: 3, h: 2 } },
   focusable: true,
-  remoteHelp: [['◀ ▶', 'Changer de compétition'], ['OK', 'Tous les matchs'], ['Retour', 'Fermer la liste']],
+  remoteHelp: [['◀ ▶', 'Changer de compétition'], ['OK', 'Sélection des ligues et matchs'], ['Retour', 'Fermer la liste']],
   schema: [
     {
       key: 'apiKey',
@@ -15,7 +15,7 @@ export default {
       default: '',
       required: true,
       group: 'Connexion',
-      help: 'Clé x-api-key obtenue via le portail développeur Riot. Elle est enregistrée dans la configuration locale puis embarquée dans l’application TV.',
+      help: 'Clé x-api-key obtenue via le portail développeur Riot. Nécessaire uniquement pour les compétitions League of Legends.',
     },
     {
       key: 'defaultLeague',
@@ -25,6 +25,11 @@ export default {
       options: [
         { value: 'lec', label: 'LEC — Europe' },
         { value: 'worlds', label: 'Worlds — International' },
+        { value: 'premier-league', label: 'Premier League' },
+        { value: 'ligue-1', label: 'Ligue 1' },
+        { value: 'champions-league', label: 'Ligue des champions' },
+        { value: 'six-nations', label: 'Tournoi des Six Nations' },
+        { value: 'rugby-world-cup', label: 'Coupe du monde de rugby' },
       ],
     },
     {
