@@ -129,3 +129,36 @@ html, body {
   -webkit-transform: translate(-50%, 0);
   transform: translate(-50%, 0);
 }
+
+/* Dictée vocale (app/dictation.js) : bandeau en haut, au-dessus des panneaux (le clavier TV est en bas). */
+#dictation {
+  position: absolute;
+  left: 50%;
+  top: 60px;
+  z-index: 70;
+  max-width: 1500px;
+  padding: 18px 44px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.88);
+  border: 3px solid var(--accent);
+  color: #fff;
+  font-size: 40px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  -webkit-transform: translate(-50%, -20px);
+  transform: translate(-50%, -20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+#dictation.is-visible {
+  opacity: 1;
+  -webkit-transform: translate(-50%, 0);
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  cursor: pointer;
+}
+#dictation.is-listening { border-color: #ff5a5a; }
+#dictation.is-error { border-color: #ffb347; }

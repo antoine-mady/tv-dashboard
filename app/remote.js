@@ -17,6 +17,7 @@ const CODES = {
   10233: 'next', 10232: 'prev', 417: 'next', 412: 'prev',
   403: 'red', 404: 'green', 405: 'yellow', 406: 'blue',
   427: 'chup', 428: 'chdown', 33: 'chup', 34: 'chdown', // CH▲ / CH▼ (Page↑ / Page↓ au clavier)
+  113: 'mic', // F2 au clavier : dictée vocale dans un champ de saisie (aperçu)
 };
 
 // Raccourcis clavier pour tester dans l'aperçu navigateur.
@@ -31,8 +32,10 @@ export function normalizeKey(keyCode, key, extraCodes) {
 
 // Codes conservés quand un champ de saisie a le focus : Entrée, Retour TV, Échap, haut, bas, Terminé (IME Samsung).
 const EDITABLE_KEYS = { 13: true, 10009: true, 27: true, 38: true, 40: true, 65376: true, 65385: true };
+// … plus les touches de couleur de la télécommande et F2 (dictée, app/dictation.js) — pas les lettres r/g/y/u.
+const EDITABLE_NAMES = { red: true, green: true, yellow: true, blue: true, mic: true };
 
-function isEditable(el) {
+export function isEditable(el) {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 }
 
@@ -51,8 +54,8 @@ export function initRemote(onKey) {
     const key = normalizeKey(e.keyCode, e.key, extra);
     if (!key) return;
     // Dans un champ de saisie (clavier de la TV), on laisse passer la frappe :
-    // seules Entrée, Retour et haut/bas restent des touches de navigation.
-    if (isEditable(e.target) && !EDITABLE_KEYS[e.keyCode]) return;
+    // seules Entrée, Retour, haut/bas et les touches de dictée restent des touches de l'app.
+    if (isEditable(e.target) && !EDITABLE_KEYS[e.keyCode] && !EDITABLE_NAMES[extra[e.keyCode] || CODES[e.keyCode]]) return;
     e.preventDefault(); // en particulier : Retour ne quitte pas l'app
     onKey(key);
   });

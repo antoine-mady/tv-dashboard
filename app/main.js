@@ -7,7 +7,8 @@ import { createStore } from './Widget.js';
 import GLOBAL_SCHEMA from './global-schema.js';
 import { createStage } from './grid.js';
 import { createPanelHost } from './panel.js';
-import { initRemote } from './remote.js';
+import { initRemote, isEditable } from './remote.js';
+import { initDictation, DICTATION_KEYS } from './dictation.js';
 import { findNeighbor, firstItem } from './focus.js';
 import { parseTime, isInRange } from './schedule.js';
 import * as platform from './platform.js';
@@ -141,7 +142,11 @@ function start() {
     showPageName();
   }
 
+  // Dictée vocale dans les champs de saisie (bouton micro Samsung, touche de couleur, F2 dans l'aperçu).
+  const dictation = initDictation(root, { lang: 'fr-FR', preview: platform.isPreview });
+
   initRemote((key) => {
+    if (DICTATION_KEYS.indexOf(key) !== -1 && isEditable(document.activeElement) && dictation.start(document.activeElement)) return;
     // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
     const owner = panels.owner();
     if (owner) {

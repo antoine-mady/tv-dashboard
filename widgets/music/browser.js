@@ -57,6 +57,9 @@ export class MusicBrowser {
       }
     });
 
+    // Dictée vocale (app) : le texte dicté lance directement la recherche.
+    this.searchEl.addEventListener('dictation', () => this.runSearch(this.searchEl.value));
+
     this.renderMenu();
     this.openTab();
     this.renderNow();
