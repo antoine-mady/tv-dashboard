@@ -1,44 +1,39 @@
 import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 import { ListPanel, focusHint } from '../../app/list-panel.js';
-import { LEAGUES, leagueById } from './sports/catalog.js';
+import { LEAGUES } from './sports/catalog.js';
 import { fetchLeagueSchedule as fetchLoLSchedule, formatMatchDate, formatMatchTime } from './sports/league-of-legends/api.js';
 import { fetchEspnSchedule } from './sports/espn/api.js';
 
 export default class SportAvoirWidget extends Widget {
   mount(el, settings) {
-    this.settings = settings;
+    this.settings = settings || {};
     this.selectedLeagues = this.store.get('selectedLeagues', LEAGUES.map((league) => league.id));
     if (!Array.isArray(this.selectedLeagues)) this.selectedLeagues = LEAGUES.map((league) => league.id);
     this.selectedLeagues = this.selectedLeagues.filter((id) => LEAGUES.some((league) => league.id === id));
-    if (!this.selectedLeagues.length && this.store.get('selectionInitialized', false) !== true) {
+    if (this.store.get('selectionInitialized', false) !== true) {
       this.selectedLeagues = LEAGUES.map((league) => league.id);
+      this.store.set('selectionInitialized', true);
     }
-    this.store.set('selectionInitialized', true);
-    this.activeLeague = this.selectedLeagues.indexOf(settings.defaultLeague) !== -1
-      ? settings.defaultLeague : (this.selectedLeagues[0] || LEAGUES[0].id);
     this.schedules = {};
     this.errors = {};
     this.refreshPromise = null;
     this.list = null;
 
-    this.titleEl = h('div', { className: 'sav-title' });
+    this.titleEl = h('div', { className: 'sav-title', text: 'SPORT À VOIR' });
     this.statusEl = h('div', { className: 'sav-status' });
     this.matchesEl = h('div', { className: 'sav-matches' });
     this.metaEl = h('div', { className: 'sav-meta' });
     el.appendChild(h('div', { className: 'sav-inner' },
       h('div', { className: 'sav-head' }, this.titleEl, this.statusEl),
-      this.matchesEl, this.metaEl, focusHint('OK : compétitions et matchs')));
+      this.matchesEl, this.metaEl, focusHint('OK : filtrer les ligues')));
     this.render();
     this.refresh().catch((error) => this.showError(error.message || 'Calendriers indisponibles.'));
-    this.every((Number(settings.refreshMinutes) || 15) * 60 * 1000, () => this.refresh(), { immediate: false });
+    this.every((Number(this.settings.refreshMinutes) || 15) * 60 * 1000, () => this.refresh(), { immediate: false });
   }
 
   saveSelection() {
     this.store.set('selectedLeagues', this.selectedLeagues);
-    if (this.selectedLeagues.indexOf(this.activeLeague) === -1 && this.selectedLeagues.length) {
-      this.activeLeague = this.selectedLeagues[0];
-    }
     this.render();
   }
 
@@ -46,9 +41,7 @@ export default class SportAvoirWidget extends Widget {
     this.selectedLeagues = this.selectedLeagues.length === LEAGUES.length
       ? [] : LEAGUES.map((league) => league.id);
     this.saveSelection();
-    const pending = this.refreshPromise;
-    if (pending) pending.then(() => this.refresh()).catch(() => {});
-    else this.refresh().catch(() => {});
+    this.refresh().catch(() => {});
     if (this.list) this.list.refresh();
   }
 
@@ -57,9 +50,7 @@ export default class SportAvoirWidget extends Widget {
     if (index === -1) this.selectedLeagues.push(id);
     else this.selectedLeagues.splice(index, 1);
     this.saveSelection();
-    const pending = this.refreshPromise;
-    if (pending) pending.then(() => this.refresh()).catch(() => {});
-    else this.refresh().catch(() => {});
+    this.refresh().catch(() => {});
     if (this.list) this.list.refresh();
   }
 
@@ -67,6 +58,7 @@ export default class SportAvoirWidget extends Widget {
     if (this.refreshPromise) return this.refreshPromise;
     const active = LEAGUES.filter((league) => this.selectedLeagues.indexOf(league.id) !== -1);
     const task = Promise.all(active.map((league) => {
+      // Une clé Riot absente ne bloque que les ligues LoL ; les autres sports continuent normalement.
       const request = league.provider === 'lol'
         ? fetchLoLSchedule((url, options) => this.fetchJson(url, options), league, this.settings.apiKey)
         : fetchEspnSchedule((url) => this.fetchJson(url), league);
@@ -76,41 +68,50 @@ export default class SportAvoirWidget extends Widget {
         return true;
       }, (error) => {
         this.errors[league.id] = error && error.message ? error.message : 'Erreur inconnue';
+        this.schedules[league.id] = [];
         return false;
       });
-    })).then((results) => {
+    })).then(() => {
       this.render();
       if (this.list && this.panelOpen) this.list.refresh();
-      if (results.length && !results.some(Boolean)) throw new Error('Aucun calendrier disponible. Vérifiez la connexion et la clé Riot pour League of Legends.');
     });
     const wrapped = task.finally(() => { if (this.refreshPromise === wrapped) this.refreshPromise = null; });
     this.refreshPromise = wrapped;
     return wrapped;
   }
 
-  currentLeague() { return leagueById(this.activeLeague); }
-  currentEvents() { return this.schedules[this.activeLeague] || []; }
+  allEvents() {
+    return LEAGUES.filter((league) => this.selectedLeagues.indexOf(league.id) !== -1)
+      .reduce((all, league) => all.concat(this.schedules[league.id] || []), [])
+      .filter((event) => event.state === 'inProgress' || event.state === 'upcoming' || event.state === 'unstarted')
+      .sort((a, b) => {
+        if (a.state === 'inProgress' && b.state !== 'inProgress') return -1;
+        if (b.state === 'inProgress' && a.state !== 'inProgress') return 1;
+        return Date.parse(a.startAt) - Date.parse(b.startAt);
+      });
+  }
 
   render() {
-    const league = this.currentLeague();
-    const events = this.currentEvents();
-    const max = Math.max(1, Math.min(6, Number(this.settings.maxMatches) || 4));
-    this.titleEl.textContent = league.name;
-    this.statusEl.textContent = this.errors[league.id] ? 'Calendrier indisponible'
-      : (events.some((event) => event.state === 'inProgress') ? 'EN DIRECT' : '');
-    this.statusEl.className = 'sav-status' + (this.statusEl.textContent === 'EN DIRECT' ? ' is-live' : '');
+    const events = this.allEvents();
+    const max = Math.max(1, Math.min(10, Number(this.settings.maxMatches) || 10));
+    const selectedCount = this.selectedLeagues.length;
+    const liveCount = events.filter((event) => event.state === 'inProgress').length;
+    this.statusEl.textContent = liveCount ? liveCount + ' EN DIRECT' : '';
+    this.statusEl.className = 'sav-status' + (liveCount ? ' is-live' : '');
     this.matchesEl.innerHTML = '';
-    if (!this.selectedLeagues.length) {
-      this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Aucune compétition sélectionnée · appuyez sur OK' }));
-    } else if (this.errors[league.id] && !events.length) {
-      this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Erreur de chargement du calendrier' }));
+    if (!selectedCount) {
+      this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Aucune ligue sélectionnée · appuyez sur OK pour filtrer' }));
     } else if (!events.length) {
-      this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: 'Aucun match programmé pour le moment' }));
+      const lolSelected = LEAGUES.some((league) => league.provider === 'lol' && this.selectedLeagues.indexOf(league.id) !== -1);
+      const hasErrors = this.selectedLeagues.some((id) => this.errors[id]);
+      const message = lolSelected && !String(this.settings.apiKey || '').trim() && hasErrors
+        ? 'Ajoutez une clé API LoL dans les réglages pour voir League of Legends. Les autres sports restent disponibles.'
+        : (hasErrors ? 'Calendriers momentanément indisponibles' : 'Aucun événement programmé pour le moment');
+      this.matchesEl.appendChild(h('div', { className: 'sav-empty', text: message }));
     } else {
       events.slice(0, max).forEach((event) => this.matchesEl.appendChild(this.matchCard(event)));
     }
-    const selected = LEAGUES.filter((item) => this.selectedLeagues.indexOf(item.id) !== -1);
-    this.metaEl.textContent = selected.length + ' compétition(s) sélectionnée(s) · OK pour gérer';
+    this.metaEl.textContent = selectedCount + ' / ' + LEAGUES.length + ' ligues actives · ' + Math.min(events.length, max) + ' événements affichés · OK pour filtrer';
   }
 
   matchCard(event) {
@@ -119,8 +120,8 @@ export default class SportAvoirWidget extends Widget {
     const teamLabel = (team) => team.code || team.name || 'À confirmer';
     return h('div', { className: 'sav-match' + (live ? ' is-live' : '') },
       h('div', { className: 'sav-match-time' },
-        h('span', { className: 'sav-date', text: live ? 'EN DIRECT' : formatMatchDate(event.startAt) }),
-        h('span', { className: 'sav-time', text: live ? 'LIVE' : formatMatchTime(event.startAt) })),
+        h('span', { className: 'sav-date', text: (event.sportName || 'Sport') + ' · ' + (event.leagueName || '') }),
+        h('span', { className: 'sav-time', text: live ? 'EN DIRECT' : formatMatchDate(Date.parse(event.startAt)) + ' ' + formatMatchTime(Date.parse(event.startAt)) })),
       h('div', { className: 'sav-team' },
         h('span', { className: 'sav-team-code', text: teamLabel(teams[0]) }),
         h('span', { className: 'sav-team-name', text: teams[0].name || 'Équipe à confirmer' })),
@@ -133,14 +134,6 @@ export default class SportAvoirWidget extends Widget {
 
   onKey(key) {
     if (this.list) return this.list.onKey(key);
-    if (key === 'left' || key === 'right') {
-      if (!this.selectedLeagues.length) { this.openList(); return true; }
-      let index = this.selectedLeagues.indexOf(this.activeLeague);
-      index = (index + (key === 'right' ? 1 : -1) + this.selectedLeagues.length) % this.selectedLeagues.length;
-      this.activeLeague = this.selectedLeagues[index];
-      this.render();
-      return true;
-    }
     if (key === 'enter') { this.openList(); return true; }
     return false;
   }
@@ -148,16 +141,12 @@ export default class SportAvoirWidget extends Widget {
   onPanelClose() { this.list = null; }
 
   openList() {
-    const tabs = [{ id: 'selection', label: 'Ligues' }].concat(LEAGUES.map((item) => ({ id: item.id, label: item.name })));
     this.list = new ListPanel(this, {
       className: 'w-sport-a-voir-panel',
-      title: '🏆 Sport à voir · sélection et calendriers',
-      tabs,
-      tabsHint: 'changer de ligue',
-      rows: (ctx) => ctx.tab && ctx.tab.id === 'selection'
-        ? this.selectionRows() : this.panelRows(ctx.tab ? ctx.tab.id : this.activeLeague),
-      empty: (ctx) => ctx.tab && ctx.tab.id === 'selection'
-        ? 'Aucune compétition disponible' : (this.errors[ctx.tab.id] || 'Aucun match à venir'),
+      title: '🏆 Filtrer les ligues',
+      tabs: [{ id: 'selection', label: 'Ligues' }],
+      rows: () => this.selectionRows(),
+      empty: 'Aucune ligue disponible',
       onActivate: (row) => {
         if (row.action === 'all') this.toggleAll();
         else if (row.action === 'league') this.toggleLeague(row.leagueId);
@@ -175,7 +164,7 @@ export default class SportAvoirWidget extends Widget {
       el: h('div', { className: 'sav-select-row' },
         h('div', { className: 'sav-select-name', text: all ? '☐ Tout désélectionner' : '☑ Tout sélectionner' }),
         h('div', { className: 'sav-select-state', text: all ? 'Toutes les ligues actives' : this.selectedLeagues.length + ' / ' + LEAGUES.length })),
-    }, { header: 'Choisir les compétitions' }];
+    }, { header: 'Sélectionner les ligues à afficher' }];
     LEAGUES.forEach((league) => {
       const selected = this.selectedLeagues.indexOf(league.id) !== -1;
       rows.push({
@@ -183,28 +172,6 @@ export default class SportAvoirWidget extends Widget {
         el: h('div', { className: 'sav-select-row' },
           h('div', { className: 'sav-select-name', text: (selected ? '☑ ' : '☐ ') + league.name }),
           h('div', { className: 'sav-select-state', text: league.sportName })),
-      });
-    });
-    return rows;
-  }
-
-  panelRows(leagueId) {
-    const events = this.schedules[leagueId] || [];
-    const rows = [];
-    let lastDay = '';
-    events.forEach((event) => {
-      const day = formatMatchDate(event.startAt);
-      if (day !== lastDay) { rows.push({ header: day }); lastDay = day; }
-      const live = event.state === 'inProgress';
-      rows.push({
-        key: event.id, className: live ? 'sav-panel-live' : '',
-        el: h('div', { className: 'sav-panel-row' },
-          h('div', { className: 'sav-panel-time', text: live ? 'LIVE' : formatMatchTime(event.startAt) }),
-          h('div', { className: 'sav-panel-teams' },
-            h('div', { text: event.teams[0].name || 'Équipe à confirmer' }),
-            h('div', { className: 'sav-panel-vs', text: 'contre' }),
-            h('div', { text: event.teams[1].name || 'Équipe à confirmer' })),
-          h('div', { className: 'sav-panel-bo', text: event.bestOf ? 'BO' + event.bestOf : '' })),
       });
     });
     return rows;
