@@ -10,7 +10,7 @@ export default {
   schema: [
     {
       key: 'apiKey',
-      label: 'Clé API LoL Esports (facultative)',
+      label: 'Clé API CitoAPI (facultative)',
       type: 'password',
       default: '',
       required: false,
@@ -32,7 +32,7 @@ export default {
       type: 'number',
       min: 5,
       max: 120,
-      default: 15,
+      default: 10,
       slider: true,
       unit: 'min',
     },
