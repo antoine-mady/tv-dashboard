@@ -52,7 +52,10 @@
   <dialog id="deploy-dialog">
     <h2>Envoi sur la TV</h2>
     <pre id="deploy-log"></pre>
-    <div class="dialog-actions"><button id="deploy-close" type="button">Fermer</button></div>
+    <div class="dialog-actions">
+      <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>⬇ Télécharger le .wgt</a>
+      <button id="deploy-close" type="button">Fermer</button>
+    </div>
   </dialog>
 
   <script type="module" src="/admin/admin.js"></script>

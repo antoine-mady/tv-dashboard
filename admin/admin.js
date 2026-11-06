@@ -408,8 +408,23 @@ async function sendToTv() {
   const dialog = $('#deploy-dialog');
   const log = $('#deploy-log');
   log.textContent = '';
+  $('#deploy-wgt').hidden = true;
   dialog.showModal();
   const env = await (await fetch('/api/env')).json();
+  if (!env.hasTizen) {
+    // Sans Tizen Studio, impossible de signer et d'installer d'ici : paquet à installer avec Apps2Samsung.
+    clearTimeout(saveTimer);
+    await save();
+    log.textContent = 'Tizen Studio n’est pas installé sur ce PC : l’envoi direct n’est pas possible.\n'
+      + 'Installez le dashboard avec Apps2Samsung (il gère lui-même le certificat Samsung) :\n\n'
+      + '1. Cliquez sur « ⬇ Télécharger le .wgt » ci-dessous\n'
+      + '2. Dans Apps2Samsung, choisissez l’installation d’un WGT personnalisé et sélectionnez TVDashboard.wgt\n'
+      + '3. Choisissez la TV détectée et lancez l’installation\n\n'
+      + 'La TV doit être en Developer mode avec l’IP de ce PC (voir README.md).\n'
+      + 'Pour l’envoi direct, installez Tizen Studio (ou renseignez TIZEN_HOME dans .env.local).';
+    $('#deploy-wgt').hidden = false;
+    return;
+  }
   if (!env.configured) {
     log.textContent = 'La TV n’est pas encore configurée.\n\n'
       + '1. Copiez .env.example en .env.local à la racine du projet\n'
