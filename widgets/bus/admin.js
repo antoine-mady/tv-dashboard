@@ -65,7 +65,8 @@ export function renderEditor(container, settings, onChange, api) {
 
   // ---- État actuel
   const tables = readTables(settings);
-  const table = combineTables(tables, settings.network);
+  const networkMismatch = tables.some((t) => t.network && t.network !== settings.network);
+  const table = networkMismatch ? null : combineTables(tables, settings.network);
   if (tables.length && table) {
     const names = routeNames(table);
     const wanted = (settings.routes || '').split(/[,;\s]+/).map((s) => s.toLowerCase()).filter(Boolean);
@@ -91,14 +92,19 @@ export function renderEditor(container, settings, onChange, api) {
     });
     status.append(chips);
     container.append(status);
-  } else if (readTable(settings)) {
-    container.append(el('p', { className: 'error', textContent: 'Le réseau a changé : cherchez à nouveau les arrêts.' }));
+  } else if (tables.length) {
+    const warning = el('div', { className: 'ext-out' },
+      el('p', { className: 'error', textContent: 'Le réseau a changé : cherchez à nouveau les arrêts.' }));
+    tables.forEach((t, index) => warning.append(el('div', { className: 'ext-row' },
+      el('span', { textContent: t.stopName }),
+      el('button', { type: 'button', textContent: 'Retirer', onclick: () => saveTables(tables.filter((_, i) => i !== index)) }))));
+    container.append(warning);
   }
 
   // ---- Recherche d'arrêt
   const input = el('input', { type: 'text', placeholder: 'Nom de l’arrêt, ex. église grands bois', value: settings.stopName || '' });
   const btnSearch = el('button', { type: 'button', className: 'primary', innerHTML: api.iconLabel('search', 'Chercher l’arrêt') });
-  const btnUpdate = el('button', { type: 'button', innerHTML: api.iconLabel('refresh', 'Mettre à jour les horaires'), disabled: !tables.length && !settings.stopIds });
+  const btnUpdate = el('button', { type: 'button', innerHTML: api.iconLabel('refresh', 'Mettre à jour les horaires'), disabled: networkMismatch || (!tables.length && !settings.stopIds) });
   container.append(el('div', { className: 'ext-actions' }, input, btnSearch, btnUpdate), out);
 
   const saveTables = (next) => {
@@ -115,7 +121,7 @@ export function renderEditor(container, settings, onChange, api) {
     message('Préparation des horaires de « ' + name + ' »…');
     try {
       const { timetable } = await api.call('timetable?' + qs({ network: settings.network, gtfsUrl: settings.gtfsUrl, ids: ids.join(','), name }));
-      const next = tables.slice();
+      const next = networkMismatch ? [] : tables.slice();
       const existing = next.findIndex((t) => (t.stopIds || []).some((id) => ids.indexOf(id) >= 0));
       const index = replaceIndex === undefined ? existing : replaceIndex;
       if (index >= 0) next[index] = timetable;
