@@ -11,6 +11,10 @@
     <div class="brand"><span class="logo">▦</span> TV Dashboard</div>
     <span id="status" class="status"></span>
     <div class="spacer"></div>
+    <div class="history-buttons">
+      <button id="btn-undo" type="button" class="ghost" title="Annuler (Ctrl+Z)" disabled>↶</button>
+      <button id="btn-redo" type="button" class="ghost" title="Rétablir (Ctrl+Y)" disabled>↷</button>
+    </div>
     <button id="btn-global" type="button">⚙ Réglages généraux</button>
     <a id="btn-wgt" class="button" href="/api/wgt" title="Paquet à installer avec Apps2Samsung">⬇ Télécharger le .wgt</a>
     <button id="btn-deploy" type="button" class="primary">📺 Envoyer sur la TV</button>
@@ -34,6 +38,15 @@
       <div class="section-head">
         <h2>Disposition</h2>
         <span class="hint">Glissez pour déplacer · coin ↘ pour redimensionner · clic pour régler</span>
+        <button id="btn-shortcuts" type="button" class="ghost hint-btn" aria-expanded="false" title="Raccourcis clavier">⌨ Raccourcis</button>
+      </div>
+      <div id="shortcuts" class="shortcuts" hidden>
+        <span><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> déplacer</span>
+        <span><kbd>Maj</kbd> + flèches redimensionner</span>
+        <span><kbd>Ctrl</kbd><kbd>D</kbd> dupliquer</span>
+        <span><kbd>Suppr</kbd> supprimer</span>
+        <span><kbd>Échap</kbd> réglages généraux</span>
+        <span><kbd>Ctrl</kbd><kbd>Z</kbd> / <kbd>Ctrl</kbd><kbd>Y</kbd> annuler / rétablir</span>
       </div>
       <div id="editor" class="editor"></div>
       <div id="errors" class="errors"></div>
@@ -41,9 +54,36 @@
       <div class="section-head">
         <h2>Aperçu</h2>
         <button id="btn-reload" type="button" class="ghost" title="Recharger l’aperçu">↻</button>
-        <span class="hint">Cliquez dans l’aperçu puis : flèches, Entrée, P = lecture/pause, N/B = piste, R = touche rouge, Page↑/↓ = page suivante/précédente</span>
+        <span class="hint" title="Au clavier, après un clic dans l’aperçu : flèches, Entrée, Retour arrière, P = lecture/pause, N/B = piste, R/G/Y/U = touches de couleur, Page↑/↓ = CH▲/CH▼, F2 = dictée">Télécommande ci-dessous, ou clavier dans l’aperçu (survolez pour les touches)</span>
       </div>
       <div id="preview-wrap" class="preview-wrap"><iframe id="preview" title="Aperçu du dashboard" src="about:blank"></iframe></div>
+      <div class="remote" id="remote" aria-label="Télécommande de l’aperçu">
+        <div class="remote-group dpad">
+          <button type="button" data-key="up" class="k-up" title="Haut">▲</button>
+          <button type="button" data-key="left" class="k-left" title="Gauche">◀</button>
+          <button type="button" data-key="enter" class="k-ok" title="OK (Entrée)">OK</button>
+          <button type="button" data-key="right" class="k-right" title="Droite">▶</button>
+          <button type="button" data-key="down" class="k-down" title="Bas">▼</button>
+        </div>
+        <div class="remote-group">
+          <button type="button" data-key="back" title="Retour">↩ Retour</button>
+        </div>
+        <div class="remote-group">
+          <button type="button" data-key="prev" title="Piste précédente">⏮</button>
+          <button type="button" data-key="playpause" title="Lecture / pause">⏯</button>
+          <button type="button" data-key="next" title="Piste suivante">⏭</button>
+        </div>
+        <div class="remote-group colors">
+          <button type="button" data-key="red" class="c-red" title="Touche rouge" aria-label="Rouge"></button>
+          <button type="button" data-key="green" class="c-green" title="Touche verte" aria-label="Verte"></button>
+          <button type="button" data-key="yellow" class="c-yellow" title="Touche jaune" aria-label="Jaune"></button>
+          <button type="button" data-key="blue" class="c-blue" title="Touche bleue" aria-label="Bleue"></button>
+        </div>
+        <div class="remote-group ch">
+          <button type="button" data-key="chup" title="Page suivante (CH▲)">CH ▲</button>
+          <button type="button" data-key="chdown" title="Page précédente (CH▼)">CH ▼</button>
+        </div>
+      </div>
     </section>
 
     <aside id="inspector" class="panel inspector"></aside>
@@ -58,6 +98,8 @@
       <button id="deploy-close" type="button">Fermer</button>
     </div>
   </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <script type="module" src="/admin/admin.js"></script>
 </body>

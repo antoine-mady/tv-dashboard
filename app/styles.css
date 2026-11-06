@@ -162,3 +162,97 @@ html, body {
 }
 #dictation.is-listening { border-color: #ff5a5a; }
 #dictation.is-error { border-color: #ffb347; }
+
+/* ---- Animations (app/anim.js) ------------------------------------------------------
+   Classe .anim-full / .anim-reduced / .anim-none sur #stage (réglage général « Animations »).
+   Uniquement transform + opacity (rapide sur le GPU d'une TV). Remplissage `backwards` : une fois
+   l'animation finie, la cellule reprend ses styles normaux (ex. l'agrandissement du focus).
+   Les durées doivent correspondre à animTiming() dans app/anim.js. */
+
+@keyframes cell-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cell-in-next {
+  from { opacity: 0; transform: translateY(70px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cell-in-prev {
+  from { opacity: 0; transform: translateY(-70px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cell-out-next {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-50px); }
+}
+@keyframes cell-out-prev {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(50px); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes focus-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.035); }
+  100% { transform: scale(1.012); }
+}
+@keyframes focus-breathe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.75; }
+}
+@keyframes panel-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes panel-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(0.98); }
+}
+
+/* Widget qui quitte la page : reste affiché le temps de disparaître, sous les nouveaux. */
+.cell.cell-leaving { pointer-events: none; z-index: 0; }
+
+/* Complètes */
+.anim-full .cell.cell-in { animation: cell-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.anim-full .cell.cell-in-next { animation: cell-in-next 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.anim-full .cell.cell-in-prev { animation: cell-in-prev 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.anim-full .cell.cell-out-next { animation: cell-out-next 0.32s ease-in forwards; }
+.anim-full .cell.cell-out-prev { animation: cell-out-prev 0.32s ease-in forwards; }
+.anim-full .cell.focus-pop { animation: focus-pop 0.35s ease-out; }
+.anim-full .cell-error { animation: fade-in 0.3s ease backwards; }
+.anim-full .panel-layer { animation: panel-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.anim-full .panel-layer.panel-out { animation: panel-out 0.22s ease-in forwards; pointer-events: none; }
+
+/* Anneau du widget sélectionné qui « respire » (lueur intérieure, opacité seulement). */
+.anim-full .cell.is-focused::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 36px var(--accent);
+  pointer-events: none;
+  z-index: 4;
+  animation: focus-breathe 2.6s ease-in-out infinite;
+}
+.anim-full.is-asleep .cell.is-focused::after { animation: none; opacity: 0; }
+
+/* Réduites : fondus simples, sans mouvement ni cascade. */
+.anim-reduced .cell.cell-in,
+.anim-reduced .cell.cell-in-next,
+.anim-reduced .cell.cell-in-prev { animation: fade-in 0.3s ease backwards; }
+.anim-reduced .cell.cell-out-next,
+.anim-reduced .cell.cell-out-prev { animation: fade-out 0.2s ease forwards; }
+.anim-reduced .cell-error { animation: fade-in 0.3s ease backwards; }
+.anim-reduced .panel-layer { animation: fade-in 0.2s ease backwards; }
+.anim-reduced .panel-layer.panel-out { animation: fade-out 0.15s ease forwards; pointer-events: none; }
+
+/* Aucune : tout est instantané. */
+.anim-none .cell,
+.anim-none #page-toast,
+.anim-none #dictation { transition: none; }

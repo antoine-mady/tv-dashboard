@@ -11,6 +11,12 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
   les autres sont détruits (`destroy()`) puis recréés. L'ancien format `config.widgets` = une seule page (`getPages`).
 - **Veille** (`app/sleep.js`, réglages généraux `idleMinutes`, `nightMode`…) : après N minutes sans touche ou la nuit,
   écran assombri, timers des widgets suspendus et économiseur d'écran de la TV réautorisé ; une touche réveille.
+- **Animations** (`app/anim.js` + fin de `app/styles.css`, réglage général `animations` : complètes / réduites / aucune →
+  classe `.anim-*` sur `#stage`) : widgets en cascade au démarrage, glissement au changement de page (les widgets conservés
+  ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs. Uniquement `transform` / `opacity`.
+- **Admin** : historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
+  raccourcis dans l'éditeur (flèches, Maj+flèches, Ctrl+D, Suppr), télécommande cliquable sous l'aperçu
+  (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes

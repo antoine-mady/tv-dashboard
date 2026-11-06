@@ -23,6 +23,10 @@ const CODES = {
 // Raccourcis clavier pour tester dans l'aperçu navigateur.
 const KEYBOARD = { p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue' };
 
+/** Touches qu'on peut envoyer depuis la télécommande cliquable de l'admin. */
+export const REMOTE_KEYS = ['left', 'right', 'up', 'down', 'enter', 'back', 'playpause', 'play', 'pause', 'stop',
+  'next', 'prev', 'red', 'green', 'yellow', 'blue', 'chup', 'chdown'];
+
 export function normalizeKey(keyCode, key, extraCodes) {
   if (extraCodes && extraCodes[keyCode]) return extraCodes[keyCode];
   if (CODES[keyCode]) return CODES[keyCode];
@@ -59,4 +63,12 @@ export function initRemote(onKey) {
     e.preventDefault(); // en particulier : Retour ne quitte pas l'app
     onKey(key);
   });
+  // Aperçu de l'admin : télécommande cliquable sous l'aperçu (message de la page parente, même origine).
+  if (typeof window !== 'undefined' && window.__PREVIEW__) {
+    window.addEventListener('message', (e) => {
+      const d = e.data;
+      if (e.origin !== window.location.origin || !d || d.type !== 'tvdash:key') return;
+      if (REMOTE_KEYS.indexOf(d.key) !== -1) onKey(d.key);
+    });
+  }
 }

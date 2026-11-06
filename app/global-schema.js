@@ -10,6 +10,11 @@ export default [
   { key: 'padding', label: 'Marge autour de l’écran (px)', type: 'number', min: 0, max: 160, default: 48,
     help: 'Augmenter si les bords sont coupés par la TV (overscan).' },
   { key: 'gap', label: 'Espace entre les widgets (px)', type: 'number', min: 0, max: 80, default: 24 },
+  { key: 'animations', label: 'Animations', type: 'select', default: 'full', options: [
+    { value: 'full', label: 'Complètes' },
+    { value: 'reduced', label: 'Réduites (fondus simples)' },
+    { value: 'none', label: 'Aucune' },
+  ], help: 'Apparition des widgets, changement de page, focus. Choisir « Réduites » ou « Aucune » si l’affichage saccade sur une TV ancienne.' },
   { key: 'antiBurnIn', label: 'Anti-marquage (décale l’affichage de quelques px chaque heure)', type: 'bool', default: true },
   { key: 'idleMinutes', label: 'Mise en veille après (minutes sans toucher la télécommande)', type: 'number',
     min: 0, max: 480, step: 5, default: 0,

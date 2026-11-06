@@ -3,6 +3,7 @@
 import { applyDefaults, validateConfig, rectsOverlap, fitsInGrid, findFreeSpot, normalizeConfig, DEFAULT_GRID } from '/app/config.js';
 import GLOBAL_SCHEMA from '/app/global-schema.js';
 import { renderForm } from '/admin/form.js';
+import { createHistory } from '/admin/history.js';
 
 const $ = (sel) => document.querySelector(sel);
 const state = {
@@ -30,18 +31,94 @@ function setStatus(text, cls) {
   s.className = 'status ' + (cls || '');
 }
 
-function scheduleSave() {
-  setStatus('Modifications…');
+/**
+ * À appeler après chaque modification de state.config : enregistre (avec un petit délai) et ajoute une
+ * étape à l'historique. `mergeKey` : les modifications rapprochées d'un même élément (frappe dans un champ,
+ * flèches) ne forment qu'une seule étape d'annulation.
+ */
+function scheduleSave(mergeKey) {
+  setStatus('Modifications…', 'pending');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(save, 400);
+  if (hist) hist.commit(JSON.stringify(state.config), mergeKey);
+  updateHistoryButtons();
   renderErrors();
+}
+
+// ---- Annuler / Rétablir --------------------------------------------------------------
+
+let hist = null;
+
+function updateHistoryButtons() {
+  $('#btn-undo').disabled = !hist || !hist.canUndo();
+  $('#btn-redo').disabled = !hist || !hist.canRedo();
+}
+
+function restore(snap, label) {
+  if (snap === null) return;
+  const pageBefore = state.page;
+  state.config = JSON.parse(snap);
+  if (!state.config.pages.some((p) => p.id === state.page)) state.page = state.config.pages[0].id;
+  if (state.selected && !findWidget(state.selected)) state.selected = null;
+  setStatus(label, 'pending');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 400);
+  updateHistoryButtons();
+  renderAll();
+  if (state.page !== pageBefore) reloadPreview();
+}
+
+function undo() { if (hist) restore(hist.undo(), 'Annulé'); }
+function redo() { if (hist) restore(hist.redo(), 'Rétabli'); }
+
+// ---- Notifications (remplacent alert / confirm) ------------------------------------
+
+/**
+ * Petit message en bas de l'écran. `opts.action` = { label, fn } (ex. « Annuler ») ;
+ * `opts.kind` = 'warn' | 'error' ; disparaît tout seul.
+ */
+function notify(message, opts) {
+  const o = opts || {};
+  const box = document.createElement('div');
+  box.className = 'toast' + (o.kind ? ' toast-' + o.kind : '');
+  box.setAttribute('role', o.kind ? 'alert' : 'status');
+  const text = document.createElement('span');
+  text.textContent = message;
+  box.append(text);
+  const close = () => {
+    if (box.classList.contains('leaving')) return;
+    box.classList.add('leaving');
+    setTimeout(() => box.remove(), 200);
+  };
+  if (o.action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = o.action.label;
+    b.onclick = () => { o.action.fn(); close(); };
+    box.append(b);
+  }
+  const x = document.createElement('button');
+  x.type = 'button';
+  x.className = 'ghost toast-close';
+  x.title = 'Fermer';
+  x.textContent = '✕';
+  x.onclick = close;
+  box.append(x);
+  $('#toasts').append(box);
+  setTimeout(close, o.duration || (o.action ? 7000 : 4000));
+}
+
+/** Notification « … · Annuler » juste après une modification : n'annule que si rien n'a changé depuis. */
+function notifyUndoable(message) {
+  const at = hist.index;
+  notify(message, { action: { label: 'Annuler', fn: () => { if (hist.index === at) undo(); } } });
 }
 
 async function save() {
   try {
     const r = await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.config) });
     if (!r.ok) throw new Error((await r.json()).error);
-    setStatus('Enregistré ✓', 'ok');
+    setStatus('Enregistré', 'ok');
     clearTimeout(previewTimer);
     previewTimer = setTimeout(reloadPreview, 300);
   } catch (e) {
@@ -95,6 +172,8 @@ function renderEditor() {
     box.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      // Le focus quitte le champ de l'inspecteur : les flèches du clavier déplacent alors le widget.
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       select(w.id);
       const resizing = e.target.classList.contains('resize');
       const rect = editor.getBoundingClientRect();
@@ -195,11 +274,11 @@ function removePage() {
   const pages = state.config.pages;
   if (pages.length < 2) return;
   const page = currentPage();
-  if (!confirm('Supprimer la page « ' + page.name + ' » et ses ' + page.widgets.length + ' widget(s) ?')) return;
   const i = pages.indexOf(page);
   pages.splice(i, 1);
   scheduleSave();
   showPage(pages[Math.max(0, i - 1)].id);
+  notifyUndoable('Page « ' + page.name + ' » supprimée (' + page.widgets.length + ' widget' + (page.widgets.length > 1 ? 's' : '') + ')');
 }
 
 function renderPages() {
@@ -249,25 +328,70 @@ function addWidget(type) {
   const widgets = pageWidgets();
   const spot = findFreeSpot(widgets, g, def.w, def.h) || findFreeSpot(widgets, g, min.w, min.h);
   if (!spot) {
-    alert('Plus de place sur cette page : réduisez ou supprimez un widget.');
+    notify('Plus de place sur cette page : réduisez ou supprimez un widget.', { kind: 'warn' });
     return;
   }
-  // Id unique sur toutes les pages : un même id sur deux pages = le même widget (données partagées sur la TV).
-  const all = allWidgets();
-  let n = 1;
-  while (all.some((o) => o.id === type + '-' + n)) n++;
-  const w = Object.assign({ id: type + '-' + n, type }, spot, { settings: applyDefaults(m.schema, {}) });
+  const w = Object.assign({ id: newWidgetId(type), type }, spot, { settings: applyDefaults(m.schema, {}) });
   widgets.push(w);
   state.selected = w.id;
   scheduleSave();
   renderAll();
 }
 
+/** Id unique sur toutes les pages : un même id sur deux pages = le même widget (données partagées sur la TV). */
+function newWidgetId(type) {
+  const all = allWidgets();
+  let n = 1;
+  while (all.some((o) => o.id === type + '-' + n)) n++;
+  return type + '-' + n;
+}
+
+function widgetLabel(w) {
+  const info = state.widgets[w.type];
+  return info ? info.manifest.icon + ' ' + info.manifest.name : w.type;
+}
+
 function removeWidget(id) {
   const page = currentPage();
-  page.widgets = page.widgets.filter((w) => w.id !== id);
+  const w = findWidget(id);
+  if (!w) return;
+  page.widgets = page.widgets.filter((o) => o.id !== id);
   state.selected = null;
   scheduleSave();
+  renderAll();
+  notifyUndoable('Widget « ' + widgetLabel(w) + ' » supprimé');
+}
+
+/** Copie du widget (mêmes réglages, nouvel id) à la première place libre de la même taille. */
+function duplicateWidget(id) {
+  const w = findWidget(id);
+  if (!w) return;
+  const spot = findFreeSpot(pageWidgets(), grid(), w.w, w.h);
+  if (!spot) {
+    notify('Pas de place libre de ' + w.w + '×' + w.h + ' pour dupliquer ce widget.', { kind: 'warn' });
+    return;
+  }
+  const copy = Object.assign({ id: newWidgetId(w.type), type: w.type }, spot, { settings: JSON.parse(JSON.stringify(w.settings || {})) });
+  pageWidgets().push(copy);
+  state.selected = copy.id;
+  scheduleSave();
+  renderAll();
+}
+
+/** Déplace (ou redimensionne avec `resize`) le widget sélectionné d'une case, si la place est libre. */
+function nudgeSelected(dc, dr, resize) {
+  const w = state.selected && findWidget(state.selected);
+  if (!w) return;
+  const info = state.widgets[w.type];
+  const min = (info && info.manifest.size && info.manifest.size.min) || { w: 1, h: 1 };
+  const cand = Object.assign({}, w, resize ? { w: w.w + dc, h: w.h + dr } : { col: w.col + dc, row: w.row + dr });
+  if (cand.w < min.w || cand.h < min.h || !isFree(cand, w.id)) {
+    const box = document.querySelector('#editor .box[data-id="' + CSS.escape(w.id) + '"]');
+    if (box) { box.classList.remove('bump'); void box.offsetWidth; box.classList.add('bump'); }
+    return;
+  }
+  Object.assign(w, { col: cand.col, row: cand.row, w: cand.w, h: cand.h });
+  scheduleSave('nudge:' + w.id + (resize ? ':size' : ':pos'));
   renderAll();
 }
 
@@ -336,7 +460,7 @@ function renderInspector() {
     state.config.global = applyDefaults(GLOBAL_SCHEMA, state.config.global);
     renderForm(panel.querySelector('.form'), GLOBAL_SCHEMA, state.config.global, (key, value) => {
       state.config.global[key] = value;
-      scheduleSave();
+      scheduleSave('global:' + key);
     });
     return;
   }
@@ -362,18 +486,27 @@ function renderInspector() {
     };
     renderForm(panel.querySelector('.form'), m.schema, w.settings, (key, value) => {
       w.settings[key] = value;
-      scheduleSave();
+      scheduleSave('field:' + w.id + ':' + key);
       renderExt();
     });
     renderExt();
   }
 
+  const actions = document.createElement('div');
+  actions.className = 'inspector-actions';
+  const dup = document.createElement('button');
+  dup.type = 'button';
+  dup.textContent = '⧉ Dupliquer';
+  dup.title = 'Ctrl+D';
+  dup.onclick = () => duplicateWidget(w.id);
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'danger';
-  del.textContent = '🗑 Supprimer ce widget';
-  del.onclick = () => { if (confirm('Supprimer ce widget ?')) removeWidget(w.id); };
-  panel.append(del);
+  del.textContent = '🗑 Supprimer';
+  del.title = 'Suppr';
+  del.onclick = () => removeWidget(w.id);
+  actions.append(dup, del);
+  panel.append(actions);
 }
 
 function renderErrors() {
@@ -458,6 +591,54 @@ async function sendToTv() {
   }
 }
 
+// ---- Raccourcis clavier ---------------------------------------------------------------
+
+function isTyping(el) {
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+}
+
+function onKeyDown(e) {
+  if ($('#deploy-dialog').open) return;
+  const mod = e.ctrlKey || e.metaKey;
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  // Dans un champ, Ctrl+Z reste l'annulation de la frappe du navigateur.
+  if (isTyping(document.activeElement)) return;
+  if (mod && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+  if (mod && key === 'y') { e.preventDefault(); redo(); return; }
+  if (!state.selected) return;
+  const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (dirs[e.key] && !mod && !e.altKey) {
+    e.preventDefault();
+    nudgeSelected(dirs[e.key][0], dirs[e.key][1], e.shiftKey);
+  } else if (mod && key === 'd') {
+    e.preventDefault();
+    duplicateWidget(state.selected);
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && !mod) {
+    e.preventDefault();
+    removeWidget(state.selected);
+  } else if (e.key === 'Escape') {
+    select(null);
+  }
+}
+
+// ---- Télécommande de l'aperçu ------------------------------------------------------------
+
+function sendRemoteKey(key) {
+  const win = $('#preview').contentWindow;
+  if (win) win.postMessage({ type: 'tvdash:key', key }, window.location.origin);
+}
+
+function initRemote() {
+  document.querySelectorAll('#remote [data-key]').forEach((b) => {
+    b.onclick = () => {
+      sendRemoteKey(b.dataset.key);
+      b.classList.remove('pressed');
+      void b.offsetWidth;
+      b.classList.add('pressed');
+    };
+  });
+}
+
 // ---- Démarrage -----------------------------------------------------------------------
 
 async function init() {
@@ -477,9 +658,21 @@ async function init() {
   $('#btn-deploy').onclick = sendToTv;
   $('#btn-reload').onclick = reloadPreview;
   $('#deploy-close').onclick = () => $('#deploy-dialog').close();
+  $('#btn-undo').onclick = undo;
+  $('#btn-redo').onclick = redo;
+  $('#btn-shortcuts').onclick = () => {
+    const panel = $('#shortcuts');
+    panel.hidden = !panel.hidden;
+    $('#btn-shortcuts').setAttribute('aria-expanded', String(!panel.hidden));
+  };
+  document.addEventListener('keydown', onKeyDown);
+  initRemote();
   new ResizeObserver(fitPreview).observe($('#preview-wrap'));
 
   renderAll();
+  // Après le premier rendu : l'inspecteur complète les réglages par défaut, qui ne comptent pas comme une modification.
+  hist = createHistory(JSON.stringify(state.config));
+  updateHistoryButtons();
   reloadPreview();
   setStatus('Prêt');
 }

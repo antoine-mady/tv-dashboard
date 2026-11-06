@@ -11,6 +11,7 @@ import { initRemote, isEditable } from './remote.js';
 import { initDictation, DICTATION_KEYS } from './dictation.js';
 import { findNeighbor, firstItem } from './focus.js';
 import { shouldSleep, sleepEnabled } from './sleep.js';
+import { animMode, animTiming, staggerDelays, enterClass, leaveClass } from './anim.js';
 import * as platform from './platform.js';
 import { h } from './dom.js';
 
@@ -36,7 +37,10 @@ function start() {
 
   platform.disableScreenSaver();
   const stage = createStage(root, grid, global);
-  const panels = createPanelHost(root);
+  const mode = animMode(global.animations);
+  const timing = animTiming(mode);
+  root.classList.add('anim-' + mode);
+  const panels = createPanelHost(root, { leaveMs: timing.panel });
   let instances = []; // widgets de la page affichée : { conf, inst, cell, focusable }
   let asleep = false; // mode veille (voir plus bas)
   let lastActivity = Date.now();
@@ -46,9 +50,30 @@ function start() {
     remember: global.rememberPage,
   });
 
-  function mountWidget(w) {
+  // ---- Animations d'entrée / sortie (app/anim.js, styles.css) -----------------
+  const ANIM_CLASSES = ['cell-in', 'cell-in-next', 'cell-in-prev', 'focus-pop'];
+  function clearAnim(cell) {
+    ANIM_CLASSES.forEach((c) => cell.classList.remove(c));
+    cell.style.animationDelay = '';
+  }
+  /** Lance l'animation `cls` sur la cellule (après `delay` ms), puis retire la classe. */
+  function animate(cell, cls, delay, duration) {
+    if (!duration) return;
+    clearAnim(cell);
+    void cell.offsetWidth; // relance l'animation si la classe vient d'être retirée
+    cell.classList.add(cls);
+    if (delay) cell.style.animationDelay = delay + 'ms';
+    setTimeout(() => {
+      if (!cell.classList.contains(cls)) return;
+      cell.classList.remove(cls);
+      cell.style.animationDelay = '';
+    }, (delay || 0) + duration + 50);
+  }
+
+  function mountWidget(w, anim) {
     const entry = registry[w.type];
     const parts = stage.addCell(w, entry && entry.manifest);
+    if (anim) animate(parts.cell, anim.cls, anim.delay, timing.enter);
     if (!entry) {
       parts.cell.appendChild(h('div', { className: 'cell-error' }, h('div', { className: 'cell-error-msg', text: 'Widget inconnu : ' + w.type })));
       return { conf: w, inst: null, cell: parts.cell, focusable: false };
@@ -68,25 +93,37 @@ function start() {
     return { conf: w, inst, cell: parts.cell, focusable: !!entry.manifest.focusable };
   }
 
-  function unmount(it) {
+  /** Arrête le widget. `dir` (changement de page) : la cellule disparaît en glissant avant d'être retirée. */
+  function unmount(it, dir) {
     if (it.inst) it.inst._destroy();
-    if (it.cell.parentNode) it.cell.parentNode.removeChild(it.cell);
+    const cell = it.cell;
+    const remove = () => { if (cell.parentNode) cell.parentNode.removeChild(cell); };
+    if (!dir || !timing.leave) return remove();
+    clearAnim(cell);
+    cell.classList.remove('is-focused');
+    cell.classList.add('cell-leaving', leaveClass(dir));
+    setTimeout(remove, timing.leave + 50);
   }
 
   /**
    * Affiche la page `index`. Les widgets identiques sur les deux pages (même id, place et réglages)
    * sont conservés tels quels (la musique continue) ; les autres sont arrêtés puis recréés.
    */
-  function showPage(index) {
+  function showPage(index, dir) {
     const page = pages[index];
     const kept = [];
     instances.forEach((it) => {
       if (page.widgets.some((w) => sameWidget(w, it.conf))) kept.push(it);
-      else unmount(it);
+      else unmount(it, dir);
     });
+    const isKept = (w) => kept.some((k) => sameWidget(w, k.conf));
+    // Les nouveaux widgets apparaissent en cascade (haut à gauche d'abord) ; en changeant de page,
+    // ils commencent pendant que les anciens disparaissent.
+    const delays = staggerDelays(page.widgets.filter((w) => !isKept(w)), timing.stagger);
+    const base = dir ? Math.round(timing.leave / 2) : 0;
     instances = page.widgets.map((w) => {
       for (let i = 0; i < kept.length; i++) if (sameWidget(w, kept[i].conf)) return kept[i];
-      return mountWidget(w);
+      return mountWidget(w, { cls: enterClass(dir || 0), delay: base + (delays[w.id] || 0) });
     });
     pageIndex = index;
     updateFocusables();
@@ -99,12 +136,18 @@ function start() {
 
   function byId(id) { return focusables.find((i) => i.conf.id === id); }
 
-  function setFocus(id) {
+  /** `pop` : petit rebond (déplacement du focus à la télécommande), sauf si la cellule est encore en train d'apparaître. */
+  function setFocus(id, pop) {
     const prev = byId(focusedId);
     if (prev) { prev.cell.classList.remove('is-focused'); try { prev.inst.onFocus(false); } catch (e) { /* ignore */ } }
     focusedId = id;
     const next = byId(id);
-    if (next) { next.cell.classList.add('is-focused'); try { next.inst.onFocus(true); } catch (e) { /* ignore */ } }
+    if (next) {
+      next.cell.classList.add('is-focused');
+      const entering = ['cell-in', 'cell-in-next', 'cell-in-prev'].some((c) => next.cell.classList.contains(c));
+      if (pop && mode === 'full' && !entering) animate(next.cell, 'focus-pop', 0, 350);
+      try { next.inst.onFocus(true); } catch (e) { /* ignore */ }
+    }
   }
 
   function updateFocusables() {
@@ -137,7 +180,7 @@ function start() {
 
   function goToPage(dir) {
     if (pages.length < 2) return;
-    showPage(stepPage(pages.length, pageIndex, dir));
+    showPage(stepPage(pages.length, pageIndex, dir), dir);
     appStore.set('page', pages[pageIndex].id);
     const info = document.getElementById('boot-info'); // diagnostic de démarrage : concerne l'ancienne page
     if (info && info.parentNode) info.parentNode.removeChild(info);
@@ -169,7 +212,7 @@ function start() {
     if (key === global.pageKey && pages.length > 1) { goToPage(1); return; }
     if (key === 'left' || key === 'right' || key === 'up' || key === 'down') {
       const next = findNeighbor(items, focusedId, key);
-      if (next) setFocus(next);
+      if (next) setFocus(next, true);
       return;
     }
     // Les touches média vont au premier widget qui sait les gérer (ex. musique), même sans focus.
@@ -200,6 +243,7 @@ function start() {
       document.body.appendChild(overlay);
     }
     overlay.style.opacity = on ? String(global.sleepDim / 100) : '0';
+    root.classList.toggle('is-asleep', on); // coupe les animations en boucle pendant la veille
     platform.setScreenSaver(on);
     instances.forEach((it) => { if (it.inst) (on ? it.inst._sleep() : it.inst._wake()); });
   }
