@@ -22,3 +22,10 @@ test('URL Open-Meteo : soleil et UV selon les réglages', () => {
   const none = buildUrl({ latitude: 1, longitude: 2, days: 3, showSun: false, showUv: false });
   assert.doesNotMatch(none, /sunrise|uv_index_max/);
 });
+
+test('URL Open-Meteo : heures à venir seulement si demandées', () => {
+  assert.doesNotMatch(buildUrl({ latitude: 1, longitude: 2, days: 3, hours: 0 }), /hourly=/);
+  const url = buildUrl({ latitude: 1, longitude: 2, days: 0, hours: 6 });
+  assert.match(url, /hourly=temperature_2m,weather_code,precipitation_probability,is_day/);
+  assert.match(url, /forecast_days=2/);
+});
