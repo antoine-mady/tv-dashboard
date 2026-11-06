@@ -15,6 +15,16 @@ export default class SportAvoirWidget extends Widget {
       this.selectedLeagues = LEAGUES.map((league) => league.id);
       this.store.set('selectionInitialized', true);
     }
+    const catalogVersion = Number(this.store.get('catalogVersion', 1));
+    if (catalogVersion < 2) {
+      // Active les nouvelles catégories une fois, tout en conservant les choix déjà enregistrés.
+      ['cs2', 'dota2', 'cod', 'europa-league', 'mls', 'nba', 'wnba', 'ncaa-basketball',
+        'nfl', 'college-football', 'mlb', 'nhl'].forEach((id) => {
+        if (this.selectedLeagues.indexOf(id) === -1) this.selectedLeagues.push(id);
+      });
+      this.store.set('selectedLeagues', this.selectedLeagues);
+      this.store.set('catalogVersion', 2);
+    }
     this.schedules = {};
     this.errors = {};
     this.refreshPromise = null;
