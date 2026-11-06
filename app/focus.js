@@ -10,7 +10,7 @@ function geometry(it) {
 
 /**
  * items : [{ id, col, row, w, h }] — widgets focusables.
- * Retourne l'id du voisin visuellement le plus proche dans la direction `dir`, ou null.
+ * Retourne l'id du voisin le plus proche dans la direction `dir`, ou null.
  * L'identifiant sert à retrouver le widget courant et à retourner le voisin ;
  * le choix lui-même dépend uniquement de la géométrie.
  */
@@ -19,9 +19,8 @@ export function findNeighbor(items, currentId, dir) {
   if (!cur) return items.length ? firstItem(items) : null;
   const a = geometry(cur);
   let best = null;
-  let bestScore = Infinity;
-  let bestSecondary = Infinity;
   let bestPrimary = Infinity;
+  let bestSecondary = Infinity;
 
   items.forEach((it) => {
     if (it.id === cur.id) return;
@@ -44,18 +43,16 @@ export function findNeighbor(items, currentId, dir) {
       return;
     }
 
-    // Ne considérer que les widgets dont le bord est dans la direction demandée.
-    // Le seul décalage des centres ne suffit pas : deux grands widgets peuvent se
-    // chevaucher sur cet axe tout en ayant leurs centres de part et d'autre.
+    // Le widget doit être entièrement dans le sens demandé. Un simple décalage
+    // des centres ne suffit pas : de grands widgets peuvent se chevaucher sur cet axe.
     if (primaryGap < 0) return;
 
-    const score = Math.hypot(primaryGap, secondaryDistance);
-    if (score < bestScore ||
-        (score === bestScore && secondaryDistance < bestSecondary) ||
-        (score === bestScore && secondaryDistance === bestSecondary && primaryGap < bestPrimary)) {
-      bestScore = score;
-      bestSecondary = secondaryDistance;
+    // La distance dans le sens de la flèche prime sur l'écart latéral. Ainsi,
+    // un widget juste au-dessus gagne face à un autre plus éloigné mais mieux aligné.
+    if (primaryGap < bestPrimary ||
+        (primaryGap === bestPrimary && secondaryDistance < bestSecondary)) {
       bestPrimary = primaryGap;
+      bestSecondary = secondaryDistance;
       best = it.id;
     }
   });
