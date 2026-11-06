@@ -881,15 +881,11 @@ function renderInspector() {
     const m = info.manifest;
     panel.innerHTML = '<button type="button" class="ghost back-link">' + iconLabel('chevronLeft', 'Réglages généraux') + '</button>'
       + '<div class="insp-head"><div class="insp-icon" aria-hidden="true"></div><div><h2></h2><p class="help desc"></p></div></div>'
-      + '<dl class="meta"><div><dt>Taille</dt><dd class="m-size"></dd></div><div><dt>Position</dt><dd class="m-pos"></dd></div><div><dt>Identifiant</dt><dd class="m-id"></dd></div></dl>'
       + '<div class="form"></div><div class="ext"></div>';
     panel.querySelector('.back-link').onclick = () => select(null);
     panel.querySelector('.insp-icon').textContent = m.icon;
     panel.querySelector('h2').textContent = m.name;
     panel.querySelector('.desc').textContent = m.description || '';
-    panel.querySelector('.m-size').textContent = w.w + ' × ' + w.h + ' cases';
-    panel.querySelector('.m-pos').textContent = 'colonne ' + w.col + ', ligne ' + w.row;
-    panel.querySelector('.m-id').textContent = w.id;
     w.settings = applyDefaults(m.schema, w.settings);
 
     const renderExt = () => {

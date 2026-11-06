@@ -562,10 +562,6 @@ kbd {
 }
 .insp-head h2 { font-size: 17px; margin: 1px 0 0; }
 .insp-head .help { margin: 2px 0 0; }
-.meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 14px 0 0; font-size: 12px; }
-.meta dt { color: var(--muted); }
-.meta dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.meta div { display: flex; flex-direction: column; }
 .error { color: var(--error); }
 .ok { color: var(--ok); }
 
