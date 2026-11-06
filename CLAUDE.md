@@ -25,6 +25,9 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
   (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
   **Historique** (`tools/backups.js`) : copie de la config dans `config/history/`
   (ignoré par git) à chaque envoi / .wgt, restauration, export / import JSON.
+- **Interface TV** : état « chargement » au premier rendu (classe `.is-loading`, fin de `mount()` + premières requêtes de
+  `this.every`), erreurs avec conseil (`app/errors.js` : réglage à faire dans l'admin / nouvel essai automatique),
+  points de page en bas, aide de la télécommande (touche Info, `app/help.js`).
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes
@@ -65,6 +68,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      size: { default: { w: 3, h: 2 }, min: { w: 2, h: 1 } },   // grille 12×6
      focusable: false,            // true si onKey() est utilisé (télécommande)
      frameless: false,            // true = pas de cadre ni de padding
+     remoteHelp: [['⏯', 'Lecture / pause']], // facultatif : lignes ajoutées à l'aide de la télécommande (touche Info)
      schema: [ { key: 'city', label: 'Ville', type: 'text', default: 'Saint-Denis', required: true } ],
    };
    ```
@@ -77,7 +81,8 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    - `mount(el, settings)` : construire le rendu **dans `el` uniquement** (peut être `async`). Lever une erreur
      affiche un message propre dans le widget (ex. `throw new Error('Renseignez la ville')`).
    - `onKey(key)` → `true` si gérée. Touches : `left right up down enter back playpause play pause stop next prev
-     red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
+     red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas ; `info` est gérée par l'app :
+     aide de la télécommande). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
      widget focalisé sont proposées aux autres widgets.
    - `onFocus(focused)`, `destroy()` (optionnels). `onSleep(asleep)` : veille / réveil du dashboard — les timers de
      `this.every` sont déjà suspendus puis rattrapés au réveil ; ne surcharger que pour un `setInterval` maison, une

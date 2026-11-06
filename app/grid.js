@@ -76,7 +76,7 @@ export function createStage(root, grid, global) {
       body.style.setProperty('--w', size.width + 'px');
       body.style.setProperty('--h', size.height + 'px');
       const cell = h('div', {
-        className: 'cell' + (frameless ? ' frameless' : ''),
+        className: 'cell' + (frameless ? ' frameless' : '') + (r.height < 230 ? ' is-short' : ''),
         'data-id': w.id,
         style: { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' },
       }, body);

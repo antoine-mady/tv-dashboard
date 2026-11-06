@@ -12,6 +12,7 @@ import { initDictation, DICTATION_KEYS } from './dictation.js';
 import { findNeighbor, firstItem } from './focus.js';
 import { shouldSleep, sleepEnabled } from './sleep.js';
 import { animMode, animTiming, staggerDelays, enterClass, leaveClass } from './anim.js';
+import { helpLines } from './help.js';
 import * as platform from './platform.js';
 import { h } from './dom.js';
 
@@ -83,12 +84,19 @@ function start() {
       id: w.id, cell: parts.cell, el: parts.body, size: parts.size, manifest: entry.manifest,
       settings: applyDefaults(entry.manifest.schema, w.settings), platform, panels,
     });
+    // État « chargement » (styles.css) jusqu'au premier rendu : fin de mount() et des premières requêtes de this.every().
+    parts.cell.classList.add('is-loading');
     try {
       const r = inst.mount(inst.el, inst.settings);
-      if (r && typeof r.then === 'function') r.catch((e) => inst.showError(e.message || String(e)));
+      if (r && typeof r.then === 'function') {
+        r.then(() => inst._mountDone(), (e) => { inst.showError(e.message || String(e)); inst._mountDone(); });
+      } else {
+        inst._mountDone();
+      }
     } catch (e) {
       console.error(e);
       inst.showError(e.message || String(e));
+      inst._mountDone();
     }
     return { conf: w, inst, cell: parts.cell, focusable: !!entry.manifest.focusable };
   }
@@ -128,6 +136,7 @@ function start() {
     });
     pageIndex = index;
     updateFocusables();
+    renderDots();
   }
 
   // ---- Focus & télécommande ---------------------------------------------------
@@ -161,6 +170,22 @@ function start() {
       focusedId = null;
       if (items.length) setFocus(firstItem(items));
     }
+  }
+
+  // ---- Repère de page : points discrets en bas de l'écran (plusieurs pages seulement) ----
+  let dots = null;
+  function renderDots() {
+    if (pages.length < 2) {
+      if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+      dots = null;
+      return;
+    }
+    if (!dots) {
+      dots = h('div', { id: 'page-dots' });
+      root.appendChild(dots);
+    }
+    dots.innerHTML = '';
+    pages.forEach((p, i) => dots.appendChild(h('span', { className: i === pageIndex ? 'is-current' : '' })));
   }
 
   showPage(pageIndex);
@@ -217,6 +242,9 @@ function start() {
       setAsleep(false);
       if (MEDIA_KEYS.indexOf(key) === -1) return;
     }
+    // Aide de la télécommande : Info l'ouvre / la ferme ; ouverte, n'importe quelle touche la ferme.
+    if (key === 'info') { toggleHelp(); return; }
+    if (helpEl) { toggleHelp(false); return; }
     if (DICTATION_KEYS.indexOf(key) !== -1 && isEditable(document.activeElement) && dictation.start(document.activeElement)) return;
     // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
     const owner = panels.owner();
@@ -241,6 +269,35 @@ function start() {
       }
     }
   });
+
+  // ---- Aide de la télécommande ----------------------------------------------------
+  let helpEl = null;
+  let helpTimer = null;
+  function toggleHelp(force) {
+    const show = force === undefined ? !helpEl : force;
+    clearTimeout(helpTimer);
+    if (!show) {
+      if (helpEl && helpEl.parentNode) helpEl.parentNode.removeChild(helpEl);
+      helpEl = null;
+      return;
+    }
+    if (helpEl) return;
+    const widgetHelp = [];
+    instances.forEach((it) => {
+      const entry = registry[it.conf.type];
+      const extra = entry && entry.manifest.remoteHelp;
+      if (Array.isArray(extra)) extra.forEach((x) => widgetHelp.push(x));
+    });
+    const lines = helpLines({ pageCount: pages.length, pageKey: global.pageKey, hasFocusables: focusables.length > 0, widgetHelp });
+    const list = h('div', { className: 'help-list' });
+    lines.forEach((l) => list.appendChild(h('div', { className: 'help-row' },
+      h('span', { className: 'help-keys', text: l.keys }), h('span', { className: 'help-text', text: l.text }))));
+    helpEl = h('div', { id: 'remote-help' },
+      h('div', { className: 'help-title', text: 'Télécommande' }), list,
+      h('div', { className: 'help-foot', text: 'Appuyez sur une touche pour fermer' }));
+    root.appendChild(helpEl);
+    helpTimer = setTimeout(() => toggleHelp(false), 15000);
+  }
 
   // ---- Anti-marquage : décale tout de quelques px chaque heure ------------------
   if (global.antiBurnIn) {

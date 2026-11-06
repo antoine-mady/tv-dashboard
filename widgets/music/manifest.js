@@ -5,6 +5,7 @@ export default {
   description: 'Se connecte à votre compte YouTube : vos playlists, vos « J’aime », la recherche. Boutons ⏮ ⏯ ⏭ ☰ à l’écran (◀ ▶ puis OK), utilisables sans touches média ; ☰ = bibliothèque, rouge = app YouTube.',
   size: { default: { w: 4, h: 3 }, min: { w: 3, h: 2 } },
   focusable: true,
+  remoteHelp: [['⏯ ⏮ ⏭', 'Musique : lecture / pause, piste'], ['Rouge', 'Musique : ouvrir l’app YouTube']],
   schema: [
     { key: 'clientId', label: 'ID client OAuth Google', type: 'text', default: '', required: true,
       placeholder: '1234-abcd.apps.googleusercontent.com',

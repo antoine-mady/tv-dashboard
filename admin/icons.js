@@ -27,6 +27,7 @@ const PATHS = {
   restore: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
   close: '<path d="M18 6 6 18M6 6l12 12"/>',
   check: '<path d="m5 12 5 5 9-10"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.5h.01"/>',
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',

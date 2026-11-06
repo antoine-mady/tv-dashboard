@@ -1,6 +1,7 @@
 // Classe de base de tous les widgets. Un widget = une sous-classe dans widgets/<type>/tv.js.
 import { proxify } from './platform.js';
 import { h } from './dom.js';
+import { errorHint } from './errors.js';
 
 /**
  * Petit stockage persistant sur la TV (localStorage), propre à chaque widget.
@@ -49,6 +50,9 @@ export default class Widget {
     this._panels = ctx.panels;   // hôte des panneaux plein écran (géré par l'app)
     this._panel = null;
     this.store = createStore('tvdash:' + ctx.id + ':');
+    this._pending = 0;           // requêtes de this.every() en cours (pour l'état « chargement »)
+    this._mounted = false;
+    this._loaded = false;
   }
 
   // ---- À surcharger ----------------------------------------------------------
@@ -104,7 +108,9 @@ export default class Widget {
       try {
         const r = fn();
         if (r && typeof r.then === 'function') {
-          r.then(() => this.clearError(), (e) => this.showError(e && e.message ? e.message : String(e)));
+          this._pending++;
+          const settle = () => { this._pending--; this._checkLoaded(); };
+          r.then(() => { this.clearError(); settle(); }, (e) => { this.showError(e && e.message ? e.message : String(e)); settle(); });
         } else {
           this.clearError();
         }
@@ -181,13 +187,38 @@ export default class Widget {
     return true;
   }
 
-  /** Affiche un message d'erreur par-dessus le widget (sans le détruire). */
+  /**
+   * Affiche un message d'erreur par-dessus le widget (sans le détruire), avec un conseil selon le type
+   * d'erreur (réglage à faire dans l'admin, nouvel essai automatique…).
+   */
   showError(message) {
     if (!this._errorEl) {
-      this._errorEl = h('div', { className: 'cell-error' }, h('div', { className: 'cell-error-icon', text: '⚠' }), h('div', { className: 'cell-error-msg' }));
+      this._errorEl = h('div', { className: 'cell-error' },
+        h('div', { className: 'cell-error-icon', text: '!' }),
+        h('div', { className: 'cell-error-msg' }),
+        h('div', { className: 'cell-error-hint' }));
       this.cell.appendChild(this._errorEl);
     }
-    this._errorEl.lastChild.textContent = message;
+    this._errorEl.children[1].textContent = message;
+    this._errorEl.children[2].textContent = errorHint(message);
+    this._setLoaded(); // l'erreur remplace l'état « chargement »
+  }
+
+  /** Appelé par l'app quand mount() est terminé (y compris sa promesse). */
+  _mountDone() {
+    this._mounted = true;
+    this._checkLoaded();
+  }
+
+  _checkLoaded() {
+    if (this._mounted && this._pending <= 0) this._setLoaded();
+  }
+
+  /** Fin de l'état « chargement » (premier rendu prêt, ou erreur). */
+  _setLoaded() {
+    if (this._loaded) return;
+    this._loaded = true;
+    if (this.cell) this.cell.classList.remove('is-loading');
   }
 
   clearError() {

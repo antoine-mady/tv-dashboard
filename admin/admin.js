@@ -1146,7 +1146,7 @@ function isTyping(el) {
 const KEY_TO_REMOTE = {
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Enter: 'enter', ' ': 'enter',
   Backspace: 'back', PageUp: 'chup', PageDown: 'chdown',
-  p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue',
+  p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue', i: 'info',
 };
 
 function onKeyDown(e) {
