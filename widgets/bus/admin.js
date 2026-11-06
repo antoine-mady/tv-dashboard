@@ -35,6 +35,8 @@ function combineTables(tables, defaultNetwork) {
   const routes = {};
   const services = {};
   const stopNames = {};
+  const stopRoutes = {};
+  const allStopRoutes = {};
   const deps = [];
   const stopIds = [];
   const seenRoutes = {};
@@ -61,6 +63,8 @@ function combineTables(tables, defaultNetwork) {
       const key = scopedId(network, id);
       if (stopIds.indexOf(key) < 0) stopIds.push(key);
       stopNames[key] = networkName(network) + ' · ' + t.stopName;
+      stopRoutes[key] = Object.keys(firstStopRoutes);
+      allStopRoutes[key] = Object.keys(ownRoutes).map((id) => ownRoutes[id]);
     });
     (t.deps || []).forEach((dep) => {
       const route = scopedId(network, dep[1]);
@@ -73,7 +77,7 @@ function combineTables(tables, defaultNetwork) {
   const ends = tables.map((t) => t.end).filter(Boolean).sort();
   return {
     v: 1, networks, stopName: tables.map((t) => networkName(t.network || defaultNetwork) + ' · ' + t.stopName).join(' / '),
-    stopNames, stopIds, stopCount: tables.length,
+    stopNames, stopRoutes, allStopRoutes, stopIds, stopCount: tables.length,
     generated: new Date().toISOString(), start: starts[0] || '', end: ends[0] || '',
     routes, services, deps,
   };
@@ -126,7 +130,7 @@ export function renderEditor(container, settings, onChange, api) {
   const networkSelect = el('select', {});
   networkSelect.setAttribute('aria-label', 'Réseau des arrêts à rechercher');
   Object.keys(NETWORKS).forEach((id) => networkSelect.append(new Option(NETWORKS[id].name, id, false, id === settings.network)));
-  const input = el('input', { type: 'text', placeholder: 'Nom de l’arrêt, ex. église grands bois', value: settings.stopName || '' });
+  const input = el('input', { type: 'text', placeholder: 'Nom de l’arrêt, ex. église grands bois', value: '' });
   const btnSearch = el('button', { type: 'button', className: 'primary', innerHTML: api.iconLabel('search', 'Chercher l’arrêt') });
   const btnUpdate = el('button', { type: 'button', innerHTML: api.iconLabel('refresh', 'Mettre à jour les horaires'), disabled: !tables.length && !settings.stopIds });
   container.append(el('div', { className: 'ext-actions' }, networkSelect, input, btnSearch, btnUpdate), out);
@@ -235,7 +239,7 @@ export function renderEditor(container, settings, onChange, api) {
   };
 
   btnSearch.onclick = () => search();
-  networkSelect.onchange = scheduleSearch;
+  networkSelect.onchange = () => { onChange({ network: networkSelect.value }); scheduleSearch(); };
   input.oninput = scheduleSearch;
   input.onkeydown = (e) => {
     if (e.key === 'ArrowDown') {
