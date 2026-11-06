@@ -1,0 +1,23 @@
+export default {
+  type: 'civis-collecte',
+  name: 'Collectes CIVIS',
+  icon: '♻️',
+  description: 'Prochaines collectes du bac jaune, bac vert, des encombrants et des déchets végétaux. Calendrier réglable par secteur.',
+  size: { default: { w: 6, h: 3 }, min: { w: 4, h: 2 } },
+  focusable: false,
+  schema: [
+    { key: 'sector', label: 'Secteur', type: 'text', default: 'A23 · Grand Bois' },
+    { key: 'cartonDates', label: 'Cartons / bac jaune — dates (une par ligne)', type: 'textarea',
+      default: '2026-11-26\n2026-12-10\n2026-12-24',
+      placeholder: 'AAAA-MM-JJ', help: 'Calendrier CIVIS 2026 (photo fournie). Ajoutez les dates au format AAAA-MM-JJ.' },
+    { key: 'menagerDates', label: 'Ménager / bac vert — dates (une par ligne)', type: 'textarea',
+      default: '2026-11-06\n2026-11-13\n2026-11-14\n2026-11-20\n2026-11-27\n2026-12-04\n2026-12-11\n2026-12-18\n2026-12-26',
+      placeholder: 'AAAA-MM-JJ', help: 'Calendrier CIVIS 2026 (photo fournie). Ajoutez les dates au format AAAA-MM-JJ.' },
+    { key: 'encombrantsDates', label: 'Encombrants — dates (une par ligne)', type: 'textarea',
+      default: '2026-11-19\n2026-12-03\n2026-12-17\n2026-12-31',
+      placeholder: 'AAAA-MM-JJ', help: 'Calendrier CIVIS 2026 (photo fournie). Ajoutez les dates au format AAAA-MM-JJ.' },
+    { key: 'vegetauxDates', label: 'Déchets végétaux — dates (une par ligne)', type: 'textarea',
+      default: '2026-11-13\n2026-12-10\n2026-12-24',
+      placeholder: 'AAAA-MM-JJ', help: 'Calendrier CIVIS 2026 (photo fournie). Ajoutez les dates au format AAAA-MM-JJ.' },
+  ],
+};
