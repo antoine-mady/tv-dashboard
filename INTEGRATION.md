@@ -2,58 +2,43 @@
 
 ## Contenu
 
-Le widget est autonome dans `widgets/sport-a-voir/` :
+Le widget est autonome dans `widgets/sport-a-voir/` et détecté automatiquement par `tools/widgets.js`.
 
-- `manifest.js` : déclaration et réglages du widget ;
-- `tv.js` / `tv.css` : interface TV et navigation à la télécommande ;
-- `sports/league-of-legends/` : adaptateur LoL Esports ;
-- `sports/league-of-legends/leagues/` : une fiche par compétition (LEC, Worlds).
+- `tv.js` / `tv.css` : interface TV, sélection des compétitions et navigation télécommande.
+- `sports/catalog.js` : catalogue commun des sports et ligues.
+- `sports/league-of-legends/` : adaptateur LoL Esports (LEC, Worlds).
+- `sports/espn/api.js` : adaptateur des calendriers football et rugby via l'API publique ESPN.
 
-La découverte est automatique : `tools/widgets.js` détecte les dossiers contenant un `manifest.js`. Aucun registre, fichier de configuration du dashboard, ni code de `app/` ou `admin/` à modifier.
+## Sports et compétitions inclus
 
-## Source des données
-
-Le widget utilise l'API persistante LoL Esports :
-
-`GET https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=fr-FR&leagueId=…`
-
-Authentification par en-tête `x-api-key`. Les identifiants de ligue utilisés sont :
-
-| Compétition | Identifiant |
+| Sport | Compétitions |
 |---|---|
-| LEC | `98767991302996019` |
-| Worlds | `98767975604431411` |
+| Esport — League of Legends | LEC, Worlds |
+| Football | Premier League, Ligue 1, Liga, Bundesliga, Serie A, Ligue des champions |
+| Rugby à XV | Tournoi des Six Nations, Coupe du monde |
 
-La clé se configure dans les réglages du widget, jamais dans le code source. Attention : la configuration du dashboard est embarquée dans l'application TV ; une personne ayant accès au paquet ou à la TV peut donc extraire cette clé. Utilisez une clé dédiée et révoquez-la si elle est exposée. Les clés Riot de développement peuvent avoir une durée de validité limitée selon leur type.
+Les calendriers football et rugby utilisent les endpoints ESPN Site API v2. Cette API est publique et ne demande pas de clé, mais elle est non documentée officiellement et peut évoluer. Les calendriers LoL utilisent l'API LoL Esports et nécessitent une clé Riot.
 
-Documentation / accès développeur : https://developer.riotgames.com/
+## Sélection des ligues
+
+Dans le widget, appuyer sur **OK**, puis ouvrir l'onglet **Ligues**. La première ligne permet de **tout sélectionner** ou **tout désélectionner**. Les compétitions peuvent aussi être activées/désactivées individuellement. La sélection est conservée localement sur la TV. Les flèches gauche/droite parcourent ensuite uniquement les compétitions sélectionnées.
+
+## Configuration
+
+Renseigner la clé Riot dans les réglages du widget pour afficher LEC et Worlds. Aucune clé n'est requise pour le football ou le rugby. La clé Riot est embarquée dans la configuration locale de l'application TV : utilisez une clé dédiée et révoquez-la si elle est exposée.
 
 ## Installation
 
 1. Copier le dossier `widgets/sport-a-voir/` à la racine du dépôt.
-2. Lancer `npm install` si les dépendances ne sont pas encore installées.
+2. Lancer `npm install` si nécessaire.
 3. Lancer `npm run dev`, ouvrir l'admin, puis ajouter **Sport à voir**.
-4. Renseigner la clé API dans les réglages du widget, choisir la compétition par défaut et enregistrer.
+4. Renseigner la clé Riot dans les réglages.
 5. Vérifier dans l'aperçu, puis exécuter `npm run build` ou utiliser **Envoyer sur la TV**.
 
-Le widget actualise les calendriers toutes les 15 minutes par défaut. L'intervalle et le nombre de matchs affichés sont configurables.
+## Ajouter une ligue
 
-## Télécommande
-
-- Gauche / droite : basculer entre LEC et Worlds.
-- OK : ouvrir le calendrier plein écran.
-- Dans le calendrier : gauche / droite pour changer de compétition ; haut / bas pour parcourir ; Retour pour fermer.
-
-## Ajouter un autre sport ou une autre ligue
-
-La structure sépare le moteur TV de l'adaptateur du sport. Pour ajouter une ligue LoL, créer un fichier dans `sports/league-of-legends/leagues/`, puis l'ajouter à `sports/league-of-legends/index.js`. Pour un autre jeu/sport, créer un dossier dédié sous `sports/` avec son propre adaptateur API et ses fiches de ligues, puis relier ce catalogue au widget.
+Ajouter une entrée au catalogue dans `sports/catalog.js`. Pour une nouvelle compétition ESPN, renseigner `provider: 'espn'`, le sport ESPN et le slug de ligue. Pour un autre fournisseur, ajouter un adaptateur puis router sa requête dans `tv.js`.
 
 ## Tests
 
-Les tests unitaires de l'adaptateur sont dans `sports/league-of-legends/api.test.js` et sont exécutés par :
-
-```bash
-npm test
-```
-
-Le build complet du dashboard reste à valider sur la machine qui possède le dépôt et les dépendances.
+Les tests LoL existants sont dans `sports/league-of-legends/api.test.js`. Le build complet, les tests et la compatibilité Tizen doivent être vérifiés sur la machine du projet.
