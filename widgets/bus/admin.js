@@ -188,7 +188,6 @@ export function renderEditor(container, settings, onChange, api) {
         const button = el('button', {
           type: 'button',
           role: 'option',
-          'aria-selected': 'false',
           textContent: stop.name + ' — lignes ' + stop.routes.join(', '),
           onclick: () => {
             clearTimeout(searchTimer);
@@ -196,6 +195,8 @@ export function renderEditor(container, settings, onChange, api) {
             choose(stop.name, stop.ids, networkSelect.value);
           },
         });
+        button.setAttribute('aria-selected', 'false');
+        button.setAttribute('aria-label', stop.name + ' — lignes ' + stop.routes.join(', ') + ' — choisir');
         button.onkeydown = (e) => {
           const options = Array.from(list.querySelectorAll('[role="option"]'));
           const i = options.indexOf(button);
@@ -212,8 +213,6 @@ export function renderEditor(container, settings, onChange, api) {
       });
       out.append(list);
       input.setAttribute('aria-expanded', 'true');
-      const first = list.querySelector('[role="option"]');
-      if (first) first.setAttribute('aria-label', stops[0].name + ' — lignes ' + stops[0].routes.join(', ') + ' — choisir');
     } catch (e) {
       if (current !== searchGeneration) return;
       input.setAttribute('aria-expanded', 'false');
@@ -223,6 +222,8 @@ export function renderEditor(container, settings, onChange, api) {
 
   const scheduleSearch = () => {
     clearTimeout(searchTimer);
+    out.innerHTML = '';
+    input.setAttribute('aria-expanded', 'false');
     const generation = ++searchGeneration;
     if (input.value.trim().length < 2) {
       out.innerHTML = '';
