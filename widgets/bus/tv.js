@@ -71,7 +71,9 @@ export default class BusWidget extends Widget {
     this.noteEl = h('div', { className: 'bus-note' });
     // Taille du texte selon le nombre de lignes affichées ET la largeur (un grand widget étroit ne doit pas tronquer).
     const size = this.size || { width: 600, height: 300 };
-    const base = Math.max(12, Math.min(size.height / (s.count + 1.8) * 0.65, size.width / 15));
+    const stopCount = Math.max(1, table.stopCount || 1);
+    const visibleCount = Math.max(Number(s.count) || 1, stopCount);
+    const base = Math.max(12, Math.min(size.height / (visibleCount + stopCount * 0.8 + 1.8) * 0.65, size.width / 15));
     el.appendChild(h('div', { className: 'bus-inner', style: { fontSize: Math.round(base) + 'px' } },
       h('div', { className: 'bus-head' },
         h('div', { className: 'bus-title', text: s.title || table.stopName }),
@@ -133,23 +135,80 @@ export default class BusWidget extends Widget {
 
     const next = this.departures(now, AHEAD);
     const live = next.live;
-    const deps = pickNext(next.deps, now, s.count, s.walkMinutes);
 
     this.liveEl.className = 'bus-live' + (live ? ' is-on' : '');
     this.liveEl.textContent = live ? (next.partial ? 'temps réel partiel' : 'temps réel') : '';
 
-    this.listEl.innerHTML = '';
-    if (!deps.length) {
-      this.listEl.appendChild(h('div', { className: 'bus-empty muted', text: 'Aucun départ dans les prochaines heures' }));
+    const groups = [];
+    (table.stopIds || []).forEach((id) => {
+      const name = table.stopNames && table.stopNames[id] || table.stopName;
+      let group = groups.filter((g) => g.name === name)[0];
+      if (!group) {
+        group = { name, ids: [], routeIds: [], allRouteIds: [], deps: [], shown: [] };
+        groups.push(group);
+      }
+      group.ids.push(id);
+      (table.stopRoutes && table.stopRoutes[id] || []).forEach((route) => {
+        if (group.routeIds.indexOf(route) < 0) group.routeIds.push(route);
+      });
+      (table.allStopRoutes && table.allStopRoutes[id] || []).forEach((route) => {
+        if (group.allRouteIds.indexOf(route) < 0) group.allRouteIds.push(route);
+      });
+    });
+    if (!groups.length) groups.push({ name: table.stopName, ids: [], routeIds: this.routeIds.slice(), allRouteIds: this.routeIds.slice(), deps: [], shown: [] });
+    next.deps.forEach((d) => {
+      const name = table.stopNames && table.stopNames[d.stopId] || table.stopName;
+      let group = groups.filter((g) => g.name === name)[0];
+      if (!group) {
+        group = { name, ids: [], routeIds: this.routeIds.slice(), allRouteIds: this.routeIds.slice(), deps: [], shown: [] };
+        groups.push(group);
+      }
+      group.deps.push(d);
+    });
+
+    const chosen = {};
+    let chosenCount = 0;
+    groups.forEach((group) => {
+      group.shown = pickNext(group.deps, now, 1, s.walkMinutes);
+      group.shown.forEach((d) => {
+        chosen[d.tripId + '|' + d.date + '|' + d.stopId] = true;
+        chosenCount++;
+      });
+    });
+    const timeOf = (d) => d.canceled ? d.scheduled : d.expected;
+    const extras = [];
+    groups.forEach((group) => group.deps.forEach((d) => {
+      if (!chosen[d.tripId + '|' + d.date + '|' + d.stopId]) extras.push({ group, dep: d });
+    }));
+    extras.sort((a, b) => timeOf(a.dep) - timeOf(b.dep));
+    const limit = Math.max(Number(s.count) || 1, chosenCount);
+    for (let i = 0; i < extras.length && chosenCount < limit; i++) {
+      extras[i].group.shown.push(extras[i].dep);
+      chosenCount++;
     }
-    deps.forEach((d) => {
-      const r = table.routes[d.route] || [d.route, '', ''];
-      const delay = d.live && !d.canceled ? formatDelay(d.delay) : null;
-      this.listEl.appendChild(h('div', { className: 'bus-row' + (d.canceled ? ' is-canceled' : '') + (d.live ? ' is-live' : '') },
-        h('div', { className: 'bus-line', text: r[0], style: { background: r[1] || '', color: r[1] ? (r[2] || '#FFFFFF') : '' } }),
-        h('div', { className: 'bus-dest', text: this.stopAndDestination(d) }),
-        delay ? h('div', { className: 'bus-delay' + (d.delay > 90 ? ' is-late' : ''), text: delay }) : null,
-        h('div', { className: 'bus-wait', text: d.canceled ? 'supprimé' : formatWait(d.expected, now) })));
+
+    this.listEl.innerHTML = '';
+    groups.forEach((group) => {
+      const section = h('div', { className: 'bus-stop-group' },
+        h('div', { className: 'bus-stop-name', text: group.name }));
+      if (!group.shown.length) {
+        const selectedAtStop = group.routeIds.some((id) => this.routeIds.indexOf(id) >= 0);
+        const presentAtStop = group.allRouteIds.some((id) => this.routeIds.indexOf(id) >= 0);
+        const empty = presentAtStop && !selectedAtStop
+          ? 'Lignes déjà affichées à un arrêt précédent'
+          : 'Aucun départ dans les prochaines heures';
+        section.appendChild(h('div', { className: 'bus-empty muted', text: empty }));
+      }
+      group.shown.forEach((d) => {
+        const r = table.routes[d.route] || [d.route, '', ''];
+        const delay = d.live && !d.canceled ? formatDelay(d.delay) : null;
+        section.appendChild(h('div', { className: 'bus-row' + (d.canceled ? ' is-canceled' : '') + (d.live ? ' is-live' : '') },
+          h('div', { className: 'bus-line', text: r[0], style: { background: r[1] || '', color: r[1] ? (r[2] || '#FFFFFF') : '' } }),
+          h('div', { className: 'bus-dest', text: d.dest }),
+          delay ? h('div', { className: 'bus-delay' + (d.delay > 90 ? ' is-late' : ''), text: delay }) : null,
+          h('div', { className: 'bus-wait', text: d.canceled ? 'supprimé' : formatWait(d.expected, now) })));
+      });
+      this.listEl.appendChild(section);
     });
 
     const notes = [];
