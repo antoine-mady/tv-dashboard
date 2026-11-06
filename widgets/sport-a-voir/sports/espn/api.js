@@ -29,6 +29,6 @@ export async function fetchEspnSchedule(fetchJson, league) {
   const url = BASE + league.espnSport + '/' + league.espnLeague + '/scoreboard?limit=100';
   const data = await fetchJson(url);
   return (data.events || []).map(normalizeEvent)
-    .filter((event) => event.startAt && event.state !== 'completed')
+    .filter((event) => event.startAt && (event.state === 'inProgress' || Date.parse(event.startAt) >= Date.now()))
     .sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt));
 }
