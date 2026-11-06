@@ -31,7 +31,7 @@ export function limitTextSizes(root) {
       records.forEach((record) => {
         if (record.type === 'attributes' && record.attributeName === 'class') {
           // Ignorer les changements de classe que nous venons de faire nous-mêmes.
-          const stripCap = (value) => (value || '').split(/\\s+/).filter((name) => name && name !== CAP_CLASS).sort().join(' ');
+          const stripCap = (value) => (value || '').split(/\s+/).filter((name) => name && name !== CAP_CLASS).sort().join(' ');
           if (stripCap(record.oldValue) !== stripCap(record.target.className)) capTree(record.target);
         }
         for (let i = 0; i < record.addedNodes.length; i++) {
