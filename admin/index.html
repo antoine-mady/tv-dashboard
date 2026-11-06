@@ -12,12 +12,12 @@
     <span id="status" class="status" role="status"></span>
     <div class="spacer"></div>
     <div class="history-buttons">
-      <button id="btn-undo" type="button" class="ghost icon" title="Annuler (Ctrl+Z)" aria-label="Annuler" disabled>↶</button>
-      <button id="btn-redo" type="button" class="ghost icon" title="Rétablir (Ctrl+Y)" aria-label="Rétablir" disabled>↷</button>
+      <button id="btn-undo" type="button" class="ghost icon" title="Annuler (Ctrl+Z)" aria-label="Annuler" data-icon="undo" disabled></button>
+      <button id="btn-redo" type="button" class="ghost icon" title="Rétablir (Ctrl+Y)" aria-label="Rétablir" data-icon="redo" disabled></button>
     </div>
-    <button id="btn-history" type="button" class="ghost" title="Versions envoyées sur la TV, export / import">Historique</button>
-    <button id="btn-global" type="button" class="ghost">Réglages généraux</button>
-    <button id="btn-deploy" type="button" class="primary">Envoyer sur la TV</button>
+    <button id="btn-history" type="button" class="ghost" data-icon="history" title="Versions envoyées sur la TV, export / import">Historique</button>
+    <button id="btn-global" type="button" class="ghost" data-icon="sliders">Réglages généraux</button>
+    <button id="btn-deploy" type="button" class="primary" data-icon="send">Envoyer sur la TV</button>
   </header>
 
   <main class="layout">
@@ -25,8 +25,8 @@
       <div class="screen-bar">
         <nav id="pages" class="channels" aria-label="Pages (chaînes CH▲ / CH▼ sur la TV)"></nav>
         <div class="picker-anchor">
-          <button id="btn-add" type="button" class="add-widget" aria-haspopup="dialog" aria-expanded="false" aria-controls="picker" title="Ajouter un widget (A)">
-            <span aria-hidden="true">+</span> Ajouter un widget
+          <button id="btn-add" type="button" class="add-widget" aria-haspopup="dialog" aria-expanded="false" aria-controls="picker" title="Ajouter un widget (A)" data-icon="plus">
+            Ajouter un widget
           </button>
           <div id="picker" class="picker" role="dialog" aria-label="Ajouter un widget" hidden>
             <p class="picker-help">Cliquez pour l’ajouter à la première place libre, ou glissez-le où vous voulez sur l’écran.</p>
@@ -34,8 +34,8 @@
           </div>
         </div>
         <div class="mode-switch" role="radiogroup" aria-label="Mode de l’écran">
-          <button type="button" role="radio" data-mode="layout" aria-checked="true">Disposer</button>
-          <button type="button" role="radio" data-mode="test" aria-checked="false">Tester</button>
+          <button type="button" role="radio" data-mode="layout" aria-checked="true" data-icon="layout">Disposer</button>
+          <button type="button" role="radio" data-mode="test" aria-checked="false" data-icon="remote">Tester</button>
         </div>
       </div>
 
@@ -70,12 +70,12 @@
             <button type="button" data-key="down" class="k-down" aria-label="Bas">▼</button>
           </div>
           <div class="remote-group">
-            <button type="button" data-key="back" title="Retour (Retour arrière)">↩ Retour</button>
+            <button type="button" data-key="back" title="Retour (Retour arrière)" data-icon="back">Retour</button>
           </div>
           <div class="remote-group">
-            <button type="button" data-key="prev" title="Piste précédente (B)" aria-label="Piste précédente">⏮</button>
-            <button type="button" data-key="playpause" title="Lecture / pause (P)" aria-label="Lecture / pause">⏯</button>
-            <button type="button" data-key="next" title="Piste suivante (N)" aria-label="Piste suivante">⏭</button>
+            <button type="button" data-key="prev" title="Piste précédente (B)" aria-label="Piste précédente" data-icon="prev"></button>
+            <button type="button" data-key="playpause" title="Lecture / pause (P)" aria-label="Lecture / pause" data-icon="playpause"></button>
+            <button type="button" data-key="next" title="Piste suivante (N)" aria-label="Piste suivante" data-icon="next"></button>
           </div>
           <div class="remote-group colors">
             <button type="button" data-key="red" class="c-red" title="Touche rouge (R)" aria-label="Rouge"></button>
@@ -87,7 +87,7 @@
             <button type="button" data-key="chup" title="Page suivante (Page↑)">CH ▲</button>
             <button type="button" data-key="chdown" title="Page précédente (Page↓)">CH ▼</button>
           </div>
-          <button id="btn-reload" type="button" class="ghost reload" title="Recharger l’aperçu">↻ Recharger</button>
+          <button id="btn-reload" type="button" class="ghost reload" title="Recharger l’aperçu" data-icon="refresh">Recharger</button>
         </div>
         <p class="deck-hint">Le clavier pilote aussi la TV : flèches, Entrée, Retour arrière, P, N, B, R G Y U, Page↑ / Page↓. <kbd>Échap</kbd> pour revenir à la disposition.</p>
       </div>
@@ -96,7 +96,7 @@
     </section>
 
     <aside id="drawer" class="drawer" aria-label="Réglages" inert>
-      <button id="drawer-close" type="button" class="ghost icon drawer-close" title="Fermer (Échap)" aria-label="Fermer les réglages">✕</button>
+      <button id="drawer-close" type="button" class="ghost icon drawer-close" title="Fermer (Échap)" aria-label="Fermer les réglages" data-icon="close"></button>
       <div id="inspector" class="inspector"></div>
     </aside>
   </main>
@@ -105,8 +105,8 @@
     <h2 class="dialog-title">Envoi sur la TV</h2>
     <pre id="deploy-log"></pre>
     <div class="dialog-actions">
-      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" hidden>Télécharger Tizen Studio</a>
-      <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>Télécharger le .wgt</a>
+      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" data-icon="download" hidden>Télécharger Tizen Studio</a>
+      <a id="deploy-wgt" class="button primary" href="/api/wgt" data-icon="download" hidden>Télécharger le .wgt</a>
       <button id="deploy-close" type="button">Fermer</button>
     </div>
   </dialog>
@@ -116,9 +116,9 @@
     <p class="help">Une copie est gardée à chaque envoi sur la TV ou téléchargement du .wgt (les 30 dernières, dans <code>config/history/</code>). Restaurer remplace la config actuelle ; Ctrl+Z annule.</p>
     <div id="backup-list" class="backup-list"></div>
     <div class="dialog-actions">
-      <button id="backup-now" type="button">Sauvegarder maintenant</button>
-      <button id="config-export" type="button" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">Exporter</button>
-      <button id="config-import" type="button">Importer…</button>
+      <button id="backup-now" type="button" data-icon="bookmark">Sauvegarder maintenant</button>
+      <button id="config-export" type="button" data-icon="download" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">Exporter</button>
+      <button id="config-import" type="button" data-icon="upload">Importer…</button>
       <input id="config-file" type="file" accept=".json,application/json" hidden>
       <span class="spacer"></span>
       <button id="history-close" type="button">Fermer</button>
@@ -126,11 +126,11 @@
   </dialog>
 
   <div id="page-menu" class="menu" role="menu" hidden>
-    <button type="button" role="menuitem" data-action="rename">Renommer</button>
-    <button type="button" role="menuitem" data-action="duplicate">Dupliquer</button>
-    <button type="button" role="menuitem" data-action="left">Déplacer vers la gauche</button>
-    <button type="button" role="menuitem" data-action="right">Déplacer vers la droite</button>
-    <button type="button" role="menuitem" data-action="delete" class="danger-text">Supprimer la page</button>
+    <button type="button" role="menuitem" data-action="rename" data-icon="pencil">Renommer</button>
+    <button type="button" role="menuitem" data-action="duplicate" data-icon="copy">Dupliquer</button>
+    <button type="button" role="menuitem" data-action="left" data-icon="left">Déplacer vers la gauche</button>
+    <button type="button" role="menuitem" data-action="right" data-icon="right">Déplacer vers la droite</button>
+    <button type="button" role="menuitem" data-action="delete" class="danger-text" data-icon="trash">Supprimer la page</button>
   </div>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>

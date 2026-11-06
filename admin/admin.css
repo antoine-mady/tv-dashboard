@@ -95,7 +95,25 @@ button.primary, a.button.primary {
 button.primary:hover:not(:disabled), a.button.primary:hover { filter: brightness(1.08); border-color: var(--action); }
 button.ghost { background: transparent; border-color: transparent; }
 button.ghost:hover:not(:disabled) { background: var(--action-soft); border-color: transparent; }
-button.icon { padding: 4px 8px; font-size: 17px; line-height: 1; }
+button.icon { padding: 0; width: 34px; height: 32px; }
+button.icon svg.i { width: 18px; height: 18px; }
+
+/* Icônes (admin/icons.js) : au trait, de la couleur du texte. */
+svg.i {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+button svg.i, a.button svg.i { margin-left: -2px; }
+button.icon svg.i { margin-left: 0; }
+.menu button svg.i { color: var(--muted); }
+.menu .danger-text svg.i { color: inherit; }
+.remote button svg.i { margin-left: 0; width: 17px; height: 17px; }
 button.danger { color: var(--error); }
 button.danger:hover:not(:disabled) { border-color: var(--error); background: var(--error-soft); }
 :focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
@@ -182,7 +200,6 @@ body.drawer-open .center { padding-right: calc(var(--drawer) + 24px); }
   border-radius: 999px;
   padding: 6px 16px 6px 12px;
 }
-.add-widget > span { font-size: 17px; line-height: 1; font-weight: 500; }
 .add-widget:hover:not(:disabled) { filter: brightness(1.08); border-color: var(--action); }
 .add-widget[aria-expanded="true"] { box-shadow: 0 0 0 4px var(--action-soft); }
 .picker {

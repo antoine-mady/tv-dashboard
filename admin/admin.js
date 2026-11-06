@@ -5,6 +5,7 @@ import GLOBAL_SCHEMA from '/app/global-schema.js';
 import { renderForm } from '/admin/form.js';
 import { createHistory } from '/admin/history.js';
 import { gridGeometry, STAGE_W, STAGE_H } from '/app/grid.js';
+import { icon, iconLabel, applyIcons } from '/admin/icons.js';
 
 const $ = (sel) => document.querySelector(sel);
 const state = {
@@ -105,7 +106,8 @@ function notify(message, opts) {
   x.type = 'button';
   x.className = 'ghost toast-close';
   x.title = 'Fermer';
-  x.textContent = '✕';
+  x.setAttribute('aria-label', 'Fermer');
+  x.innerHTML = icon('close');
   x.onclick = close;
   box.append(x);
   const stack = $('#toasts');
@@ -207,7 +209,7 @@ function renderEditor() {
   if (!pageWidgets().length) {
     const empty = document.createElement('div');
     empty.className = 'editor-empty';
-    empty.innerHTML = '<strong>Page vide</strong><span>Ajoutez un premier widget à cette page.</span><button type="button" class="add-widget"><span aria-hidden="true">+</span> Ajouter un widget</button>';
+    empty.innerHTML = '<strong>Page vide</strong><span>Ajoutez un premier widget à cette page.</span><button type="button" class="add-widget">' + iconLabel('plus', 'Ajouter un widget') + '</button>';
     empty.querySelector('button').onclick = (e) => { e.stopPropagation(); openPicker(); };
     editor.append(empty);
   }
@@ -494,7 +496,7 @@ async function renderBackups() {
       + ' · ' + b.widgets + ' widget' + (b.widgets > 1 ? 's' : '') + (b.pageNames.length ? ' · ' + b.pageNames.join(', ') : '');
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = 'Restaurer';
+    btn.innerHTML = iconLabel('restore', 'Restaurer');
     btn.onclick = () => restoreBackup(b, fmt);
     row.append(btn);
     box.append(row);
@@ -671,14 +673,15 @@ function renderPages() {
   const more = document.createElement('button');
   more.type = 'button';
   more.className = 'ghost icon channel-more';
-  more.textContent = '⋯';
+  more.innerHTML = icon('dots');
+  more.setAttribute('aria-label', 'Actions sur cette page');
   more.title = 'Actions sur cette page';
   more.setAttribute('aria-haspopup', 'menu');
   more.onclick = (e) => { e.stopPropagation(); openPageMenu(more); };
   const add = document.createElement('button');
   add.type = 'button';
   add.className = 'ghost channel-add';
-  add.textContent = '+ Page';
+  add.innerHTML = iconLabel('plus', 'Page');
   add.title = 'Nouvelle page (ex. pour les invités)';
   add.onclick = addPage;
   bar.append(more, add);
@@ -876,7 +879,7 @@ function renderInspector() {
     panel.innerHTML = '<h2>❓ ' + w.type + '</h2><p class="error">Type de widget inconnu (dossier widgets/' + w.type + ' absent).</p>';
   } else {
     const m = info.manifest;
-    panel.innerHTML = '<button type="button" class="ghost back-link">‹ Réglages généraux</button>'
+    panel.innerHTML = '<button type="button" class="ghost back-link">' + iconLabel('chevronLeft', 'Réglages généraux') + '</button>'
       + '<div class="insp-head"><div class="insp-icon" aria-hidden="true"></div><div><h2></h2><p class="help desc"></p></div></div>'
       + '<dl class="meta"><div><dt>Taille</dt><dd class="m-size"></dd></div><div><dt>Position</dt><dd class="m-pos"></dd></div><div><dt>Identifiant</dt><dd class="m-id"></dd></div></dl>'
       + '<div class="form"></div><div class="ext"></div>';
@@ -909,13 +912,13 @@ function renderInspector() {
   actions.className = 'inspector-actions';
   const dup = document.createElement('button');
   dup.type = 'button';
-  dup.textContent = 'Dupliquer';
+  dup.innerHTML = iconLabel('copy', 'Dupliquer');
   dup.title = 'Ctrl+D';
   dup.onclick = () => duplicateWidget(w.id);
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'danger';
-  del.textContent = 'Supprimer';
+  del.innerHTML = iconLabel('trash', 'Supprimer');
   del.title = 'Suppr';
   del.onclick = () => removeWidget(w.id);
   actions.append(dup, del);
@@ -1145,6 +1148,7 @@ async function init() {
   let mode = 'layout';
   try { mode = localStorage.getItem('tvdash-admin-mode') || 'layout'; } catch (e) { /* stockage indisponible */ }
   setMode(mode);
+  applyIcons();
   initPageMenu();
   initPicker();
   document.addEventListener('keydown', onKeyDown);
