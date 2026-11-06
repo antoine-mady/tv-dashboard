@@ -135,9 +135,11 @@ export function renderEditor(container, settings, onChange, api) {
   const btnUpdate = el('button', { type: 'button', innerHTML: api.iconLabel('refresh', 'Mettre à jour les horaires'), disabled: !tables.length && !settings.stopIds });
   container.append(el('div', { className: 'ext-actions' }, networkSelect, input, btnSearch, btnUpdate), out);
 
-  const saveTables = (next) => {
-    const merged = combineTables(next, settings.network);
+  const saveTables = (next, selectedNetwork) => {
+    const defaultNetwork = selectedNetwork || settings.network || networkSelect.value;
+    const merged = combineTables(next, defaultNetwork);
     onChange({
+      network: defaultNetwork,
       stops: JSON.stringify(next),
       stopName: merged ? merged.stopName : '',
       stopIds: merged ? merged.stopIds.join(',') : '',
@@ -154,7 +156,7 @@ export function renderEditor(container, settings, onChange, api) {
       const index = replaceIndex === undefined ? existing : replaceIndex;
       if (index >= 0) next[index] = timetable;
       else next.push(timetable);
-      saveTables(next);
+      saveTables(next, network);
     } catch (e) {
       message('Erreur : ' + e.message, 'error');
     }
@@ -239,7 +241,7 @@ export function renderEditor(container, settings, onChange, api) {
   };
 
   btnSearch.onclick = () => search();
-  networkSelect.onchange = () => { onChange({ network: networkSelect.value }); scheduleSearch(); };
+  networkSelect.onchange = scheduleSearch;
   input.oninput = scheduleSearch;
   input.onkeydown = (e) => {
     if (e.key === 'ArrowDown') {
