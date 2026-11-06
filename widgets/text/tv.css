@@ -1,0 +1,67 @@
+.w-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.w-text .text-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 100%;
+  padding: 12px;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.w-text .text-content.is-empty {
+  color: var(--muted);
+  font-size: 22px;
+  text-align: center;
+  font-weight: 400;
+}
+.w-text-panel {
+  box-sizing: border-box;
+  padding: 8vh 12vw;
+  background: rgba(9, 15, 28, 0.97);
+  color: #fff;
+  font-family: inherit;
+}
+.w-text-panel .text-editor {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.w-text-panel .text-editor-title {
+  margin: 0 0 2vh;
+  font-size: 32px;
+}
+.w-text-panel .text-editor-help {
+  margin: 0 0 3vh;
+  color: #c5d0e0;
+  font-size: 24px;
+}
+.w-text-panel .text-editor-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 30vh;
+  padding: 2vh;
+  border: 3px solid #8aa4cb;
+  border-radius: 12px;
+  background: #fff;
+  color: #172033;
+  font: 28px/1.4 sans-serif;
+  resize: none;
+}
+.w-text-panel .text-editor-input:focus {
+  outline: 4px solid #5eb6ff;
+}
+.w-text-panel .text-editor-done {
+  margin-top: 3vh;
+  padding: 1.5vh 3vw;
+  border: 2px solid #8aa4cb;
+  border-radius: 8px;
+  background: #26344d;
+  color: #fff;
+  font: 24px sans-serif;
+}
