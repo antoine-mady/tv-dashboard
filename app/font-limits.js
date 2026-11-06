@@ -29,12 +29,23 @@ export function limitTextSizes(root) {
   if (typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver((records) => {
       records.forEach((record) => {
+        if (record.type === 'attributes' && record.attributeName === 'class') {
+          // Ignorer les changements de classe que nous venons de faire nous-mêmes.
+          const stripCap = (value) => (value || '').split(/\\s+/).filter((name) => name && name !== CAP_CLASS).sort().join(' ');
+          if (stripCap(record.oldValue) !== stripCap(record.target.className)) capTree(record.target);
+        }
         for (let i = 0; i < record.addedNodes.length; i++) {
           const node = record.addedNodes[i];
           if (node.nodeType === 1) capTree(node);
         }
       });
     });
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+      attributeOldValue: true,
+    });
   }
 }
