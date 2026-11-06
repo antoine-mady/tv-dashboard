@@ -2,10 +2,10 @@ import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 
 const STREAMS = [
-  { key: 'cartonDates', label: 'Carton · bac jaune', icon: '♻️', className: 'carton' },
-  { key: 'menagerDates', label: 'Ménager · bac vert', icon: '🗑️', className: 'menager' },
-  { key: 'encombrantsDates', label: 'Encombrants', icon: '🛋️', className: 'encombrants' },
-  { key: 'vegetauxDates', label: 'Déchets végétaux', icon: '🌿', className: 'vegetaux' },
+  { key: 'cartonDates', label: 'Cartons · bac jaune', color: '#ffe27a' },
+  { key: 'menagerDates', label: 'Ménager · bac vert', color: '#7ee0a1' },
+  { key: 'encombrantsDates', label: 'Encombrants', color: '#b8c2cc' },
+  { key: 'vegetauxDates', label: 'Déchets végétaux', color: '#c6ad79' },
 ];
 
 function twoDigits(value) {
@@ -38,35 +38,46 @@ function formatDate(value) {
 
 export default class CivisCollecteWidget extends Widget {
   mount(el, settings) {
-    this.sectorEl = h('div', { className: 'civis-sector' });
-    this.cardsEl = h('div', { className: 'civis-cards' });
-    this.noteEl = h('div', { className: 'civis-note', text: 'Sortez les bacs la veille de la collecte.' });
-    el.appendChild(h('div', { className: 'civis-inner' }, this.sectorEl, this.cardsEl, this.noteEl));
+    this.titleEl = h('div', { className: 'civis-title' });
+    this.listEl = h('div', { className: 'civis-list' });
+    this.noteEl = h('div', { className: 'civis-note', text: 'Sortez les déchets la veille de la collecte.' });
+    el.appendChild(h('div', { className: 'civis-inner' }, this.titleEl, this.listEl, this.noteEl));
     this.settings = settings;
     this.render();
-    this.every(15 * 60 * 1000, () => this.render());
+    this.every(60 * 1000, () => this.render());
   }
 
   render() {
     const today = dateKey(new Date());
-    this.sectorEl.textContent = 'CIVIS  ·  ' + (this.settings.sector || 'Mon secteur');
-    this.cardsEl.innerHTML = '';
+    this.titleEl.textContent = 'CIVIS  ·  ' + (this.settings.sector || 'Mon secteur');
+    this.listEl.innerHTML = '';
 
-    STREAMS.forEach((stream) => {
-      const value = nextDate(this.settings[stream.key], today);
-      const card = h('div', { className: 'civis-card civis-' + stream.className },
-        h('div', { className: 'civis-icon', text: stream.icon }),
-        h('div', { className: 'civis-label', text: stream.label }));
+    const events = STREAMS.map((stream, index) => ({
+      stream,
+      index,
+      date: nextDate(this.settings[stream.key], today),
+    })).sort((a, b) => {
+      if (!a.date) return b.date ? 1 : a.index - b.index;
+      if (!b.date) return -1;
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : a.index - b.index;
+    });
 
-      if (value) {
-        const remaining = daysUntil(value, today);
-        const relative = remaining === 0 ? 'Aujourd’hui' : remaining === 1 ? 'Demain' : 'Dans ' + remaining + ' jours';
-        card.appendChild(h('div', { className: 'civis-date', text: formatDate(value) }));
-        card.appendChild(h('div', { className: 'civis-relative', text: relative }));
-      } else {
-        card.appendChild(h('div', { className: 'civis-date civis-missing', text: 'À renseigner' }));
-      }
-      this.cardsEl.appendChild(card);
+    events.forEach((event) => {
+      const value = event.date;
+      const row = h('div', { className: 'civis-event' },
+        h('div', { className: 'civis-dot', style: { background: event.stream.color } }),
+        h('div', { className: 'civis-date', text: value ? formatDate(value) : '—' }),
+        h('div', { className: 'civis-text' },
+          h('div', { className: 'civis-summary', text: event.stream.label }),
+          h('div', { className: 'civis-relative muted',
+            text: value ? relativeDate(daysUntil(value, today)) : 'À renseigner' })));
+      this.listEl.appendChild(row);
     });
   }
+}
+
+function relativeDate(remaining) {
+  if (remaining === 0) return 'Aujourd’hui';
+  if (remaining === 1) return 'Demain';
+  return 'Dans ' + remaining + ' jours';
 }
