@@ -12,7 +12,7 @@ export default {
       { value: 'citalis', label: 'Citalis (Saint-Denis…) · horaires prévus' },
       { value: 'karouest', label: 'Kar’Ouest (Saint-Paul, Trois-Bassins…) · horaires prévus' },
     ], help: 'Choisissez le réseau pour chaque recherche d’arrêt dans l’éditeur du widget. Plusieurs réseaux peuvent être mélangés.' },
-    { key: 'stopName', label: 'Arrêt', type: 'text', default: '', required: true,
+    { key: 'stopName', label: 'Arrêt(s)', type: 'text', default: '', required: true,
       help: 'Cherchez l’arrêt ci-dessous, puis « Choisir » : les horaires sont téléchargés et envoyés avec la config.' },
     { key: 'title', label: 'Titre affiché', type: 'text', default: '', placeholder: 'Nom de l’arrêt par défaut' },
     { key: 'routes', label: 'Lignes à afficher', type: 'text', default: '', placeholder: 'ex. 11, Lit2',
