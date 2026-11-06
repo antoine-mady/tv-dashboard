@@ -29,6 +29,7 @@ export function normalizeEvent(event, league) {
     id: String(event.match.id || event.id || startAt),
     leagueId: league.id,
     leagueName: league.name,
+    sportName: league.sportName || 'Esport · League of Legends',
     region: league.region,
     startAt,
     state: event.state || 'unstarted',
@@ -71,7 +72,6 @@ export async function fetchLeagueSchedule(fetchJson, league, apiKey, now) {
   const events = [];
   const seen = {};
 
-  // Le jeton newer permet de parcourir les pages futures. Limite stricte pour éviter une boucle réseau.
   do {
     const payload = await fetchJson(buildScheduleUrl(league, pageToken), {
       headers: { 'x-api-key': String(apiKey).trim() },
