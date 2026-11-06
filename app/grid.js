@@ -19,11 +19,30 @@ export function viewportSize(win) {
   };
 }
 
+/**
+ * Géométrie de la grille sur la scène 1920×1080 (pure, partagée avec l'éditeur de l'admin) :
+ * { colW, rowH, pad, gap, rect(w) } où rect(w) = { left, top, width, height } en px de la scène.
+ */
+export function gridGeometry(grid, padding, gap) {
+  const pad = Number(padding) || 0;
+  const g = Number(gap) || 0;
+  const colW = (STAGE_W - 2 * pad - g * (grid.cols - 1)) / grid.cols;
+  const rowH = (STAGE_H - 2 * pad - g * (grid.rows - 1)) / grid.rows;
+  return {
+    colW, rowH, pad, gap: g,
+    rect(w) {
+      return {
+        left: pad + (w.col - 1) * (colW + g),
+        top: pad + (w.row - 1) * (rowH + g),
+        width: w.w * colW + (w.w - 1) * g,
+        height: w.h * rowH + (w.h - 1) * g,
+      };
+    },
+  };
+}
+
 export function createStage(root, grid, global) {
-  const pad = global.padding;
-  const gap = global.gap;
-  const colW = (STAGE_W - 2 * pad - gap * (grid.cols - 1)) / grid.cols;
-  const rowH = (STAGE_H - 2 * pad - gap * (grid.rows - 1)) / grid.rows;
+  const geo = gridGeometry(grid, global.padding, global.gap);
   let shiftX = 0;
   let shiftY = 0;
 
@@ -44,14 +63,7 @@ export function createStage(root, grid, global) {
   // ne suit : on recalcule un peu plus tard pour ne pas rester à l'échelle 0 (écran vide).
   [300, 1500, 5000].forEach((ms) => setTimeout(fit, ms));
 
-  function rect(w) {
-    return {
-      left: pad + (w.col - 1) * (colW + gap),
-      top: pad + (w.row - 1) * (rowH + gap),
-      width: w.w * colW + (w.w - 1) * gap,
-      height: w.h * rowH + (w.h - 1) * gap,
-    };
-  }
+  const rect = geo.rect;
 
   return {
     /** Crée le cadre d'un widget. Retourne { cell, body, size }. */

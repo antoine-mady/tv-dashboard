@@ -4,6 +4,7 @@ import { applyDefaults, validateConfig, rectsOverlap, fitsInGrid, findFreeSpot, 
 import GLOBAL_SCHEMA from '/app/global-schema.js';
 import { renderForm } from '/admin/form.js';
 import { createHistory } from '/admin/history.js';
+import { gridGeometry, STAGE_W, STAGE_H } from '/app/grid.js';
 
 const $ = (sel) => document.querySelector(sel);
 const state = {
@@ -11,6 +12,8 @@ const state = {
   widgets: {},       // type → { manifest, admin }
   selected: null,    // id du widget sélectionné, null = réglages généraux
   page: null,        // id de la page en cours d'édition
+  mode: 'layout',    // 'layout' = disposer les widgets sur l'écran, 'test' = piloter l'aperçu
+  renaming: null,    // id de la page dont le nom est en cours de modification
 };
 
 function grid() { return Object.assign({}, DEFAULT_GRID, state.config.grid); }
@@ -138,54 +141,105 @@ function reloadPreview() {
 }
 
 function fitPreview() {
-  const wrap = $('#preview-wrap');
-  $('#preview').style.transform = 'scale(' + wrap.clientWidth / 1920 + ')';
+  $('#preview').style.transform = 'scale(' + $('#screen').clientWidth / STAGE_W + ')';
 }
 
-// ---- Éditeur de disposition ---------------------------------------------------------
+// ---- Éditeur de disposition (posé sur l'aperçu, aux positions exactes de la TV) -------------
 
-function placeBox(box, w) {
-  const g = grid();
-  box.style.left = ((w.col - 1) / g.cols * 100) + '%';
-  box.style.top = ((w.row - 1) / g.rows * 100) + '%';
-  box.style.width = (w.w / g.cols * 100) + '%';
-  box.style.height = (w.h / g.rows * 100) + '%';
+function globalSettings() { return applyDefaults(GLOBAL_SCHEMA, state.config.global); }
+
+function geometry() {
+  const gl = globalSettings();
+  return gridGeometry(grid(), gl.padding, gl.gap);
+}
+
+function placeBox(box, w, geo) {
+  const r = (geo || geometry()).rect(w);
+  box.style.left = (r.left / STAGE_W * 100) + '%';
+  box.style.top = (r.top / STAGE_H * 100) + '%';
+  box.style.width = (r.width / STAGE_W * 100) + '%';
+  box.style.height = (r.height / STAGE_H * 100) + '%';
+}
+
+/** Position du pointeur en cases (fractionnaires, 0 = bord gauche / haut de la grille). */
+function pointerCells(clientX, clientY) {
+  const geo = geometry();
+  const rect = $('#editor').getBoundingClientRect();
+  const sx = (clientX - rect.left) / rect.width * STAGE_W;
+  const sy = (clientY - rect.top) / rect.height * STAGE_H;
+  return { x: (sx - geo.pad + geo.gap / 2) / (geo.colW + geo.gap), y: (sy - geo.pad + geo.gap / 2) / (geo.rowH + geo.gap) };
 }
 
 function isFree(candidate, ignoreId) {
   return fitsInGrid(candidate, grid()) && !pageWidgets().some((o) => o.id !== ignoreId && rectsOverlap(candidate, o));
 }
 
+/** Nombre de réglages à compléter par widget de la page affichée. */
+function errorsByWidget() {
+  const out = {};
+  validateConfig(state.config, manifestsMap()).forEach((e) => {
+    if (e.widgetId && e.pageId === currentPage().id) out[e.widgetId] = (out[e.widgetId] || 0) + 1;
+  });
+  return out;
+}
+
 function renderEditor() {
   const editor = $('#editor');
   const g = grid();
+  const geo = geometry();
+  const problems = errorsByWidget();
   editor.innerHTML = '';
-  editor.style.setProperty('--cols', g.cols);
-  editor.style.setProperty('--rows', g.rows);
+
+  // Emplacements de la grille : visibles pendant un déplacement.
+  const slots = document.createElement('div');
+  slots.className = 'slots';
+  for (let row = 1; row <= g.rows; row++) {
+    for (let col = 1; col <= g.cols; col++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      placeBox(slot, { col, row, w: 1, h: 1 }, geo);
+      slots.append(slot);
+    }
+  }
+  editor.append(slots);
+
+  if (!pageWidgets().length) {
+    const empty = document.createElement('div');
+    empty.className = 'editor-empty';
+    empty.innerHTML = '<strong>Page vide</strong><span>Glissez un widget depuis la liste de gauche, ou cliquez dessus.</span>';
+    editor.append(empty);
+  }
 
   pageWidgets().forEach((w) => {
     const info = state.widgets[w.type];
     const m = info ? info.manifest : { name: w.type + ' (inconnu)', icon: '❓', size: { min: { w: 1, h: 1 } } };
     const box = document.createElement('div');
-    box.className = 'box' + (w.id === state.selected ? ' selected' : '');
+    box.className = 'box' + (w.id === state.selected ? ' selected' : '') + (problems[w.id] ? ' has-problem' : '');
     box.dataset.id = w.id;
-    box.innerHTML = '<div class="box-icon"></div><div class="box-name"></div><div class="box-size"></div><div class="resize" title="Redimensionner"></div>';
+    box.innerHTML = '<div class="box-chip"><span class="box-icon"></span><span class="box-name"></span><span class="box-size"></span></div>'
+      + '<div class="box-problem" hidden></div><div class="resize" title="Redimensionner"></div>';
     box.querySelector('.box-icon').textContent = m.icon;
     box.querySelector('.box-name').textContent = m.name;
     box.querySelector('.box-size').textContent = w.w + '×' + w.h;
-    placeBox(box, w);
+    if (problems[w.id]) {
+      const pb = box.querySelector('.box-problem');
+      pb.hidden = false;
+      pb.textContent = '⚠ ' + problems[w.id] + ' réglage' + (problems[w.id] > 1 ? 's' : '') + ' à compléter';
+    }
+    placeBox(box, w, geo);
     editor.append(box);
 
     box.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      e.stopPropagation();
       // Le focus quitte le champ de l'inspecteur : les flèches du clavier déplacent alors le widget.
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       select(w.id);
       const resizing = e.target.classList.contains('resize');
       const rect = editor.getBoundingClientRect();
-      const cw = rect.width / g.cols;
-      const ch = rect.height / g.rows;
+      const cw = (geo.colW + geo.gap) / STAGE_W * rect.width;  // pas d'une case, en px de l'écran
+      const ch = (geo.rowH + geo.gap) / STAGE_H * rect.height;
       const start = { x: e.clientX, y: e.clientY, col: w.col, row: w.row, w: w.w, h: w.h };
       const min = (m.size && m.size.min) || { w: 1, h: 1 };
       let candidate = null;
@@ -200,7 +254,7 @@ function renderEditor() {
         candidate = Object.assign({}, w, resizing
           ? { w: Math.max(min.w, Math.min(g.cols - w.col + 1, start.w + dc)), h: Math.max(min.h, Math.min(g.rows - w.row + 1, start.h + dr)) }
           : { col: Math.max(1, Math.min(g.cols - w.w + 1, start.col + dc)), row: Math.max(1, Math.min(g.rows - w.h + 1, start.row + dr)) });
-        placeBox(liveBox, candidate);
+        placeBox(liveBox, candidate, geo);
         liveBox.querySelector('.box-size').textContent = candidate.w + '×' + candidate.h;
         liveBox.classList.toggle('invalid', !isFree(candidate, w.id));
       };
@@ -213,6 +267,8 @@ function renderEditor() {
             (candidate.col !== w.col || candidate.row !== w.row || candidate.w !== w.w || candidate.h !== w.h)) {
           Object.assign(w, { col: candidate.col, row: candidate.row, w: candidate.w, h: candidate.h });
           scheduleSave();
+        } else if (candidate && !isFree(candidate, w.id)) {
+          notify('Cette place est déjà prise : le widget reste où il était.', { kind: 'warn' });
         }
         renderAll();
       };
@@ -221,6 +277,17 @@ function renderEditor() {
       liveBox.addEventListener('pointercancel', up);
     });
   });
+}
+
+// ---- Mode de l'écran : disposer / tester ---------------------------------------------------
+
+function setMode(mode) {
+  state.mode = mode === 'test' ? 'test' : 'layout';
+  try { localStorage.setItem('tvdash-admin-mode', state.mode); } catch (e) { /* stockage indisponible */ }
+  document.body.classList.toggle('is-testing', state.mode === 'test');
+  document.querySelectorAll('.mode-switch [data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === state.mode)));
+  $('#deck-layout').hidden = state.mode === 'test';
+  $('#deck-test').hidden = state.mode !== 'test';
 }
 
 // ---- Glisser-déposer depuis la bibliothèque ---------------------------------------------
@@ -233,9 +300,7 @@ const drag = { type: null, ghost: null, spot: null };
  */
 function dropSpot(type, clientX, clientY) {
   const g = grid();
-  const rect = $('#editor').getBoundingClientRect();
-  const x = (clientX - rect.left) / rect.width * g.cols; // en cases, depuis le bord gauche
-  const y = (clientY - rect.top) / rect.height * g.rows;
+  const { x, y } = pointerCells(clientX, clientY);
   const pc = Math.min(g.cols, Math.max(1, Math.floor(x) + 1));
   const pr = Math.min(g.rows, Math.max(1, Math.floor(y) + 1));
   const { def, min } = widgetSizes(type);
@@ -266,7 +331,7 @@ function showGhost(type, target) {
     const m = state.widgets[type].manifest;
     drag.ghost = document.createElement('div');
     drag.ghost.className = 'box ghost';
-    drag.ghost.innerHTML = '<div class="box-icon"></div><div class="box-name"></div><div class="box-size"></div>';
+    drag.ghost.innerHTML = '<div class="box-chip"><span class="box-icon"></span><span class="box-name"></span><span class="box-size"></span></div>';
     drag.ghost.querySelector('.box-icon').textContent = m.icon;
     drag.ghost.querySelector('.box-name').textContent = m.name;
   }
@@ -293,6 +358,7 @@ function initLibraryDrop() {
   editor.addEventListener('dragover', (e) => {
     if (!drag.type) return;
     e.preventDefault();
+    if (state.mode !== 'layout') setMode('layout');
     const target = dropSpot(drag.type, e.clientX, e.clientY);
     e.dataTransfer.dropEffect = target.ok ? 'copy' : 'none';
     drag.spot = target.ok ? target.spot : null;
@@ -431,33 +497,27 @@ function newPageId() {
 }
 
 function addPage() {
-  const name = prompt('Nom de la nouvelle page (ex. « Invités ») :', 'Page ' + (state.config.pages.length + 1));
-  if (name === null) return;
-  const page = { id: newPageId(), name: name.trim() || 'Page ' + (state.config.pages.length + 1), widgets: [] };
+  const page = { id: newPageId(), name: 'Page ' + (state.config.pages.length + 1), widgets: [] };
   state.config.pages.push(page);
   scheduleSave();
+  state.renaming = page.id; // le nom est tout de suite modifiable dans l'onglet
   showPage(page.id);
 }
 
 function duplicatePage() {
   const src = currentPage();
-  const name = prompt('Nom de la copie :', src.name + ' (copie)');
-  if (name === null) return;
   // Les widgets gardent leur id : tant qu'ils ne sont ni déplacés ni modifiés, ils restent affichés
   // (sans redémarrer) quand on change de page sur la TV, et partagent leurs données (ex. connexion YouTube).
-  const page = { id: newPageId(), name: name.trim() || src.name, widgets: JSON.parse(JSON.stringify(src.widgets)) };
+  const page = { id: newPageId(), name: src.name + ' (copie)', widgets: JSON.parse(JSON.stringify(src.widgets)) };
   state.config.pages.splice(state.config.pages.indexOf(src) + 1, 0, page);
   scheduleSave();
+  state.renaming = page.id;
   showPage(page.id);
 }
 
 function renamePage() {
-  const page = currentPage();
-  const name = prompt('Nom de la page :', page.name);
-  if (name === null || !name.trim()) return;
-  page.name = name.trim();
-  scheduleSave();
-  renderAll();
+  state.renaming = currentPage().id;
+  renderPages();
 }
 
 function movePage(dir) {
@@ -481,41 +541,100 @@ function removePage() {
   notifyUndoable('Page « ' + page.name + ' » supprimée (' + page.widgets.length + ' widget' + (page.widgets.length > 1 ? 's' : '') + ')');
 }
 
+/** Onglets « chaînes » : sur la TV, CH▲ / CH▼ passent d'une page à l'autre dans cet ordre. */
 function renderPages() {
   const bar = $('#pages');
   bar.innerHTML = '';
   const pages = state.config.pages;
   const cur = currentPage();
   pages.forEach((p, i) => {
+    if (state.renaming === p.id) {
+      const input = document.createElement('input');
+      input.className = 'channel-rename';
+      input.value = p.name;
+      input.setAttribute('aria-label', 'Nom de la page');
+      input.size = Math.max(6, p.name.length + 1);
+      let done = false;
+      const finish = (commit) => {
+        if (done) return;
+        done = true;
+        const name = input.value.trim();
+        state.renaming = null;
+        if (commit && name && name !== p.name) {
+          p.name = name;
+          scheduleSave();
+        }
+        renderPages();
+      };
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      };
+      input.oninput = () => { input.size = Math.max(6, input.value.length + 1); };
+      input.onblur = () => finish(true);
+      bar.append(input);
+      setTimeout(() => { input.focus(); input.select(); });
+      return;
+    }
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'page-tab' + (p === cur ? ' selected' : '');
-    b.textContent = p.name;
-    b.title = (i === 0 ? 'Page de démarrage · ' : '') + p.widgets.length + ' widget(s)';
+    b.className = 'channel' + (p === cur ? ' selected' : '');
+    b.setAttribute('aria-current', p === cur ? 'page' : 'false');
+    b.innerHTML = '<span class="channel-num"></span><span class="channel-name"></span>';
+    b.querySelector('.channel-num').textContent = 'CH ' + (i + 1);
+    b.querySelector('.channel-name').textContent = p.name;
+    b.title = (i === 0 ? 'Page affichée au démarrage. ' : '') + p.widgets.length + ' widget' + (p.widgets.length > 1 ? 's' : '') + ' · double-clic pour renommer';
     b.onclick = () => showPage(p.id);
-    b.ondblclick = renamePage;
+    b.ondblclick = () => { showPage(p.id); renamePage(); };
     bar.append(b);
   });
-  const tool = (label, title, fn, disabled) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ghost';
-    b.textContent = label;
-    b.title = title;
-    b.disabled = !!disabled;
-    b.onclick = fn;
-    bar.append(b);
-  };
-  const i = pages.indexOf(cur);
-  tool('＋ Page', 'Nouvelle page vide', addPage);
-  tool('⧉', 'Dupliquer cette page', duplicatePage);
-  tool('✎', 'Renommer cette page', renamePage);
-  tool('◀', 'Déplacer vers la gauche', () => movePage(-1), i === 0);
-  tool('▶', 'Déplacer vers la droite', () => movePage(1), i === pages.length - 1);
-  tool('🗑', 'Supprimer cette page', removePage, pages.length < 2);
-  $('#pages-hint').textContent = pages.length > 1
-    ? 'Sur la TV : CH▲ / CH▼ pour changer de page (Page↑ / Page↓ dans l’aperçu). La 1re page est celle de démarrage.'
-    : 'Ajoutez une page pour un 2e dashboard (ex. quand vous avez des invités).';
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'ghost icon channel-more';
+  more.textContent = '⋯';
+  more.title = 'Actions sur cette page';
+  more.setAttribute('aria-haspopup', 'menu');
+  more.onclick = (e) => { e.stopPropagation(); openPageMenu(more); };
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'ghost channel-add';
+  add.textContent = '+ Page';
+  add.title = 'Nouvelle page (ex. pour les invités)';
+  add.onclick = addPage;
+  bar.append(more, add);
+}
+
+function openPageMenu(anchor) {
+  const menu = $('#page-menu');
+  const pages = state.config.pages;
+  const i = pages.indexOf(currentPage());
+  menu.querySelector('[data-action="left"]').disabled = i === 0;
+  menu.querySelector('[data-action="right"]').disabled = i === pages.length - 1;
+  menu.querySelector('[data-action="delete"]').disabled = pages.length < 2;
+  const r = anchor.getBoundingClientRect();
+  menu.style.left = Math.min(window.innerWidth - 240, r.left) + 'px';
+  menu.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  menu.hidden = false;
+  const first = menu.querySelector('button:not(:disabled)');
+  if (first) first.focus();
+}
+
+function closePageMenu() { $('#page-menu').hidden = true; }
+
+function initPageMenu() {
+  const menu = $('#page-menu');
+  const actions = { rename: renamePage, duplicate: duplicatePage, left: () => movePage(-1), right: () => movePage(1), delete: removePage };
+  menu.querySelectorAll('[data-action]').forEach((b) => {
+    b.onclick = () => { closePageMenu(); actions[b.dataset.action](); };
+  });
+  document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) closePageMenu(); });
+  menu.addEventListener('keydown', (e) => {
+    const items = Array.from(menu.querySelectorAll('button:not(:disabled)'));
+    const k = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { closePageMenu(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(k + 1) % items.length].focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); items[(k - 1 + items.length) % items.length].focus(); }
+  });
 }
 
 // ---- Bibliothèque, liste, inspecteur ----------------------------------------------
@@ -604,6 +723,7 @@ function select(id) {
   if (state.selected === id) return;
   state.selected = id;
   document.querySelectorAll('#editor .box').forEach((b) => b.classList.toggle('selected', b.dataset.id === id));
+  if (id && state.mode !== 'layout') setMode('layout');
   renderLibrary();
   renderInspector();
 }
@@ -615,8 +735,8 @@ function renderLibrary() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'lib-item';
-    b.title = m.description || '';
-    b.innerHTML = '<span class="lib-icon"></span><span class="lib-name"></span><span class="lib-add">＋</span>';
+    b.title = (m.description || m.name) + ' — cliquez ou glissez sur l’écran';
+    b.innerHTML = '<span class="lib-icon" aria-hidden="true"></span><span class="lib-name"></span>';
     b.querySelector('.lib-icon').textContent = m.icon;
     b.querySelector('.lib-name').textContent = m.name;
     b.onclick = () => addWidget(type);
@@ -633,15 +753,26 @@ function renderLibrary() {
 
   const list = $('#widget-list');
   list.innerHTML = '';
+  const problems = errorsByWidget();
+  if (!pageWidgets().length) {
+    list.innerHTML = '<li class="empty">Aucun widget pour l’instant.</li>';
+  }
   pageWidgets().forEach((w) => {
     const m = state.widgets[w.type] ? state.widgets[w.type].manifest : { icon: '❓', name: w.type };
     const li = document.createElement('li');
-    li.className = w.id === state.selected ? 'selected' : '';
-    li.textContent = m.icon + '  ' + m.name;
-    const small = document.createElement('small');
-    small.textContent = w.id;
-    li.append(small);
-    li.onclick = () => select(w.id);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'widget-item' + (w.id === state.selected ? ' selected' : '');
+    b.innerHTML = '<span class="wi-icon" aria-hidden="true"></span><span class="wi-name"></span><span class="wi-flag"></span>';
+    b.querySelector('.wi-icon').textContent = m.icon;
+    b.querySelector('.wi-name').textContent = m.name;
+    if (problems[w.id]) {
+      b.querySelector('.wi-flag').textContent = '⚠';
+      b.querySelector('.wi-flag').title = 'Réglages à compléter';
+    }
+    b.title = w.id + ' · ' + w.w + '×' + w.h;
+    b.onclick = () => select(w.id);
+    li.append(b);
     list.append(li);
   });
 }
@@ -669,7 +800,7 @@ function renderInspector() {
   const w = state.selected && findWidget(state.selected);
 
   if (!w) {
-    panel.innerHTML = '<h2>Réglages généraux</h2><p class="help">Apparence et comportement de tout le dashboard.</p><div class="form"></div>';
+    panel.innerHTML = '<div class="insp-head"><div class="insp-icon" aria-hidden="true">⚙</div><div><h2>Réglages généraux</h2><p class="help">S’appliquent à toutes les pages. Cliquez un widget sur l’écran pour régler celui-ci.</p></div></div><div class="form"></div>';
     state.config.global = applyDefaults(GLOBAL_SCHEMA, state.config.global);
     renderForm(panel.querySelector('.form'), GLOBAL_SCHEMA, state.config.global, (key, value) => {
       state.config.global[key] = value;
@@ -683,10 +814,17 @@ function renderInspector() {
     panel.innerHTML = '<h2>❓ ' + w.type + '</h2><p class="error">Type de widget inconnu (dossier widgets/' + w.type + ' absent).</p>';
   } else {
     const m = info.manifest;
-    panel.innerHTML = '<h2></h2><p class="help desc"></p><p class="meta"></p><div class="form"></div><div class="ext"></div>';
-    panel.querySelector('h2').textContent = m.icon + ' ' + m.name;
+    panel.innerHTML = '<button type="button" class="ghost back-link">‹ Réglages généraux</button>'
+      + '<div class="insp-head"><div class="insp-icon" aria-hidden="true"></div><div><h2></h2><p class="help desc"></p></div></div>'
+      + '<dl class="meta"><div><dt>Taille</dt><dd class="m-size"></dd></div><div><dt>Position</dt><dd class="m-pos"></dd></div><div><dt>Identifiant</dt><dd class="m-id"></dd></div></dl>'
+      + '<div class="form"></div><div class="ext"></div>';
+    panel.querySelector('.back-link').onclick = () => select(null);
+    panel.querySelector('.insp-icon').textContent = m.icon;
+    panel.querySelector('h2').textContent = m.name;
     panel.querySelector('.desc').textContent = m.description || '';
-    panel.querySelector('.meta').textContent = 'id : ' + w.id + ' · colonne ' + w.col + ', ligne ' + w.row + ' · ' + w.w + '×' + w.h;
+    panel.querySelector('.m-size').textContent = w.w + ' × ' + w.h + ' cases';
+    panel.querySelector('.m-pos').textContent = 'colonne ' + w.col + ', ligne ' + w.row;
+    panel.querySelector('.m-id').textContent = w.id;
     w.settings = applyDefaults(m.schema, w.settings);
 
     const renderExt = () => {
@@ -709,13 +847,13 @@ function renderInspector() {
   actions.className = 'inspector-actions';
   const dup = document.createElement('button');
   dup.type = 'button';
-  dup.textContent = '⧉ Dupliquer';
+  dup.textContent = 'Dupliquer';
   dup.title = 'Ctrl+D';
   dup.onclick = () => duplicateWidget(w.id);
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'danger';
-  del.textContent = '🗑 Supprimer';
+  del.textContent = 'Supprimer';
   del.title = 'Suppr';
   del.onclick = () => removeWidget(w.id);
   actions.append(dup, del);
@@ -726,18 +864,51 @@ function renderErrors() {
   const errors = validateConfig(state.config, manifestsMap());
   const box = $('#errors');
   box.innerHTML = '';
-  errors.forEach((e) => {
-    const p = document.createElement('div');
-    p.textContent = '⚠ ' + e.message;
-    p.onclick = () => {
-      if (e.pageId && e.pageId !== currentPage().id) showPage(e.pageId);
-      if (e.widgetId) select(e.widgetId);
-    };
-    box.append(p);
-  });
+  box.hidden = !errors.length;
+  if (errors.length) {
+    const head = document.createElement('p');
+    head.className = 'errors-head';
+    head.textContent = errors.length === 1
+      ? 'Un réglage à compléter avant d’envoyer sur la TV'
+      : errors.length + ' réglages à compléter avant d’envoyer sur la TV';
+    const list = document.createElement('ul');
+    errors.forEach((e) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = e.message;
+      b.onclick = () => {
+        if (e.pageId && e.pageId !== currentPage().id) showPage(e.pageId);
+        if (e.widgetId) select(e.widgetId);
+        if (state.mode !== 'layout') setMode('layout');
+      };
+      li.append(b);
+      list.append(li);
+    });
+    box.append(head, list);
+  }
   $('#btn-deploy').disabled = errors.length > 0;
   $('#btn-wgt').classList.toggle('disabled', errors.length > 0);
-  $('#btn-deploy').title = errors.length ? 'Corrigez les erreurs avant d’envoyer' : '';
+  const why = errors.length ? 'Complétez d’abord les réglages signalés sous l’écran' : '';
+  $('#btn-deploy').title = why;
+  $('#btn-wgt').title = why || 'Paquet à installer avec Apps2Samsung';
+  // Les repères ⚠ des cadres et de la liste suivent les corrections.
+  const problems = errorsByWidget();
+  document.querySelectorAll('#editor .box[data-id]').forEach((el) => {
+    if (el.classList.contains('ghost')) return;
+    const n = problems[el.dataset.id] || 0;
+    el.classList.toggle('has-problem', n > 0);
+    const pb = el.querySelector('.box-problem');
+    if (pb) {
+      pb.hidden = !n;
+      pb.textContent = n ? '⚠ ' + n + ' réglage' + (n > 1 ? 's' : '') + ' à compléter' : '';
+    }
+  });
+  document.querySelectorAll('#widget-list .widget-item').forEach((el, i) => {
+    const w = pageWidgets()[i];
+    const flag = el.querySelector('.wi-flag');
+    if (w && flag) flag.textContent = problems[w.id] ? '⚠' : '';
+  });
 }
 
 function renderAll() {
@@ -810,14 +981,36 @@ function isTyping(el) {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
 }
 
+// Mode test : le clavier de l'admin pilote la TV de l'aperçu.
+const KEY_TO_REMOTE = {
+  ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Enter: 'enter', ' ': 'enter',
+  Backspace: 'back', PageUp: 'chup', PageDown: 'chdown',
+  p: 'playpause', n: 'next', b: 'prev', r: 'red', g: 'green', y: 'yellow', u: 'blue',
+};
+
 function onKeyDown(e) {
-  if (document.querySelector('dialog[open]')) return;
+  if (document.querySelector('dialog[open]') || !$('#page-menu').hidden) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   // Dans un champ, Ctrl+Z reste l'annulation de la frappe du navigateur.
   if (isTyping(document.activeElement)) return;
   if (mod && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
   if (mod && key === 'y') { e.preventDefault(); redo(); return; }
+
+  if (state.mode === 'test') {
+    if (e.key === 'Escape') { setMode('layout'); return; }
+    const remote = !mod && !e.altKey && KEY_TO_REMOTE[key];
+    // Entrée / espace sur un bouton de l'admin gardent leur rôle normal.
+    if (remote && !((key === 'Enter' || key === ' ') && document.activeElement && document.activeElement.tagName === 'BUTTON')) {
+      e.preventDefault();
+      sendRemoteKey(remote);
+      const btn = document.querySelector('#remote [data-key="' + remote + '"]');
+      if (btn) pressFeedback(btn);
+    }
+    return;
+  }
+
+  if (key === 't' && !mod && !e.altKey) { setMode('test'); return; }
   if (!state.selected) return;
   const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   if (dirs[e.key] && !mod && !e.altKey) {
@@ -845,11 +1038,15 @@ function initRemote() {
   document.querySelectorAll('#remote [data-key]').forEach((b) => {
     b.onclick = () => {
       sendRemoteKey(b.dataset.key);
-      b.classList.remove('pressed');
-      void b.offsetWidth;
-      b.classList.add('pressed');
+      pressFeedback(b);
     };
   });
+}
+
+function pressFeedback(b) {
+  b.classList.remove('pressed');
+  void b.offsetWidth;
+  b.classList.add('pressed');
 }
 
 // ---- Démarrage -----------------------------------------------------------------------
@@ -884,14 +1081,16 @@ async function init() {
   initLibraryDrop();
   $('#btn-undo').onclick = undo;
   $('#btn-redo').onclick = redo;
-  $('#btn-shortcuts').onclick = () => {
-    const panel = $('#shortcuts');
-    panel.hidden = !panel.hidden;
-    $('#btn-shortcuts').setAttribute('aria-expanded', String(!panel.hidden));
-  };
+  document.querySelectorAll('.mode-switch [data-mode]').forEach((b) => { b.onclick = () => setMode(b.dataset.mode); });
+  // Clic sur une zone vide de l'écran : retour aux réglages généraux.
+  $('#editor').addEventListener('pointerdown', (e) => { if (e.target === $('#editor') || e.target.classList.contains('slot')) select(null); });
+  let mode = 'layout';
+  try { mode = localStorage.getItem('tvdash-admin-mode') || 'layout'; } catch (e) { /* stockage indisponible */ }
+  setMode(mode);
+  initPageMenu();
   document.addEventListener('keydown', onKeyDown);
   initRemote();
-  new ResizeObserver(fitPreview).observe($('#preview-wrap'));
+  new ResizeObserver(fitPreview).observe($('#screen'));
 
   renderAll();
   // Après le premier rendu : l'inspecteur complète les réglages par défaut, qui ne comptent pas comme une modification.

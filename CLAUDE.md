@@ -14,7 +14,9 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
 - **Animations** (`app/anim.js` + fin de `app/styles.css`, réglage général `animations` : complètes / réduites / aucune →
   classe `.anim-*` sur `#stage`) : widgets en cascade au démarrage, glissement au changement de page (les widgets conservés
   ne bougent pas), rebond + lueur du focus, fondu des panneaux et erreurs, widgets qui se rallument au réveil. Uniquement `transform` / `opacity`.
-- **Admin** : historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
+- **Admin** : un seul écran TV où les cadres des widgets sont posés sur l'aperçu en direct, aux positions exactes
+  (`gridGeometry` de `app/grid.js`, partagée avec la TV) ; mode **Disposer / Tester** (en test, le clavier pilote l'aperçu) ;
+  pages présentées comme des chaînes (CH 1, CH 2…), renommées dans l'onglet. Thème clair / sombre selon le système. Historique Annuler / Rétablir (`admin/history.js`, Ctrl+Z / Ctrl+Y), suppressions annulables par notification,
   raccourcis dans l'éditeur (flèches, Maj+flèches, Ctrl+D, Suppr), télécommande cliquable sous l'aperçu
   (`postMessage({ type: 'tvdash:key', key })`, écouté par `app/remote.js` dans l'aperçu seulement).
   Glisser-déposer depuis la bibliothèque. **Historique** (`tools/backups.js`) : copie de la config dans `config/history/`
@@ -64,7 +66,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    ```
    Types de champ : `text`, `password`, `number` (`min`/`max`/`step`), `bool`, `select` (`options`:
    `[{ value, label }]`), `color`, `time` (`HH:MM`), `textarea`. Options : `required`, `help`, `placeholder`,
-   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas).
+   `when: { autreClé: valeur }` (champ affiché/validé seulement dans ce cas), `group: 'Titre'` (titre de section dans le formulaire).
    L'admin génère le formulaire tout seul ; les valeurs par défaut sont appliquées partout (`app/config.js`).
 3. **`tv.js`** — `export default class extends Widget` (`app/Widget.js`) :
    - `mount(el, settings)` : construire le rendu **dans `el` uniquement** (peut être `async`). Lever une erreur

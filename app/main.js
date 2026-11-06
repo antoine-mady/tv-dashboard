@@ -267,7 +267,8 @@ function start() {
     setInterval(check, 30 * 1000);
   }
 
-  showStartupInfo(pages, pageIndex, instances.filter((i) => i.inst).length);
+  // Dans l'aperçu de l'admin, le bandeau masquerait l'écran (l'admin affiche déjà ces infos) : seulement si la page est vide.
+  if (!platform.isPreview || !pages[pageIndex].widgets.length) showStartupInfo(pages, pageIndex, instances.filter((i) => i.inst).length);
 
   window.addEventListener('unload', () => instances.forEach((i) => { if (i.inst) i.inst._destroy(); }));
 }

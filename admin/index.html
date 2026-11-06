@@ -8,112 +8,127 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="logo">▦</span> TV Dashboard</div>
-    <span id="status" class="status"></span>
+    <div class="brand"><span class="logo" aria-hidden="true"></span>TV Dashboard</div>
+    <span id="status" class="status" role="status"></span>
     <div class="spacer"></div>
     <div class="history-buttons">
-      <button id="btn-undo" type="button" class="ghost" title="Annuler (Ctrl+Z)" disabled>↶</button>
-      <button id="btn-redo" type="button" class="ghost" title="Rétablir (Ctrl+Y)" disabled>↷</button>
+      <button id="btn-undo" type="button" class="ghost icon" title="Annuler (Ctrl+Z)" aria-label="Annuler" disabled>↶</button>
+      <button id="btn-redo" type="button" class="ghost icon" title="Rétablir (Ctrl+Y)" aria-label="Rétablir" disabled>↷</button>
     </div>
-    <button id="btn-history" type="button" title="Versions envoyées sur la TV, export / import">🕘 Historique</button>
-    <button id="btn-global" type="button">⚙ Réglages généraux</button>
-    <a id="btn-wgt" class="button" href="/api/wgt" title="Paquet à installer avec Apps2Samsung">⬇ Télécharger le .wgt</a>
-    <button id="btn-deploy" type="button" class="primary">📺 Envoyer sur la TV</button>
+    <button id="btn-history" type="button" class="ghost" title="Versions envoyées sur la TV, export / import">Historique</button>
+    <button id="btn-global" type="button" class="ghost">Réglages généraux</button>
+    <span class="topbar-sep" aria-hidden="true"></span>
+    <a id="btn-wgt" class="button" href="/api/wgt" title="Paquet à installer avec Apps2Samsung">Télécharger le .wgt</a>
+    <button id="btn-deploy" type="button" class="primary">Envoyer sur la TV</button>
   </header>
 
   <main class="layout">
-    <aside class="panel library">
+    <aside class="side library" aria-label="Widgets">
       <h2>Ajouter un widget</h2>
-      <p class="help lib-help">Cliquez, ou glissez sur la grille.</p>
+      <p class="help">Cliquez, ou glissez sur l’écran.</p>
       <div id="library" class="library-list"></div>
-      <h2>Sur cette page</h2>
+      <h2 class="side-title-2">Sur cette page</h2>
       <ul id="widget-list" class="widget-list"></ul>
     </aside>
 
     <section class="center">
-      <div class="section-head">
-        <h2>Pages</h2>
-        <span id="pages-hint" class="hint"></span>
+      <div class="screen-bar">
+        <nav id="pages" class="channels" aria-label="Pages (chaînes CH▲ / CH▼ sur la TV)"></nav>
+        <div class="mode-switch" role="radiogroup" aria-label="Mode de l’écran">
+          <button type="button" role="radio" data-mode="layout" aria-checked="true">Disposer</button>
+          <button type="button" role="radio" data-mode="test" aria-checked="false">Tester</button>
+        </div>
       </div>
-      <div id="pages" class="pages"></div>
 
-      <div class="section-head">
-        <h2>Disposition</h2>
-        <span class="hint">Glissez pour déplacer · coin ↘ pour redimensionner · clic pour régler</span>
-        <button id="btn-shortcuts" type="button" class="ghost hint-btn" aria-expanded="false" title="Raccourcis clavier">⌨ Raccourcis</button>
+      <div class="tv">
+        <div id="screen" class="screen">
+          <iframe id="preview" title="Aperçu du dashboard" src="about:blank" tabindex="-1"></iframe>
+          <div id="editor" class="editor" aria-label="Disposition des widgets"></div>
+        </div>
       </div>
-      <div id="shortcuts" class="shortcuts" hidden>
-        <span><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> déplacer</span>
-        <span><kbd>Maj</kbd> + flèches redimensionner</span>
-        <span><kbd>Ctrl</kbd><kbd>D</kbd> dupliquer</span>
-        <span><kbd>Suppr</kbd> supprimer</span>
-        <span><kbd>Échap</kbd> réglages généraux</span>
-        <span><kbd>Ctrl</kbd><kbd>Z</kbd> / <kbd>Ctrl</kbd><kbd>Y</kbd> annuler / rétablir</span>
-      </div>
-      <div id="editor" class="editor"></div>
-      <div id="errors" class="errors"></div>
+      <div class="tv-stand" aria-hidden="true"></div>
 
-      <div class="section-head">
-        <h2>Aperçu</h2>
-        <button id="btn-reload" type="button" class="ghost" title="Recharger l’aperçu">↻</button>
-        <span class="hint" title="Au clavier, après un clic dans l’aperçu : flèches, Entrée, Retour arrière, P = lecture/pause, N/B = piste, R/G/Y/U = touches de couleur, Page↑/↓ = CH▲/CH▼, F2 = dictée">Télécommande ci-dessous, ou clavier dans l’aperçu (survolez pour les touches)</span>
-      </div>
-      <div id="preview-wrap" class="preview-wrap"><iframe id="preview" title="Aperçu du dashboard" src="about:blank"></iframe></div>
-      <div class="remote" id="remote" aria-label="Télécommande de l’aperçu">
-        <div class="remote-group dpad">
-          <button type="button" data-key="up" class="k-up" title="Haut">▲</button>
-          <button type="button" data-key="left" class="k-left" title="Gauche">◀</button>
-          <button type="button" data-key="enter" class="k-ok" title="OK (Entrée)">OK</button>
-          <button type="button" data-key="right" class="k-right" title="Droite">▶</button>
-          <button type="button" data-key="down" class="k-down" title="Bas">▼</button>
-        </div>
-        <div class="remote-group">
-          <button type="button" data-key="back" title="Retour">↩ Retour</button>
-        </div>
-        <div class="remote-group">
-          <button type="button" data-key="prev" title="Piste précédente">⏮</button>
-          <button type="button" data-key="playpause" title="Lecture / pause">⏯</button>
-          <button type="button" data-key="next" title="Piste suivante">⏭</button>
-        </div>
-        <div class="remote-group colors">
-          <button type="button" data-key="red" class="c-red" title="Touche rouge" aria-label="Rouge"></button>
-          <button type="button" data-key="green" class="c-green" title="Touche verte" aria-label="Verte"></button>
-          <button type="button" data-key="yellow" class="c-yellow" title="Touche jaune" aria-label="Jaune"></button>
-          <button type="button" data-key="blue" class="c-blue" title="Touche bleue" aria-label="Bleue"></button>
-        </div>
-        <div class="remote-group ch">
-          <button type="button" data-key="chup" title="Page suivante (CH▲)">CH ▲</button>
-          <button type="button" data-key="chdown" title="Page précédente (CH▼)">CH ▼</button>
+      <div id="deck-layout" class="deck">
+        <p class="deck-hint">Glissez un widget pour le déplacer, tirez son coin pour le redimensionner, cliquez pour le régler.</p>
+        <div class="shortcuts">
+          <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> déplacer</span>
+          <span><kbd>Maj</kbd> + flèches redimensionner</span>
+          <span><kbd>Ctrl</kbd><kbd>D</kbd> dupliquer</span>
+          <span><kbd>Suppr</kbd> supprimer</span>
+          <span><kbd>Ctrl</kbd><kbd>Z</kbd> annuler</span>
+          <span><kbd>T</kbd> passer en test</span>
         </div>
       </div>
+
+      <div id="deck-test" class="deck" hidden>
+        <div class="remote" id="remote" aria-label="Télécommande de l’aperçu">
+          <div class="remote-group dpad">
+            <button type="button" data-key="up" class="k-up" aria-label="Haut">▲</button>
+            <button type="button" data-key="left" class="k-left" aria-label="Gauche">◀</button>
+            <button type="button" data-key="enter" class="k-ok" title="OK (Entrée)">OK</button>
+            <button type="button" data-key="right" class="k-right" aria-label="Droite">▶</button>
+            <button type="button" data-key="down" class="k-down" aria-label="Bas">▼</button>
+          </div>
+          <div class="remote-group">
+            <button type="button" data-key="back" title="Retour (Retour arrière)">↩ Retour</button>
+          </div>
+          <div class="remote-group">
+            <button type="button" data-key="prev" title="Piste précédente (B)" aria-label="Piste précédente">⏮</button>
+            <button type="button" data-key="playpause" title="Lecture / pause (P)" aria-label="Lecture / pause">⏯</button>
+            <button type="button" data-key="next" title="Piste suivante (N)" aria-label="Piste suivante">⏭</button>
+          </div>
+          <div class="remote-group colors">
+            <button type="button" data-key="red" class="c-red" title="Touche rouge (R)" aria-label="Rouge"></button>
+            <button type="button" data-key="green" class="c-green" title="Touche verte (G)" aria-label="Verte"></button>
+            <button type="button" data-key="yellow" class="c-yellow" title="Touche jaune (Y)" aria-label="Jaune"></button>
+            <button type="button" data-key="blue" class="c-blue" title="Touche bleue (U)" aria-label="Bleue"></button>
+          </div>
+          <div class="remote-group ch">
+            <button type="button" data-key="chup" title="Page suivante (Page↑)">CH ▲</button>
+            <button type="button" data-key="chdown" title="Page précédente (Page↓)">CH ▼</button>
+          </div>
+          <button id="btn-reload" type="button" class="ghost reload" title="Recharger l’aperçu">↻ Recharger</button>
+        </div>
+        <p class="deck-hint">Le clavier pilote aussi la TV : flèches, Entrée, Retour arrière, P, N, B, R G Y U, Page↑ / Page↓. <kbd>Échap</kbd> pour revenir à la disposition.</p>
+      </div>
+
+      <div id="errors" class="errors" hidden></div>
     </section>
 
-    <aside id="inspector" class="panel inspector"></aside>
+    <aside id="inspector" class="side inspector" aria-label="Réglages"></aside>
   </main>
 
   <dialog id="deploy-dialog">
-    <h2>Envoi sur la TV</h2>
+    <h2 class="dialog-title">Envoi sur la TV</h2>
     <pre id="deploy-log"></pre>
     <div class="dialog-actions">
-      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" hidden>⬇ Télécharger Tizen Studio</a>
-      <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>⬇ Télécharger le .wgt</a>
+      <a id="deploy-tizen" class="button" href="https://developer.tizen.org/development/tizen-studio/download" target="_blank" rel="noopener" hidden>Télécharger Tizen Studio</a>
+      <a id="deploy-wgt" class="button primary" href="/api/wgt" hidden>Télécharger le .wgt</a>
       <button id="deploy-close" type="button">Fermer</button>
     </div>
   </dialog>
 
   <dialog id="history-dialog">
     <h2 class="dialog-title">Historique de la config</h2>
-    <p class="help">Une copie est gardée à chaque « Envoyer sur la TV » ou téléchargement du .wgt (les 30 dernières, dans <code>config/history/</code>). Restaurer remplace la config actuelle — c’est annulable (Ctrl+Z).</p>
+    <p class="help">Une copie est gardée à chaque envoi sur la TV ou téléchargement du .wgt (les 30 dernières, dans <code>config/history/</code>). Restaurer remplace la config actuelle ; Ctrl+Z annule.</p>
     <div id="backup-list" class="backup-list"></div>
     <div class="dialog-actions">
-      <button id="backup-now" type="button">📌 Sauvegarder maintenant</button>
-      <button id="config-export" type="button" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">⬇ Exporter</button>
-      <button id="config-import" type="button">⬆ Importer…</button>
+      <button id="backup-now" type="button">Sauvegarder maintenant</button>
+      <button id="config-export" type="button" title="Contient vos mots de passe (Wi-Fi…) : à garder pour vous">Exporter</button>
+      <button id="config-import" type="button">Importer…</button>
       <input id="config-file" type="file" accept=".json,application/json" hidden>
       <span class="spacer"></span>
       <button id="history-close" type="button">Fermer</button>
     </div>
   </dialog>
+
+  <div id="page-menu" class="menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-action="rename">Renommer</button>
+    <button type="button" role="menuitem" data-action="duplicate">Dupliquer</button>
+    <button type="button" role="menuitem" data-action="left">Déplacer vers la gauche</button>
+    <button type="button" role="menuitem" data-action="right">Déplacer vers la droite</button>
+    <button type="button" role="menuitem" data-action="delete" class="danger-text">Supprimer la page</button>
+  </div>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>
 

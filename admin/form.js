@@ -1,5 +1,5 @@
 // Génère un formulaire à partir d'un `schema` (manifest.js d'un widget ou app/global-schema.js).
-// Types : text, password, number, bool, select, color, time, textarea.
+// Types : text, password, number, bool, select, color, time, textarea. Option `group` : titre de section.
 
 function isVisible(field, values) {
   if (!field.when) return true;
@@ -71,7 +71,16 @@ export function renderForm(container, schema, values, onChange) {
   const vals = Object.assign({}, values);
   const draw = () => {
     container.innerHTML = '';
+    let group = null;
     schema.filter((f) => isVisible(f, vals)).forEach((field) => {
+      // `group` (optionnel) : titre de section affiché quand il change d'un champ à l'autre.
+      if (field.group && field.group !== group) {
+        const head = document.createElement('h3');
+        head.className = 'form-group';
+        head.textContent = field.group;
+        container.append(head);
+      }
+      group = field.group || group;
       const row = document.createElement('label');
       row.className = 'field' + (field.type === 'bool' ? ' field-bool' : '');
       const title = document.createElement('span');
