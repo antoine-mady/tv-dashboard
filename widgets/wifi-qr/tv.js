@@ -9,8 +9,9 @@ export default class WifiQrWidget extends Widget {
     const pwd = passwordOf(s);
     el.appendChild(h('div', { className: 'wq-title', text: s.title }));
     el.appendChild(h('div', { className: 'wq-code', html: qrSvg(buildWifiString(s)) }));
-    el.appendChild(h('div', { className: 'wq-info' },
-      h('div', { className: 'wq-ssid ellipsis', text: s.ssid }),
-      s.showPassword && pwd ? h('div', { className: 'wq-pass muted ellipsis', text: pwd }) : null));
+    if (s.showPassword && pwd) {
+      el.appendChild(h('div', { className: 'wq-info' },
+        h('div', { className: 'wq-pass muted ellipsis', text: pwd })));
+    }
   }
 }

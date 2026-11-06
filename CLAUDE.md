@@ -79,6 +79,10 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    - QR code : `qrSvg(texte)` de `app/qr.js` (SVG à insérer en `innerHTML`).
    - Champs de saisie : quand un `<input>` a le focus, la télécommande ne transmet que Entrée, Retour, haut et
      bas (`app/remote.js`) ; le clavier natif de la TV gère le reste.
+   - Dictée vocale (`app/dictation.js`, automatique pour tout champ texte) : bouton micro de la télécommande
+     (Samsung Voice Interaction, TV récentes) ou touche de couleur / F2 dans l'aperçu (reconnaissance vocale
+     web, si disponible). Le texte est inséré dans le champ, puis `input` et `dictation` (`e.detail.text`) sont
+     émis sur le champ — ex. la musique lance la recherche sur `dictation`.
 4. **`tv.css`** — chaque sélecteur **commence par `.w-<type>`** (vérifié par les tests). Les variables
    `var(--w)` / `var(--h)` donnent la taille du widget : `font-size: calc(var(--h) * 0.2)`. `var(--accent)` = couleur d'accent.
 5. **Logique pure** dans un fichier à part (ex. `codes.js`, `dlna.js`) + **test** `<nom>.test.js` à côté.
