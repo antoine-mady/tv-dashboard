@@ -4,7 +4,7 @@
 //  - Samsung « Voice Interaction » (webapis.voiceinteraction, TV récentes) : on maintient le bouton micro
 //    de la télécommande, la TV transcrit et transmet le texte à l'app (callback onsearch).
 //  - Reconnaissance vocale web (webkitSpeechRecognition : Chrome de l'aperçu, certaines TV) : déclenchée
-//    par une touche de couleur (ou F2 / clic sur le bandeau dans l'aperçu) quand un champ a le focus.
+//    par l'icône micro (ou F2 dans l'aperçu) quand un champ a le focus.
 // Sans aucun moteur, rien n'est affiché (le clavier natif de la TV propose souvent son propre micro).
 //
 // Le texte dicté est inséré dans le champ, puis deux événements sont émis sur le champ :
@@ -175,7 +175,7 @@ export function initDictation(root, opts) {
     }
   }
 
-  // ---- Reconnaissance vocale web : touche de couleur / F2 / clic ------------------
+  // ---- Reconnaissance vocale web : icône micro / F2 -------------------------------
   function start(field) {
     if (!field) return false;
     if (!engines.Speech) {
