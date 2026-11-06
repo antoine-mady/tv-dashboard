@@ -1,6 +1,6 @@
 // Page d'admin : édition de config/dashboard.json + aperçu + envoi sur la TV.
 // Aucun code spécifique à un widget ici : tout vient des manifest.js (et admin.js optionnels).
-import { applyDefaults, validateConfig, rectsOverlap, fitsInGrid, findFreeSpot, DEFAULT_GRID } from '/app/config.js';
+import { applyDefaults, validateConfig, rectsOverlap, fitsInGrid, findFreeSpot, normalizeConfig, DEFAULT_GRID } from '/app/config.js';
 import GLOBAL_SCHEMA from '/app/global-schema.js';
 import { renderForm } from '/admin/form.js';
 
@@ -9,11 +9,15 @@ const state = {
   config: null,
   widgets: {},       // type → { manifest, admin }
   selected: null,    // id du widget sélectionné, null = réglages généraux
+  page: null,        // id de la page en cours d'édition
 };
 
 function grid() { return Object.assign({}, DEFAULT_GRID, state.config.grid); }
 function manifestsMap() { return Object.fromEntries(Object.entries(state.widgets).map(([t, w]) => [t, w.manifest])); }
-function findWidget(id) { return state.config.widgets.find((w) => w.id === id); }
+function currentPage() { return state.config.pages.find((p) => p.id === state.page) || state.config.pages[0]; }
+function pageWidgets() { return currentPage().widgets; }
+function findWidget(id) { return pageWidgets().find((w) => w.id === id); }
+function allWidgets() { return [].concat(...state.config.pages.map((p) => p.widgets)); }
 
 // ---- Sauvegarde + aperçu ---------------------------------------------------------
 
@@ -46,7 +50,7 @@ async function save() {
 }
 
 function reloadPreview() {
-  $('#preview').src = '/preview/?t=' + Date.now();
+  $('#preview').src = '/preview/?t=' + Date.now() + '&page=' + encodeURIComponent(currentPage().id);
 }
 
 function fitPreview() {
@@ -65,7 +69,7 @@ function placeBox(box, w) {
 }
 
 function isFree(candidate, ignoreId) {
-  return fitsInGrid(candidate, grid()) && !state.config.widgets.some((o) => o.id !== ignoreId && rectsOverlap(candidate, o));
+  return fitsInGrid(candidate, grid()) && !pageWidgets().some((o) => o.id !== ignoreId && rectsOverlap(candidate, o));
 }
 
 function renderEditor() {
@@ -75,7 +79,7 @@ function renderEditor() {
   editor.style.setProperty('--cols', g.cols);
   editor.style.setProperty('--rows', g.rows);
 
-  state.config.widgets.forEach((w) => {
+  pageWidgets().forEach((w) => {
     const info = state.widgets[w.type];
     const m = info ? info.manifest : { name: w.type + ' (inconnu)', icon: '❓', size: { min: { w: 1, h: 1 } } };
     const box = document.createElement('div');
@@ -131,6 +135,110 @@ function renderEditor() {
   });
 }
 
+// ---- Pages ---------------------------------------------------------------------------
+
+function showPage(id) {
+  if (state.page === id) return;
+  state.page = id;
+  state.selected = null;
+  renderAll();
+  reloadPreview();
+}
+
+function newPageId() {
+  let n = 1;
+  while (state.config.pages.some((p) => p.id === 'page-' + n)) n++;
+  return 'page-' + n;
+}
+
+function addPage() {
+  const name = prompt('Nom de la nouvelle page (ex. « Invités ») :', 'Page ' + (state.config.pages.length + 1));
+  if (name === null) return;
+  const page = { id: newPageId(), name: name.trim() || 'Page ' + (state.config.pages.length + 1), widgets: [] };
+  state.config.pages.push(page);
+  scheduleSave();
+  showPage(page.id);
+}
+
+function duplicatePage() {
+  const src = currentPage();
+  const name = prompt('Nom de la copie :', src.name + ' (copie)');
+  if (name === null) return;
+  // Les widgets gardent leur id : tant qu'ils ne sont ni déplacés ni modifiés, ils restent affichés
+  // (sans redémarrer) quand on change de page sur la TV, et partagent leurs données (ex. connexion YouTube).
+  const page = { id: newPageId(), name: name.trim() || src.name, widgets: JSON.parse(JSON.stringify(src.widgets)) };
+  state.config.pages.splice(state.config.pages.indexOf(src) + 1, 0, page);
+  scheduleSave();
+  showPage(page.id);
+}
+
+function renamePage() {
+  const page = currentPage();
+  const name = prompt('Nom de la page :', page.name);
+  if (name === null || !name.trim()) return;
+  page.name = name.trim();
+  scheduleSave();
+  renderAll();
+}
+
+function movePage(dir) {
+  const pages = state.config.pages;
+  const i = pages.indexOf(currentPage());
+  const j = i + dir;
+  if (j < 0 || j >= pages.length) return;
+  pages.splice(j, 0, pages.splice(i, 1)[0]);
+  scheduleSave();
+  renderAll();
+}
+
+function removePage() {
+  const pages = state.config.pages;
+  if (pages.length < 2) return;
+  const page = currentPage();
+  if (!confirm('Supprimer la page « ' + page.name + ' » et ses ' + page.widgets.length + ' widget(s) ?')) return;
+  const i = pages.indexOf(page);
+  pages.splice(i, 1);
+  scheduleSave();
+  showPage(pages[Math.max(0, i - 1)].id);
+}
+
+function renderPages() {
+  const bar = $('#pages');
+  bar.innerHTML = '';
+  const pages = state.config.pages;
+  const cur = currentPage();
+  pages.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'page-tab' + (p === cur ? ' selected' : '');
+    b.textContent = p.name;
+    b.title = (i === 0 ? 'Page de démarrage · ' : '') + p.widgets.length + ' widget(s)';
+    b.onclick = () => showPage(p.id);
+    b.ondblclick = renamePage;
+    bar.append(b);
+  });
+  const tool = (label, title, fn, disabled) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ghost';
+    b.textContent = label;
+    b.title = title;
+    b.disabled = !!disabled;
+    b.onclick = fn;
+    bar.append(b);
+  };
+  const i = pages.indexOf(cur);
+  tool('＋ Page', 'Nouvelle page vide', addPage);
+  tool('⧉', 'Dupliquer cette page', duplicatePage);
+  tool('✎', 'Renommer cette page', renamePage);
+  tool('◀', 'Déplacer vers la gauche', () => movePage(-1), i === 0);
+  tool('▶', 'Déplacer vers la droite', () => movePage(1), i === pages.length - 1);
+  tool('🗑', 'Supprimer cette page', removePage, pages.length < 2);
+  $('#pages-hint').textContent = pages.length > 1
+    ? 'Sur la TV : CH▲ / CH▼ pour changer de page (Page↑ / Page↓ dans l’aperçu). La 1re page est celle de démarrage.'
+    : 'Ajoutez une page pour un 2e dashboard (ex. quand vous avez des invités).';
+}
+
 // ---- Bibliothèque, liste, inspecteur ----------------------------------------------
 
 function addWidget(type) {
@@ -138,22 +246,26 @@ function addWidget(type) {
   const g = grid();
   const def = (m.size && m.size.default) || { w: 3, h: 2 };
   const min = (m.size && m.size.min) || { w: 1, h: 1 };
-  const spot = findFreeSpot(state.config.widgets, g, def.w, def.h) || findFreeSpot(state.config.widgets, g, min.w, min.h);
+  const widgets = pageWidgets();
+  const spot = findFreeSpot(widgets, g, def.w, def.h) || findFreeSpot(widgets, g, min.w, min.h);
   if (!spot) {
-    alert('Plus de place sur l’écran : réduisez ou supprimez un widget.');
+    alert('Plus de place sur cette page : réduisez ou supprimez un widget.');
     return;
   }
+  // Id unique sur toutes les pages : un même id sur deux pages = le même widget (données partagées sur la TV).
+  const all = allWidgets();
   let n = 1;
-  while (findWidget(type + '-' + n)) n++;
+  while (all.some((o) => o.id === type + '-' + n)) n++;
   const w = Object.assign({ id: type + '-' + n, type }, spot, { settings: applyDefaults(m.schema, {}) });
-  state.config.widgets.push(w);
+  widgets.push(w);
   state.selected = w.id;
   scheduleSave();
   renderAll();
 }
 
 function removeWidget(id) {
-  state.config.widgets = state.config.widgets.filter((w) => w.id !== id);
+  const page = currentPage();
+  page.widgets = page.widgets.filter((w) => w.id !== id);
   state.selected = null;
   scheduleSave();
   renderAll();
@@ -184,7 +296,7 @@ function renderLibrary() {
 
   const list = $('#widget-list');
   list.innerHTML = '';
-  state.config.widgets.forEach((w) => {
+  pageWidgets().forEach((w) => {
     const m = state.widgets[w.type] ? state.widgets[w.type].manifest : { icon: '❓', name: w.type };
     const li = document.createElement('li');
     li.className = w.id === state.selected ? 'selected' : '';
@@ -271,7 +383,10 @@ function renderErrors() {
   errors.forEach((e) => {
     const p = document.createElement('div');
     p.textContent = '⚠ ' + e.message;
-    p.onclick = () => e.widgetId && select(e.widgetId);
+    p.onclick = () => {
+      if (e.pageId && e.pageId !== currentPage().id) showPage(e.pageId);
+      if (e.widgetId) select(e.widgetId);
+    };
     box.append(p);
   });
   $('#btn-deploy').disabled = errors.length > 0;
@@ -280,6 +395,7 @@ function renderErrors() {
 }
 
 function renderAll() {
+  renderPages();
   renderLibrary();
   renderEditor();
   renderInspector();
@@ -321,8 +437,8 @@ async function init() {
     fetch('/api/config').then((r) => r.json()),
     fetch('/api/widgets').then((r) => r.json()),
   ]);
-  state.config = config;
-  state.config.widgets = state.config.widgets || [];
+  state.config = normalizeConfig(config); // ancien format (une seule liste de widgets) → pages
+  state.page = state.config.pages[0].id;
   for (const w of list) {
     const manifest = (await import('/widgets/' + w.type + '/manifest.js')).default;
     const admin = w.hasAdmin ? await import('/widgets/' + w.type + '/admin.js') : null;

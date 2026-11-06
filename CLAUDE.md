@@ -6,6 +6,9 @@ configurables (horloge, météo, QR Wi-Fi, musique YouTube, photos de la box…)
 - **TV** : vanilla JS, bundlé par esbuild en un seul fichier (`target: chrome56`). Aucun serveur au quotidien.
 - **Config** : page d'admin sur le PC (`npm run dev`) → `config/dashboard.json` → **embarquée dans le build**
   et poussée sur la TV par « Envoyer sur la TV » (`npm run deploy`). La TV ne contacte jamais le PC.
+- **Pages** : `config.pages = [{ id, name, widgets: [...] }]` (ex. « Moi » / « Invités »), CH▲ / CH▼ pour en changer
+  (`app/pages.js`). Un widget identique (même id, place et réglages) sur deux pages reste affiché sans être recréé ;
+  les autres sont détruits (`destroy()`) puis recréés. L'ancien format `config.widgets` = une seule page (`getPages`).
 - Rien n'est en ligne : tout reste sur le réseau local (seules les API des widgets sortent, ex. météo, YouTube).
 
 ## Commandes
@@ -57,7 +60,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
    - `mount(el, settings)` : construire le rendu **dans `el` uniquement** (peut être `async`). Lever une erreur
      affiche un message propre dans le widget (ex. `throw new Error('Renseignez la ville')`).
    - `onKey(key)` → `true` si gérée. Touches : `left right up down enter back playpause play pause stop next prev
-     red green yellow blue`. Les flèches non gérées déplacent le focus ; les touches média non gérées par le
+     red green yellow blue chup chdown` (CH▲ / CH▼ changent de page si le widget ne les gère pas). Les flèches non gérées déplacent le focus ; les touches média non gérées par le
      widget focalisé sont proposées aux autres widgets.
    - `onFocus(focused)`, `destroy()` (optionnels).
    - Utilitaires : `this.every(ms, fn)` (timer auto-nettoyé ; une erreur/promesse rejetée affiche l'état
@@ -87,7 +90,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      `/api/widgets/<type>/route`. **Tourne sur le PC, uniquement dans l'admin** (jamais sur la TV).
    - `assets/` : `import icon from './assets/x.svg'` → texte SVG ; `.png/.jpg` → data URL.
 7. Vérifier : `npm test`, puis `npm run dev` → ajouter le widget, régler, tester dans l'aperçu
-   (clavier : flèches, Entrée, P/N/B, R/G/Y/U pour les touches de couleur). Puis « Envoyer sur la TV ».
+   (clavier : flèches, Entrée, P/N/B, R/G/Y/U pour les touches de couleur, Page↑/Page↓ pour CH▲/CH▼). Puis « Envoyer sur la TV ».
 
 Référence la plus simple : **`widgets/clock/`**. Exemple complet (admin + serveur + tests) : **`widgets/photos/`**.
 

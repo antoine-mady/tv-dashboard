@@ -55,13 +55,51 @@ export function findFreeSpot(widgets, grid, w, h) {
 }
 
 /**
+ * Pages du dashboard : `config.pages` = [{ id, name, widgets: [...] }].
+ * Les anciennes configs (`config.widgets` sans pages) donnent une seule page.
+ */
+export function getPages(config) {
+  if (config && Array.isArray(config.pages) && config.pages.length) {
+    return config.pages.map((p, i) => ({
+      id: p.id || 'page-' + (i + 1),
+      name: p.name || 'Page ' + (i + 1),
+      widgets: Array.isArray(p.widgets) ? p.widgets : [],
+    }));
+  }
+  return [{ id: 'page-1', name: 'Principal', widgets: (config && Array.isArray(config.widgets)) ? config.widgets : [] }];
+}
+
+/** Copie de la config au format « pages » (migre l'ancien format `widgets`). */
+export function normalizeConfig(config) {
+  const out = Object.assign({}, config);
+  out.pages = getPages(config);
+  delete out.widgets;
+  return out;
+}
+
+/**
  * Valide une config complète. `manifests` : { [type]: manifest }.
- * Retourne une liste d'erreurs { widgetId, message } (vide si tout va bien).
+ * Retourne une liste d'erreurs { pageId, widgetId, message } (vide si tout va bien).
  */
 export function validateConfig(config, manifests) {
   const errors = [];
+  const pages = getPages(config);
+  const seenPages = {};
+  pages.forEach((page) => {
+    if (seenPages[page.id]) errors.push({ pageId: page.id, message: 'Id de page en double : ' + page.id });
+    seenPages[page.id] = true;
+    const prefix = pages.length > 1 ? page.name + ' · ' : '';
+    validatePage(page.widgets, config, manifests).forEach((e) => {
+      errors.push({ pageId: page.id, widgetId: e.widgetId, message: prefix + e.message });
+    });
+  });
+  return errors;
+}
+
+/** Une page : ids uniques, tailles, champs requis, chevauchements. */
+function validatePage(widgets, config, manifests) {
+  const errors = [];
   const grid = Object.assign({}, DEFAULT_GRID, config && config.grid);
-  const widgets = (config && config.widgets) || [];
   const seen = {};
 
   widgets.forEach((w) => {

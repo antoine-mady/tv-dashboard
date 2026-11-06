@@ -119,7 +119,9 @@ async function handle(req, res) {
   if (p === '/api/config' && req.method === 'PUT') {
     let config;
     try { config = JSON.parse((await readBody(req)).toString()); } catch { return sendJson(res, 400, { error: 'JSON invalide' }); }
-    if (!config || !Array.isArray(config.widgets)) return sendJson(res, 400, { error: 'Config invalide' });
+    if (!config || !Array.isArray(config.pages) || !config.pages.every((pg) => pg && Array.isArray(pg.widgets))) {
+      return sendJson(res, 400, { error: 'Config invalide' });
+    }
     writeConfig(config);
     return sendJson(res, 200, { ok: true });
   }

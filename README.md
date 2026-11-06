@@ -19,6 +19,19 @@ npm run dev
 Ouvrez http://localhost:5173 : ajoutez et disposez les widgets, réglez-les, vérifiez le résultat dans l'aperçu.
 La config est enregistrée dans `config/dashboard.json` (fichier personnel, non versionné).
 
+## Plusieurs pages (ex. « Moi » et « Invités »)
+
+Dans l'admin, la barre **Pages** au-dessus de la disposition permet d'ajouter, dupliquer (⧉), renommer (✎ ou
+double-clic), réordonner (◀ ▶) et supprimer des pages. Chaque page a ses propres widgets ; les réglages généraux
+(fond, couleur, mode nuit…) sont communs.
+
+Sur la TV, **CH▲ / CH▼** passent à la page suivante / précédente (le nom de la page s'affiche quelques secondes).
+Une touche de couleur peut aussi faire défiler les pages (*Réglages généraux → Touche couleur pour changer de
+page*). La TV rouvre la dernière page affichée au redémarrage (désactivable) ; sinon, c'est la première page.
+
+Astuce : un widget **dupliqué** et laissé à la même place avec les mêmes réglages sur deux pages n'est pas recréé
+quand on change de page (la musique continue, par exemple). Les autres widgets sont arrêtés et relancés.
+
 ## Installer sur la TV avec Apps2Samsung (le plus simple)
 
 [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung) gère lui-même le certificat Samsung et

@@ -1,7 +1,9 @@
 // Point d'entrée de l'app TV : lit la config embarquée, crée les widgets, gère la télécommande.
 import './styles.css'; // en premier : les styles des widgets passent après
 import registry from '../.generated/tv-registry.js'; // généré par tools/build.js (tous les widgets/*)
-import { applyDefaults, DEFAULT_GRID } from './config.js';
+import { applyDefaults, getPages, DEFAULT_GRID } from './config.js';
+import { stepPage, initialPage, sameWidget } from './pages.js';
+import { createStore } from './Widget.js';
 import GLOBAL_SCHEMA from './global-schema.js';
 import { createStage } from './grid.js';
 import { createPanelHost } from './panel.js';
@@ -17,24 +19,36 @@ function safeKey(inst, key) {
   try { return !!inst.onKey(key); } catch (e) { console.error(e); return false; }
 }
 
+function queryParam(name) {
+  const m = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.search || '');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 function start() {
   window.__APP_STARTED__ = true;
-  const config = window.__DASHBOARD_CONFIG__ || { widgets: [] };
+  const config = window.__DASHBOARD_CONFIG__ || { pages: [] };
   const global = applyDefaults(GLOBAL_SCHEMA, config.global);
   const grid = Object.assign({}, DEFAULT_GRID, config.grid);
+  const pages = getPages(config);
   const root = document.getElementById('stage');
+  const appStore = createStore('tvdash:app:');
 
   platform.disableScreenSaver();
   const stage = createStage(root, grid, global);
   const panels = createPanelHost(root);
-  const instances = [];
+  let instances = []; // widgets de la page affichée : { conf, inst, cell, focusable }
+  let pageIndex = initialPage(pages, {
+    requested: platform.isPreview ? queryParam('page') : null, // l'admin affiche la page en cours d'édition
+    saved: appStore.get('page', null),
+    remember: global.rememberPage,
+  });
 
-  (config.widgets || []).forEach((w) => {
+  function mountWidget(w) {
     const entry = registry[w.type];
     const parts = stage.addCell(w, entry && entry.manifest);
     if (!entry) {
       parts.cell.appendChild(h('div', { className: 'cell-error' }, h('div', { className: 'cell-error-msg', text: 'Widget inconnu : ' + w.type })));
-      return;
+      return { conf: w, inst: null, cell: parts.cell, focusable: false };
     }
     const inst = new entry.Widget();
     inst._init({
@@ -48,12 +62,36 @@ function start() {
       console.error(e);
       inst.showError(e.message || String(e));
     }
-    instances.push({ conf: w, inst, cell: parts.cell, focusable: !!entry.manifest.focusable });
-  });
+    return { conf: w, inst, cell: parts.cell, focusable: !!entry.manifest.focusable };
+  }
+
+  function unmount(it) {
+    if (it.inst) it.inst._destroy();
+    if (it.cell.parentNode) it.cell.parentNode.removeChild(it.cell);
+  }
+
+  /**
+   * Affiche la page `index`. Les widgets identiques sur les deux pages (même id, place et réglages)
+   * sont conservés tels quels (la musique continue) ; les autres sont arrêtés puis recréés.
+   */
+  function showPage(index) {
+    const page = pages[index];
+    const kept = [];
+    instances.forEach((it) => {
+      if (page.widgets.some((w) => sameWidget(w, it.conf))) kept.push(it);
+      else unmount(it);
+    });
+    instances = page.widgets.map((w) => {
+      for (let i = 0; i < kept.length; i++) if (sameWidget(w, kept[i].conf)) return kept[i];
+      return mountWidget(w);
+    });
+    pageIndex = index;
+    updateFocusables();
+  }
 
   // ---- Focus & télécommande ---------------------------------------------------
-  const focusables = instances.filter((i) => i.focusable);
-  const items = focusables.map((i) => ({ id: i.conf.id, col: i.conf.col, row: i.conf.row, w: i.conf.w, h: i.conf.h }));
+  let focusables = [];
+  let items = [];
   let focusedId = null;
 
   function byId(id) { return focusables.find((i) => i.conf.id === id); }
@@ -65,7 +103,43 @@ function start() {
     const next = byId(id);
     if (next) { next.cell.classList.add('is-focused'); try { next.inst.onFocus(true); } catch (e) { /* ignore */ } }
   }
-  if (items.length) setFocus(firstItem(items));
+
+  function updateFocusables() {
+    const prev = byId(focusedId); // encore présent si le widget a été conservé
+    focusables = instances.filter((i) => i.focusable);
+    items = focusables.map((i) => ({ id: i.conf.id, col: i.conf.col, row: i.conf.row, w: i.conf.w, h: i.conf.h }));
+    const keep = prev && byId(focusedId) === prev;
+    if (!keep) {
+      if (prev) prev.cell.classList.remove('is-focused');
+      focusedId = null;
+      if (items.length) setFocus(firstItem(items));
+    }
+  }
+
+  showPage(pageIndex);
+
+  // ---- Changement de page -------------------------------------------------------
+  let toast = null;
+  let toastTimer = null;
+  function showPageName() {
+    if (!toast) {
+      toast = h('div', { id: 'page-toast' });
+      root.appendChild(toast);
+    }
+    toast.textContent = pages[pageIndex].name + '  ·  ' + (pageIndex + 1) + ' / ' + pages.length;
+    toast.className = 'is-visible';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = ''; }, 2500);
+  }
+
+  function goToPage(dir) {
+    if (pages.length < 2) return;
+    showPage(stepPage(pages.length, pageIndex, dir));
+    appStore.set('page', pages[pageIndex].id);
+    const info = document.getElementById('boot-info'); // diagnostic de démarrage : concerne l'ancienne page
+    if (info && info.parentNode) info.parentNode.removeChild(info);
+    showPageName();
+  }
 
   initRemote((key) => {
     // Un panneau plein écran est ouvert : toutes les touches vont à son widget.
@@ -77,6 +151,8 @@ function start() {
     }
     const cur = byId(focusedId);
     if (cur && safeKey(cur.inst, key)) return;
+    if (key === 'chup' || key === 'chdown') { goToPage(key === 'chup' ? 1 : -1); return; }
+    if (key === global.pageKey && pages.length > 1) { goToPage(1); return; }
     if (key === 'left' || key === 'right' || key === 'up' || key === 'down') {
       const next = findNeighbor(items, focusedId, key);
       if (next) setFocus(next);
@@ -85,7 +161,7 @@ function start() {
     // Les touches média vont au premier widget qui sait les gérer (ex. musique), même sans focus.
     if (MEDIA_KEYS.indexOf(key) !== -1) {
       for (let i = 0; i < instances.length; i++) {
-        if (instances[i] !== cur && safeKey(instances[i].inst, key)) return;
+        if (instances[i] !== cur && instances[i].inst && safeKey(instances[i].inst, key)) return;
       }
     }
   });
@@ -113,9 +189,9 @@ function start() {
     setInterval(check, 30 * 1000);
   }
 
-  showStartupInfo(config, instances.length);
+  showStartupInfo(pages, pageIndex, instances.filter((i) => i.inst).length);
 
-  window.addEventListener('unload', () => instances.forEach((i) => i.inst._destroy()));
+  window.addEventListener('unload', () => instances.forEach((i) => { if (i.inst) i.inst._destroy(); }));
 }
 
 /* global __BUILD_TIME__ */
@@ -125,18 +201,20 @@ const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '?';
  * Bandeau de diagnostic affiché quelques secondes au démarrage (permanent si aucun widget) :
  * date du build (vérifier que la bonne version est installée), widgets, écran, navigateur.
  */
-function showStartupInfo(config, mounted) {
-  const count = (config.widgets || []).length;
+function showStartupInfo(pages, pageIndex, mounted) {
+  const count = pages[pageIndex].widgets.length;
+  const total = pages.reduce((n, p) => n + p.widgets.length, 0);
   const ua = navigator.userAgent;
   const m = /(Tizen [\d.]+)/.exec(ua);
   const c = /(Chrome\/[\d]+)/.exec(ua);
   const lines = [
     'TV Dashboard · build du ' + BUILD_TIME.replace('T', ' ').slice(0, 16) + ' (UTC)',
-    'Widgets dans la config : ' + count + (count !== mounted ? ' (' + mounted + ' affichés)' : '') +
+    (pages.length > 1 ? 'Page « ' + pages[pageIndex].name + ' » (' + (pageIndex + 1) + '/' + pages.length + ', CH▲/CH▼ pour changer) · ' : '') +
+      'Widgets : ' + count + (count !== mounted ? ' (' + mounted + ' affichés)' : '') +
       (window.__DASHBOARD_CONFIG__ ? '' : ' · ⚠ config embarquée absente'),
     'Écran : ' + window.innerWidth + '×' + window.innerHeight + ' · ' + (m ? m[1] + ' · ' : '') + (c ? c[1] : ua),
   ];
-  if (!count) lines.push('⚠ Aucun widget : ajoutez-en dans l’admin (npm run dev), puis « Envoyer sur la TV ».');
+  if (!total) lines.push('⚠ Aucun widget : ajoutez-en dans l’admin (npm run dev), puis « Envoyer sur la TV ».');
   const box = h('pre', {
     id: 'boot-info',
     text: lines.join('\n'),
@@ -147,7 +225,7 @@ function showStartupInfo(config, mounted) {
     },
   });
   document.body.appendChild(box);
-  if (count) setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 20000);
+  if (total) setTimeout(() => { if (box.parentNode) box.parentNode.removeChild(box); }, 20000);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
