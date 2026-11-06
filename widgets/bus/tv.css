@@ -40,6 +40,18 @@
   min-height: 0;
   overflow: hidden;
 }
+.w-bus .bus-stop-group {
+  margin-bottom: 0.18em;
+}
+.w-bus .bus-stop-name {
+  font-size: 0.68em;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .w-bus .bus-row {
   display: flex;
   align-items: center;
