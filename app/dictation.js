@@ -83,6 +83,7 @@ export function initDictation(root, opts) {
   let hideTimer = null;
   let rec = null;
   let lastField = null;
+  let micButton = null;
 
   function show(text, cls, ms) {
     if (!bar) {
@@ -103,6 +104,30 @@ export function initDictation(root, opts) {
   }
 
   function visible(el) { return !!el && el.offsetParent !== null && !el.disabled && !el.readOnly; }
+
+  /** Bouton micro au bord du champ ciblé, ajouté hors de la grille TV pour rester cliquable. */
+  function positionMicButton(field) {
+    if (!available || !field || !visible(field)) {
+      if (micButton) micButton.style.display = 'none';
+      return;
+    }
+    if (!micButton) {
+      micButton = document.createElement('button');
+      micButton.type = 'button';
+      micButton.id = 'dictation-input-action';
+      micButton.setAttribute('aria-label', 'Démarrer la dictée vocale');
+      micButton.title = 'Démarrer la dictée vocale';
+      micButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"></path></svg>';
+      // Garde le focus du champ : la dictée doit toujours écrire dedans.
+      micButton.addEventListener('mousedown', (e) => e.preventDefault());
+      micButton.addEventListener('click', () => { if (lastField) start(lastField); });
+      document.body.appendChild(micButton);
+    }
+    const rect = field.getBoundingClientRect();
+    micButton.style.left = Math.max(0, rect.right - 58) + 'px';
+    micButton.style.top = Math.max(0, rect.top + (rect.height - 48) / 2) + 'px';
+    micButton.style.display = 'block';
+  }
 
   /** Champ cible : celui qui a le focus, sinon le champ visible du panneau plein écran ouvert. */
   function currentField() {
@@ -153,7 +178,18 @@ export function initDictation(root, opts) {
 
   // ---- Reconnaissance vocale web : touche de couleur / F2 / clic ------------------
   function start(field) {
-    if (!engines.Speech || !field) return false;
+    if (!field) return false;
+    if (!engines.Speech) {
+      // Tizen démarre l'écoute Samsung à la demande, depuis l'icône ou la touche micro.
+      if (!engines.samsung) return false;
+      try {
+        engines.samsung.listen();
+        show('🎤 Parlez maintenant…', 'is-listening');
+      } catch (e) {
+        show('⚠ ' + errorMessage(e && e.name), 'is-error', 3000);
+      }
+      return true;
+    }
     if (rec) { try { rec.abort(); } catch (e) { /* ignore */ } return true; } // 2e appui : annule
     let finalText = '';
     let error = null;
@@ -207,7 +243,10 @@ export function initDictation(root, opts) {
       'background-position: right 18px center !important;',
       'background-size: 30px 30px !important;',
       'padding-right: 64px !important;',
-      '}'
+      '}',
+      '#dictation-input-action { position: fixed; z-index: 99999; width: 48px; height: 48px; padding: 8px; border: 0; border-radius: 50%; background: rgba(0,0,0,.72); color: #bac7d8; display: none; cursor: pointer; box-sizing: border-box; }',
+      '#dictation-input-action svg { display: block; width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }',
+      '#dictation-input-action:focus { outline: 3px solid #7cc4ff; }'
     ].join('\n');
     document.head.appendChild(style);
     document.documentElement.classList.add('has-dictation');
@@ -215,6 +254,7 @@ export function initDictation(root, opts) {
     document.addEventListener('focusin', (e) => {
       if (!isEditable(e.target)) return;
       lastField = e.target;
+      positionMicButton(lastField);
       if (!rec) show(hintText());
     });
     document.addEventListener('focusout', (e) => {
@@ -222,9 +262,13 @@ export function initDictation(root, opts) {
       setTimeout(() => {
         if (!rec && !isEditable(document.activeElement) && bar && bar.className.indexOf('is-done') === -1 &&
           bar.className.indexOf('is-error') === -1) hide();
+        if (!isEditable(document.activeElement)) positionMicButton(null);
       }, 0);
     });
+    window.addEventListener('resize', () => positionMicButton(lastField));
+    window.addEventListener('scroll', () => positionMicButton(lastField), true);
   }
 
   return { available, start: (field) => start(field || currentField()) };
 }
+
