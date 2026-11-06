@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildLiveUrl,
   buildScheduleUrl,
   normalizeEvent,
   normalizeSchedule,
@@ -8,80 +9,87 @@ import {
   fetchLeagueSchedule,
 } from './api.js';
 
-const league = { id: 'lec', name: 'LEC', region: 'Europe', leagueId: '98767991302996019' };
+const league = { id: 'lec', name: 'LEC', region: 'Europe', citoLeagueIds: ['lec'] };
 const event = (id, startAt, state) => ({
-  id: 'event-' + id,
+  id,
   startTime: new Date(startAt).toISOString(),
   state,
-  match: {
-    id,
-    strategy: { count: 3 },
-    teams: [
-      { name: 'Team Alpha', code: 'ALP', result: { outcome: '', gameWins: 0 } },
-      { name: 'Team Beta', code: 'BET', result: { outcome: '', gameWins: 0 } },
-    ],
-  },
+  league: { id: 'lec', name: 'LEC', slug: 'lec' },
+  bestOf: 3,
+  teams: [
+    { name: 'Team Alpha', code: 'ALP', score: 0 },
+    { name: 'Team Beta', code: 'BET', score: 0 },
+  ],
 });
 
-test('buildScheduleUrl encodes league id and optional page token', () => {
-  assert.equal(
-    buildScheduleUrl(league),
-    'https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=fr-FR&leagueId=98767991302996019'
-  );
-  assert.match(buildScheduleUrl(league, 'a b'), /pageToken=a%20b$/);
+test('builds documented CitoAPI live and upcoming URLs', () => {
+  assert.equal(buildLiveUrl(), 'https://api.citoapi.com/api/v1/lol/live');
+  assert.equal(buildScheduleUrl(), 'https://api.citoapi.com/api/v1/lol/schedule/upcoming');
 });
 
-test('normalizeEvent rejects malformed records and maps teams', () => {
+test('normalizeEvent maps a Cito match and rejects malformed records', () => {
   assert.equal(normalizeEvent(null, league), null);
-  assert.equal(normalizeEvent({ match: { teams: [] } }, league), null);
-  const normalized = normalizeEvent(event('42', 1000, 'unstarted'), league);
-  assert.equal(normalized.id, '42');
+  assert.equal(normalizeEvent({ teams: [] }, league), null);
+  const normalized = normalizeEvent(event('lol-match-42', 1000, 'scheduled'), league);
+  assert.equal(normalized.id, 'lol-match-42');
   assert.equal(normalized.bestOf, 3);
   assert.equal(normalized.teams[0].code, 'ALP');
+  assert.equal(normalized.state, 'unstarted');
 });
 
-test('normalizeSchedule tolerates missing schedule and extracts pagination', () => {
-  assert.deepEqual(normalizeSchedule({}, league), { events: [], newerPageToken: null });
+test('normalizeSchedule reads the Cito response envelope and filters leagues', () => {
   const result = normalizeSchedule({
-    data: { schedule: { events: [event('42', 1000, 'unstarted')], pages: { newer: 'next' } } },
+    success: true,
+    data: { matches: [event('42', 1000, 'upcoming'), {
+      ...event('other', 2000, 'upcoming'),
+      league: { id: 'lck', name: 'LCK', slug: 'lck' },
+    }] },
+    meta: {},
   }, league);
-  assert.equal(result.events.length, 1);
-  assert.equal(result.newerPageToken, 'next');
+  assert.deepEqual(result.events.map((item) => item.id), ['42']);
 });
 
 test('sortUpcoming keeps live and future games, drops completed and past games', () => {
   const now = 100000;
   const sorted = sortUpcoming([
-    normalizeEvent(event('past', now - 1000, 'unstarted'), league),
-    normalizeEvent(event('live', now - 5000, 'inProgress'), league),
-    normalizeEvent(event('future', now + 10000, 'unstarted'), league),
+    normalizeEvent(event('past', now - 1000, 'scheduled'), league),
+    normalizeEvent(event('live', now - 5000, 'live'), league),
+    normalizeEvent(event('future', now + 10000, 'upcoming'), league),
     normalizeEvent(event('done', now + 20000, 'completed'), league),
   ], now);
   assert.deepEqual(sorted.map((item) => item.id), ['live', 'future']);
 });
 
-test('fetchLeagueSchedule sends API key, paginates and deduplicates', async () => {
+test('fetchLeagueSchedule sends the Cito key and merges live and upcoming matches', async () => {
   const calls = [];
   const now = 100000;
   const fetchJson = async (url, options) => {
     calls.push({ url, options });
-    if (calls.length === 1) {
-      return { data: { schedule: { events: [event('1', now + 1000, 'unstarted')], pages: { newer: 'next' } } } };
+    if (url === buildLiveUrl()) {
+      return { success: true, data: { matches: [event('live-1', now - 1000, 'inProgress')] } };
     }
-    return { data: { schedule: { events: [event('1', now + 1000, 'unstarted'), event('2', now + 2000, 'unstarted')], pages: { newer: null } } } };
+    return { success: true, data: { matches: [event('live-1', now - 1000, 'upcoming'), event('future-2', now + 2000, 'upcoming')] } };
   };
   const result = await fetchLeagueSchedule(fetchJson, league, 'secret-key', now);
   assert.equal(calls.length, 2);
   assert.equal(calls[0].options.headers['x-api-key'], 'secret-key');
-  assert.match(calls[1].url, /pageToken=next$/);
-  assert.deepEqual(result.map((item) => item.id), ['1', '2']);
+  assert.deepEqual(result.map((item) => item.id), ['live-1', 'future-2']);
+});
+
+test('fetchLeagueSchedule keeps successful schedule data if live endpoint fails', async () => {
+  const now = 100000;
+  const result = await fetchLeagueSchedule(async (url) => {
+    if (url === buildLiveUrl()) throw new Error('temporary live endpoint failure');
+    return { success: true, data: { matches: [event('future', now + 1000, 'upcoming')] } };
+  }, league, 'secret-key', now);
+  assert.deepEqual(result.map((item) => item.id), ['future']);
 });
 
 test('fetchLeagueSchedule refuses an empty API key before network access', async () => {
   let called = false;
   await assert.rejects(
     fetchLeagueSchedule(async () => { called = true; }, league, '', 0),
-    /Clé API/
+    /Clé API CitoAPI/
   );
   assert.equal(called, false);
 });
