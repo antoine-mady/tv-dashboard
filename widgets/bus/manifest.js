@@ -6,13 +6,13 @@ export default {
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
   focusable: true, // OK : panneau plein écran avec tous les horaires
   schema: [
-    { key: 'network', label: 'Réseau', type: 'select', default: 'alterneo', options: [
+    { key: 'network', label: 'Réseau par défaut pour les recherches', type: 'select', default: 'alterneo', options: [
       { value: 'alterneo', label: 'Alternéo (Saint-Pierre, Saint-Louis…) · temps réel' },
       { value: 'car-jaune', label: 'Car Jaune (interurbain) · temps réel' },
       { value: 'citalis', label: 'Citalis (Saint-Denis…) · horaires prévus' },
       { value: 'karouest', label: 'Kar’Ouest (Saint-Paul, Trois-Bassins…) · horaires prévus' },
-    ] },
-    { key: 'stopName', label: 'Arrêt', type: 'text', default: '', required: true,
+    ], help: 'Choisissez le réseau pour chaque recherche d’arrêt dans l’éditeur du widget. Plusieurs réseaux peuvent être mélangés.' },
+    { key: 'stopName', label: 'Arrêt(s)', type: 'text', default: '', required: true,
       help: 'Cherchez l’arrêt ci-dessous, puis « Choisir » : les horaires sont téléchargés et envoyés avec la config.' },
     { key: 'title', label: 'Titre affiché', type: 'text', default: '', placeholder: 'Nom de l’arrêt par défaut' },
     { key: 'routes', label: 'Lignes à afficher', type: 'text', default: '', placeholder: 'ex. 11, Lit2',
@@ -24,11 +24,12 @@ export default {
     { key: 'showAlerts', label: 'Afficher les perturbations du réseau', type: 'bool', default: true },
     { key: 'refreshSeconds', label: 'Temps réel : rafraîchir toutes les (secondes)', type: 'number', min: 20, max: 300, default: 45 },
     { key: 'realtimeUrl', label: 'Adresse GTFS-RT (avancé)', type: 'text', default: '',
-      help: 'Seulement si le réseau change d’adresse. Vide = adresse connue du réseau.' },
+      help: 'Adresse personnalisée pour le réseau par défaut ci-dessus. Les autres réseaux utilisent leur adresse connue.' },
     { key: 'gtfsUrl', label: 'Adresse GTFS (avancé)', type: 'text', default: '',
       help: 'Seulement si le réseau change d’adresse. Vide = adresse connue du réseau.' },
     // Remplis par l'assistant de l'admin (admin.js) ; jamais affichés.
     { key: 'stopIds', label: 'Identifiants GTFS de l’arrêt', type: 'text', default: '', when: { network: '__jamais__' } },
     { key: 'timetable', label: 'Table des horaires', type: 'textarea', default: '', when: { network: '__jamais__' } },
+    { key: 'stops', label: 'Arrêts et horaires', type: 'textarea', default: '', when: { network: '__jamais__' } },
   ],
 };
