@@ -122,6 +122,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .widget-list li.selected { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accent); }
 .widget-list small { color: var(--muted); }
 
+/* ---- Pages ---- */
+.pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
+.page-tab { font-weight: 500; }
+.page-tab.selected { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
 /* ---- Éditeur de disposition ---- */
 .editor {
   position: relative;

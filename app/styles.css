@@ -103,3 +103,29 @@ html, body {
   color: #f2f5f9;
   overflow: hidden;
 }
+
+/* Nom de la page affiché brièvement quand on change de page (CH▲ / CH▼). */
+#page-toast {
+  position: absolute;
+  left: 50%;
+  top: 60px;
+  z-index: 60;
+  padding: 18px 44px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.82);
+  border: 3px solid var(--accent);
+  color: #fff;
+  font-size: 44px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  -webkit-transform: translate(-50%, -20px);
+  transform: translate(-50%, -20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+#page-toast.is-visible {
+  opacity: 1;
+  -webkit-transform: translate(-50%, 0);
+  transform: translate(-50%, 0);
+}

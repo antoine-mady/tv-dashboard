@@ -20,11 +20,17 @@
     <aside class="panel library">
       <h2>Ajouter un widget</h2>
       <div id="library" class="library-list"></div>
-      <h2>Sur l’écran</h2>
+      <h2>Sur cette page</h2>
       <ul id="widget-list" class="widget-list"></ul>
     </aside>
 
     <section class="center">
+      <div class="section-head">
+        <h2>Pages</h2>
+        <span id="pages-hint" class="hint"></span>
+      </div>
+      <div id="pages" class="pages"></div>
+
       <div class="section-head">
         <h2>Disposition</h2>
         <span class="hint">Glissez pour déplacer · coin ↘ pour redimensionner · clic pour régler</span>
@@ -35,7 +41,7 @@
       <div class="section-head">
         <h2>Aperçu</h2>
         <button id="btn-reload" type="button" class="ghost" title="Recharger l’aperçu">↻</button>
-        <span class="hint">Cliquez dans l’aperçu puis : flèches, Entrée, P = lecture/pause, N/B = piste, R = touche rouge</span>
+        <span class="hint">Cliquez dans l’aperçu puis : flèches, Entrée, P = lecture/pause, N/B = piste, R = touche rouge, Page↑/↓ = page suivante/précédente</span>
       </div>
       <div id="preview-wrap" class="preview-wrap"><iframe id="preview" title="Aperçu du dashboard" src="about:blank"></iframe></div>
     </section>

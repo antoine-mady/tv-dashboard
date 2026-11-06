@@ -5,6 +5,7 @@
 const TIZEN_KEYS = {
   MediaPlayPause: 'playpause', MediaPlay: 'play', MediaPause: 'pause', MediaStop: 'stop',
   MediaTrackNext: 'next', MediaTrackPrevious: 'prev', MediaFastForward: 'next', MediaRewind: 'prev',
+  ChannelUp: 'chup', ChannelDown: 'chdown',
   ColorF0Red: 'red', ColorF1Green: 'green', ColorF2Yellow: 'yellow', ColorF3Blue: 'blue',
 };
 
@@ -15,6 +16,7 @@ const CODES = {
   10252: 'playpause', 415: 'play', 19: 'pause', 413: 'stop',
   10233: 'next', 10232: 'prev', 417: 'next', 412: 'prev',
   403: 'red', 404: 'green', 405: 'yellow', 406: 'blue',
+  427: 'chup', 428: 'chdown', 33: 'chup', 34: 'chdown', // CH▲ / CH▼ (Page↑ / Page↓ au clavier)
 };
 
 // Raccourcis clavier pour tester dans l'aperçu navigateur.

@@ -15,4 +15,12 @@ export default [
   { key: 'nightStart', label: 'Début du mode nuit', type: 'time', default: '23:00', when: { nightMode: true } },
   { key: 'nightEnd', label: 'Fin du mode nuit', type: 'time', default: '07:00', when: { nightMode: true } },
   { key: 'nightDim', label: 'Assombrissement la nuit (%)', type: 'number', min: 0, max: 95, default: 75, when: { nightMode: true } },
+  { key: 'pageKey', label: 'Touche couleur pour changer de page', type: 'select', default: 'none', options: [
+    { value: 'none', label: 'Aucune (CH▲ / CH▼ seulement)' },
+    { value: 'green', label: 'Verte' },
+    { value: 'yellow', label: 'Jaune' },
+    { value: 'blue', label: 'Bleue' },
+    { value: 'red', label: 'Rouge' },
+  ], help: 'Avec plusieurs pages, CH▲ / CH▼ passent toujours à la page suivante / précédente. La touche couleur fait défiler les pages (si le widget sélectionné ne s’en sert pas déjà, ex. rouge = app YouTube pour la musique).' },
+  { key: 'rememberPage', label: 'Au redémarrage, rouvrir la dernière page affichée', type: 'bool', default: true },
 ];

@@ -12,95 +12,160 @@
     "nightMode": false,
     "nightStart": "23:00",
     "nightEnd": "07:00",
-    "nightDim": 75
+    "nightDim": 75,
+    "pageKey": "none",
+    "rememberPage": true
   },
-  "widgets": [
+  "pages": [
     {
-      "id": "clock-1",
-      "type": "clock",
-      "col": 1,
-      "row": 1,
-      "w": 5,
-      "h": 2,
-      "settings": {
-        "timezone": "Indian/Reunion",
-        "label": "",
-        "seconds": false,
-        "showDate": true
-      }
+      "id": "page-1",
+      "name": "🏠 Moi",
+      "widgets": [
+        {
+          "id": "clock-1",
+          "type": "clock",
+          "col": 1,
+          "row": 1,
+          "w": 5,
+          "h": 2,
+          "settings": {
+            "timezone": "Indian/Reunion",
+            "label": "",
+            "seconds": false,
+            "showDate": true
+          }
+        },
+        {
+          "id": "weather-1",
+          "type": "weather",
+          "col": 1,
+          "row": 3,
+          "w": 5,
+          "h": 2,
+          "settings": {
+            "label": "Saint-Denis",
+            "latitude": -20.8823,
+            "longitude": 55.4504,
+            "days": 3,
+            "refreshMinutes": 15
+          }
+        },
+        {
+          "id": "wifi-qr-1",
+          "type": "wifi-qr",
+          "col": 1,
+          "row": 5,
+          "w": 2,
+          "h": 2,
+          "settings": {
+            "title": "Wi-Fi",
+            "ssid": "MonWifi",
+            "security": "WPA",
+            "password": "changez-moi",
+            "passwordWep": "",
+            "hidden": false,
+            "showPassword": false
+          }
+        },
+        {
+          "id": "music-1",
+          "type": "music",
+          "col": 3,
+          "row": 5,
+          "w": 3,
+          "h": 2,
+          "settings": {
+            "clientId": "",
+            "clientSecret": "",
+            "startSource": "none",
+            "startPlaylist": "",
+            "autoplay": true,
+            "shuffle": false,
+            "volume": 60,
+            "quickSearches": "Lofi hip hop\nDaft Punk\nMusique réunionnaise",
+            "showVideo": false,
+            "youtubeAppId": "111299001912",
+            "playerUrl": "https://antoine-mady.github.io/tv-dashboard/player/"
+          }
+        },
+        {
+          "id": "photos-1",
+          "type": "photos",
+          "col": 6,
+          "row": 1,
+          "w": 7,
+          "h": 6,
+          "settings": {
+            "source": "dlna",
+            "dlnaUrl": "",
+            "rootId": "0",
+            "usbFolder": "",
+            "intervalSec": 15,
+            "shuffle": true,
+            "fit": "contain",
+            "showCaption": true,
+            "maxPhotos": 5000,
+            "refreshHours": 12
+          }
+        }
+      ]
     },
     {
-      "id": "weather-1",
-      "type": "weather",
-      "col": 1,
-      "row": 3,
-      "w": 5,
-      "h": 2,
-      "settings": {
-        "label": "Saint-Denis",
-        "latitude": -20.8823,
-        "longitude": 55.4504,
-        "days": 3,
-        "refreshMinutes": 15
-      }
-    },
-    {
-      "id": "wifi-qr-1",
-      "type": "wifi-qr",
-      "col": 1,
-      "row": 5,
-      "w": 2,
-      "h": 2,
-      "settings": {
-        "title": "Wi-Fi",
-        "ssid": "MonWifi",
-        "security": "WPA",
-        "password": "changez-moi",
-        "passwordWep": "",
-        "hidden": false,
-        "showPassword": false
-      }
-    },
-    {
-      "id": "music-1",
-      "type": "music",
-      "col": 3,
-      "row": 5,
-      "w": 3,
-      "h": 2,
-      "settings": {
-        "clientId": "",
-        "clientSecret": "",
-        "startSource": "none",
-        "startPlaylist": "",
-        "autoplay": true,
-        "shuffle": false,
-        "volume": 60,
-        "quickSearches": "Lofi hip hop\nDaft Punk\nMusique réunionnaise",
-        "showVideo": false,
-        "youtubeAppId": "111299001912",
-        "playerUrl": "https://antoine-mady.github.io/tv-dashboard/player/"
-      }
-    },
-    {
-      "id": "photos-1",
-      "type": "photos",
-      "col": 6,
-      "row": 1,
-      "w": 7,
-      "h": 6,
-      "settings": {
-        "source": "dlna",
-        "dlnaUrl": "",
-        "rootId": "0",
-        "usbFolder": "",
-        "intervalSec": 15,
-        "shuffle": true,
-        "fit": "contain",
-        "showCaption": true,
-        "maxPhotos": 5000,
-        "refreshHours": 12
-      }
+      "id": "page-2",
+      "name": "👥 Invités",
+      "widgets": [
+        {
+          "id": "clock-1",
+          "type": "clock",
+          "col": 1,
+          "row": 1,
+          "w": 5,
+          "h": 2,
+          "settings": {
+            "timezone": "Indian/Reunion",
+            "label": "",
+            "seconds": false,
+            "showDate": true
+          }
+        },
+        {
+          "id": "wifi-qr-2",
+          "type": "wifi-qr",
+          "col": 1,
+          "row": 3,
+          "w": 5,
+          "h": 4,
+          "settings": {
+            "title": "Wi-Fi invités",
+            "ssid": "MonWifi",
+            "security": "WPA",
+            "password": "changez-moi",
+            "passwordWep": "",
+            "hidden": false,
+            "showPassword": true
+          }
+        },
+        {
+          "id": "photos-1",
+          "type": "photos",
+          "col": 6,
+          "row": 1,
+          "w": 7,
+          "h": 6,
+          "settings": {
+            "source": "dlna",
+            "dlnaUrl": "",
+            "rootId": "0",
+            "usbFolder": "",
+            "intervalSec": 15,
+            "shuffle": true,
+            "fit": "contain",
+            "showCaption": true,
+            "maxPhotos": 5000,
+            "refreshHours": 12
+          }
+        }
+      ]
     }
   ]
 }
