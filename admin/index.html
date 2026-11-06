@@ -23,20 +23,18 @@
   </header>
 
   <main class="layout">
-    <aside id="rail" class="rail" aria-label="Widgets">
-      <div class="rail-inner">
-        <div class="rail-head">
-          <button id="rail-pin" type="button" class="ghost icon rail-pin" aria-pressed="false" title="Garder la liste ouverte">»</button>
-          <h2>Ajouter un widget</h2>
-        </div>
-        <p class="help rail-fade">Cliquez, ou glissez sur l’écran.</p>
-        <div id="library" class="library-list"></div>
-      </div>
-    </aside>
-
     <section class="center">
       <div class="screen-bar">
         <nav id="pages" class="channels" aria-label="Pages (chaînes CH▲ / CH▼ sur la TV)"></nav>
+        <div class="picker-anchor">
+          <button id="btn-add" type="button" class="add-widget" aria-haspopup="dialog" aria-expanded="false" aria-controls="picker" title="Ajouter un widget (A)">
+            <span aria-hidden="true">+</span> Ajouter un widget
+          </button>
+          <div id="picker" class="picker" role="dialog" aria-label="Ajouter un widget" hidden>
+            <p class="picker-help">Cliquez pour l’ajouter à la première place libre, ou glissez-le où vous voulez sur l’écran.</p>
+            <div id="library" class="library-list"></div>
+          </div>
+        </div>
         <div class="mode-switch" role="radiogroup" aria-label="Mode de l’écran">
           <button type="button" role="radio" data-mode="layout" aria-checked="true">Disposer</button>
           <button type="button" role="radio" data-mode="test" aria-checked="false">Tester</button>
@@ -59,6 +57,7 @@
           <span><kbd>Ctrl</kbd><kbd>D</kbd> dupliquer</span>
           <span><kbd>Suppr</kbd> supprimer</span>
           <span><kbd>Ctrl</kbd><kbd>Z</kbd> annuler</span>
+          <span><kbd>A</kbd> ajouter un widget</span>
           <span><kbd>T</kbd> passer en test</span>
         </div>
       </div>

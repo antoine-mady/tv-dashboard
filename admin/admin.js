@@ -207,7 +207,8 @@ function renderEditor() {
   if (!pageWidgets().length) {
     const empty = document.createElement('div');
     empty.className = 'editor-empty';
-    empty.innerHTML = '<strong>Page vide</strong><span>Glissez un widget depuis la liste de gauche, ou cliquez dessus.</span>';
+    empty.innerHTML = '<strong>Page vide</strong><span>Ajoutez un premier widget à cette page.</span><button type="button" class="add-widget"><span aria-hidden="true">+</span> Ajouter un widget</button>';
+    empty.querySelector('button').onclick = (e) => { e.stopPropagation(); openPicker(); };
     editor.append(empty);
   }
 
@@ -284,7 +285,7 @@ function renderEditor() {
 
 function setMode(mode) {
   state.mode = mode === 'test' ? 'test' : 'layout';
-  if (state.mode === 'test') closeDrawer();
+  if (state.mode === 'test') { closeDrawer(); closePicker(); }
   try { localStorage.setItem('tvdash-admin-mode', state.mode); } catch (e) { /* stockage indisponible */ }
   document.body.classList.toggle('is-testing', state.mode === 'test');
   document.querySelectorAll('.mode-switch [data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === state.mode)));
@@ -325,12 +326,48 @@ function toggleGlobalSettings() {
   openDrawer(true);
 }
 
-function setRailPinned(on) {
-  document.body.classList.toggle('rail-pinned', on);
-  $('#rail-pin').setAttribute('aria-pressed', String(on));
-  $('#rail-pin').textContent = on ? '«' : '»';
-  $('#rail-pin').title = on ? 'Réduire la liste' : 'Garder la liste ouverte';
-  try { localStorage.setItem('tvdash-admin-rail', on ? '1' : '0'); } catch (e) { /* stockage indisponible */ }
+// ---- Sélecteur « Ajouter un widget » -----------------------------------------------------
+
+function openPicker() {
+  if (state.mode !== 'layout') setMode('layout');
+  const picker = $('#picker');
+  picker.hidden = false;
+  picker.classList.remove('is-dragging-out');
+  $('#btn-add').setAttribute('aria-expanded', 'true');
+  const first = picker.querySelector('.lib-item');
+  if (first) first.focus();
+}
+
+function closePicker(restoreFocus) {
+  const picker = $('#picker');
+  if (picker.hidden) return;
+  picker.hidden = true;
+  picker.classList.remove('is-dragging-out');
+  $('#btn-add').setAttribute('aria-expanded', 'false');
+  if (restoreFocus) $('#btn-add').focus();
+}
+
+function initPicker() {
+  const picker = $('#picker');
+  $('#btn-add').onclick = (e) => {
+    e.stopPropagation();
+    if (picker.hidden) openPicker(); else closePicker();
+  };
+  document.addEventListener('pointerdown', (e) => {
+    if (!picker.hidden && !picker.contains(e.target) && e.target !== $('#btn-add') && !$('#btn-add').contains(e.target)) closePicker();
+  });
+  picker.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); closePicker(true); return; }
+    // Flèches : se déplacer dans la grille de widgets (2 colonnes).
+    const items = Array.from(picker.querySelectorAll('.lib-item'));
+    const i = items.indexOf(document.activeElement);
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 2, ArrowUp: -2 }[e.key];
+    if (i !== -1 && step) {
+      e.preventDefault();
+      const next = items[i + step];
+      if (next) next.focus();
+    }
+  });
 }
 
 // ---- Glisser-déposer depuis la bibliothèque ---------------------------------------------
@@ -774,29 +811,32 @@ function select(id) {
   renderInspector();
 }
 
+/** Tuiles du sélecteur (construites une fois : la liste des widgets ne change pas). */
 function renderLibrary() {
   const lib = $('#library');
-  lib.innerHTML = '';
+  if (lib.childElementCount) return;
   Object.entries(state.widgets).forEach(([type, { manifest: m }]) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'lib-item';
-    b.title = (m.description || m.name) + ' — cliquez ou glissez sur l’écran';
-    b.innerHTML = '<span class="lib-icon" aria-hidden="true"></span><span class="lib-name"></span>';
+    b.innerHTML = '<span class="lib-icon" aria-hidden="true"></span><span class="lib-text"><span class="lib-name"></span><span class="lib-desc"></span></span>';
     b.querySelector('.lib-icon').textContent = m.icon;
     b.querySelector('.lib-name').textContent = m.name;
-    b.onclick = () => addWidget(type);
+    b.querySelector('.lib-desc').textContent = m.description || '';
+    b.title = m.description || m.name;
+    b.onclick = () => { closePicker(); addWidget(type); };
     b.draggable = true;
     b.ondragstart = (e) => {
       drag.type = type;
       e.dataTransfer.setData('text/plain', type);
       e.dataTransfer.effectAllowed = 'copy';
       $('#editor').classList.add('is-dragging');
+      // Le sélecteur s'efface pour laisser voir l'écran (sans le retirer : ça annulerait le glisser).
+      setTimeout(() => $('#picker').classList.add('is-dragging-out'), 0);
     };
-    b.ondragend = endLibraryDrag;
+    b.ondragend = () => { endLibraryDrag(); closePicker(); };
     lib.append(b);
   });
-
 }
 
 function widgetApi(type) {
@@ -1006,7 +1046,7 @@ const KEY_TO_REMOTE = {
 };
 
 function onKeyDown(e) {
-  if (document.querySelector('dialog[open]') || !$('#page-menu').hidden) return;
+  if (document.querySelector('dialog[open]') || !$('#page-menu').hidden || !$('#picker').hidden) return;
   const mod = e.ctrlKey || e.metaKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   // Échap dans un champ du panneau de réglages : ferme le panneau.
@@ -1030,6 +1070,7 @@ function onKeyDown(e) {
   }
 
   if (key === 't' && !mod && !e.altKey) { setMode('test'); return; }
+  if (key === 'a' && !mod && !e.altKey) { e.preventDefault(); openPicker(); return; }
   if (e.key === 'Escape' && state.drawer) { closeDrawer(); return; }
   if (!state.selected) return;
   const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -1084,10 +1125,6 @@ async function init() {
 
   $('#btn-global').onclick = toggleGlobalSettings;
   $('#drawer-close').onclick = closeDrawer;
-  $('#rail-pin').onclick = () => setRailPinned(!document.body.classList.contains('rail-pinned'));
-  let pinned = false;
-  try { pinned = localStorage.getItem('tvdash-admin-rail') === '1'; } catch (e) { /* stockage indisponible */ }
-  setRailPinned(pinned);
   $('#btn-deploy').onclick = sendToTv;
   $('#btn-reload').onclick = reloadPreview;
   $('#deploy-close').onclick = () => $('#deploy-dialog').close();
@@ -1111,6 +1148,7 @@ async function init() {
   try { mode = localStorage.getItem('tvdash-admin-mode') || 'layout'; } catch (e) { /* stockage indisponible */ }
   setMode(mode);
   initPageMenu();
+  initPicker();
   document.addEventListener('keydown', onKeyDown);
   initRemote();
   new ResizeObserver(fitPreview).observe($('#screen'));
