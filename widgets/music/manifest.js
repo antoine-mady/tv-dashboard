@@ -2,7 +2,7 @@ export default {
   type: 'music',
   name: 'Musique YouTube',
   icon: '🎵',
-  description: 'Se connecte à votre compte YouTube : vos playlists, vos « J’aime », la recherche. OK = ouvrir la bibliothèque, ⏯ ⏭ ⏮ pilotent la lecture, rouge = app YouTube.',
+  description: 'Se connecte à votre compte YouTube : vos playlists, vos « J’aime », la recherche. Boutons ⏮ ⏯ ⏭ ☰ à l’écran (◀ ▶ puis OK), utilisables sans touches média ; ☰ = bibliothèque, rouge = app YouTube.',
   size: { default: { w: 4, h: 3 }, min: { w: 3, h: 2 } },
   focusable: true,
   schema: [
@@ -21,7 +21,7 @@ export default {
     { key: 'shuffle', label: 'Lecture aléatoire', type: 'bool', default: false },
     { key: 'volume', label: 'Volume (%)', type: 'number', min: 0, max: 100, default: 60 },
     { key: 'quickSearches', label: 'Recherches rapides (une par ligne)', type: 'textarea', default: 'Lofi hip hop\nDaft Punk\nMusique réunionnaise',
-      help: 'Accessibles en un clic depuis la TV, sans clavier.' },
+      help: 'Proposées dans l’onglet « Rechercher » de la TV, sans clavier.' },
     { key: 'showVideo', label: 'Afficher la vidéo (sinon la pochette)', type: 'bool', default: false },
     { key: 'playerUrl', label: 'Adresse de la page lecteur', type: 'text', default: 'https://antoine-mady.github.io/tv-dashboard/player/', required: true,
       help: 'Page player/ du projet publiée sur GitHub Pages : YouTube refuse de lire directement dans une app TV. Si vous changez d’hébergement, ajoutez son origine à frame-src dans tizen/config.xml.' },

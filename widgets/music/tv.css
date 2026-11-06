@@ -3,13 +3,7 @@
   flex-direction: column;
   height: 100%;
 }
-.w-music .mu-source {
-  font-size: calc(var(--h) * 0.042);
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  min-height: 1.2em;
-}
+.w-music .mu-warn { font-size: calc(var(--h) * 0.045); color: #ffb4a8; margin-top: 2px; }
 
 /* ---- Écran de connexion ---- */
 .w-music .mu-login {
@@ -54,19 +48,41 @@
   flex-direction: column;
   background: rgba(255, 255, 255, 0.04);
 }
-.w-music-panel .mp-brand { font-size: 44px; font-weight: 700; margin-bottom: 40px; }
+.w-music-panel .mp-now { display: flex; align-items: center; margin-bottom: 24px; }
+.w-music-panel .mp-now-cover {
+  width: 128px;
+  height: 128px;
+  flex: none;
+  margin-right: 24px;
+  border-radius: 14px;
+  background: #222 center / cover no-repeat;
+}
+.w-music-panel .mp-now-text { flex: 1; min-width: 0; }
+.w-music-panel .mp-now-title { font-size: 30px; font-weight: 700; }
+.w-music-panel .mp-now-artist { font-size: 24px; color: rgba(242, 245, 249, 0.6); margin-top: 6px; }
+.w-music-panel .mp-controls { display: flex; justify-content: space-between; margin-bottom: 48px; }
+.w-music-panel .mp-btn {
+  width: 128px;
+  height: 96px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.w-music-panel .mp-btn svg { width: 52px; height: 52px; }
+.w-music-panel .mp-btn.is-selected { background: var(--accent); color: #06243b; }
 .w-music-panel .mp-menu { flex: 1; }
 .w-music-panel .mp-tab {
-  font-size: 32px;
-  padding: 16px 22px;
+  font-size: 34px;
+  padding: 18px 26px;
   margin-bottom: 8px;
   border-radius: 16px;
   color: rgba(242, 245, 249, 0.7);
 }
-.w-music-panel .mp-tab-icon { display: inline-block; width: 52px; }
 .w-music-panel .mp-tab.is-current { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .w-music-panel .mp-tab.is-selected { background: var(--accent); color: #06243b; font-weight: 700; }
-.w-music-panel .mp-help { font-size: 22px; line-height: 1.6; color: rgba(242, 245, 249, 0.55); }
 .w-music-panel .mp-main {
   flex: 1;
   min-width: 0;
@@ -115,15 +131,6 @@
 .w-music-panel .mp-row-sub { font-size: 24px; color: rgba(242, 245, 249, 0.6); margin-top: 4px; }
 .w-music-panel .mp-row-badge { font-size: 32px; color: var(--accent); margin-left: 20px; }
 .w-music-panel .mp-more { position: absolute; right: 8px; bottom: 0; font-size: 22px; color: rgba(242, 245, 249, 0.5); }
-.w-music-panel .mp-now {
-  font-size: 26px;
-  color: rgba(242, 245, 249, 0.75);
-  padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .w-music .mu-media {
   position: relative;
   flex: 1;
@@ -155,7 +162,7 @@
   background: rgba(0, 0, 0, 0.35);
   transition: opacity 0.3s;
 }
-.w-music .mu-info { padding-top: calc(var(--h) * 0.04); }
+.w-music .mu-info { padding-top: calc(var(--h) * 0.035); }
 .w-music .mu-title { font-size: calc(var(--h) * 0.075); font-weight: 600; }
 .w-music .mu-artist { font-size: calc(var(--h) * 0.055); }
 .w-music .mu-bar {
@@ -166,5 +173,24 @@
   overflow: hidden;
 }
 .w-music .mu-bar-fill { height: 100%; width: 0; background: var(--accent); transition: width 1s linear; }
-.w-music .mu-time { font-size: calc(var(--h) * 0.045); margin-top: 6px; font-variant-numeric: tabular-nums; }
-.w-music .mu-hint { font-size: calc(var(--h) * 0.04); opacity: 0; transition: opacity 0.3s; margin-top: 4px; }
+
+/* ---- Boutons de lecture (◀ ▶ pour choisir, OK pour valider) ---- */
+.w-music .mu-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: calc(var(--h) * 0.03);
+}
+.w-music .mu-btn {
+  width: calc(var(--h) * 0.2);
+  height: calc(var(--h) * 0.13);
+  margin: 0 calc(var(--h) * 0.015);
+  border-radius: calc(var(--h) * 0.035);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.w-music .mu-btn svg { width: calc(var(--h) * 0.075); height: calc(var(--h) * 0.075); }
+.w-music .mu-btn-main svg { width: calc(var(--h) * 0.09); height: calc(var(--h) * 0.09); }
+.w-music .mu-btn.is-selected { background: var(--accent); color: #06243b; }

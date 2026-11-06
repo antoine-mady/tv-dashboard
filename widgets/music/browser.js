@@ -1,7 +1,9 @@
 // Panneau plein écran « bibliothèque musicale » (ouvert avec OK sur le widget).
-// Colonne gauche : onglets. Droite : liste (playlists, titres, recherches). Tout à la télécommande.
+// Colonne gauche : titre en cours + boutons ⏮ ⏯ ⏭ (▲ depuis le premier onglet), puis les onglets.
+// Droite : liste (playlists, titres, recherches). Tout à la télécommande, touches média facultatives.
 import { h } from '../../app/dom.js';
 import { navigate } from './list-nav.js';
+import { ICONS } from './icons.js';
 
 const VISIBLE_ROWS = 7; // lignes visibles dans la liste (défilement au-delà)
 
@@ -13,34 +15,38 @@ export class MusicBrowser {
   constructor(widget, root) {
     this.w = widget;
     this.root = root;
-    this.state = { zone: 'menu', menu: 0, item: 0 };
+    this.state = { zone: 'menu', control: 1, menu: 0, item: 0 };
     this.items = [];
     this.status = '';
     this.searchResultsFor = null;
     this.quick = String(widget.settings.quickSearches || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     this.tabs = [
-      { id: 'playlists', label: 'Mes playlists', icon: '📚' },
-      { id: 'liked', label: 'J’aime', icon: '👍' },
-      { id: 'search', label: 'Rechercher', icon: '🔍' },
+      { id: 'playlists', label: 'Playlists' },
+      { id: 'liked', label: 'J’aime' },
+      { id: 'search', label: 'Rechercher' },
+      { id: 'queue', label: 'En cours' },
+      { id: 'logout', label: 'Déconnexion' },
     ];
-    if (this.quick.length) this.tabs.push({ id: 'quick', label: 'Recherches rapides', icon: '⚡' });
-    this.tabs.push({ id: 'queue', label: 'File en cours', icon: '🎶' }, { id: 'logout', label: 'Se déconnecter', icon: '⎋' });
+    this.controls = ['prev', 'playpause', 'next'];
     this.loadToken = 0;
 
     root.classList.add('w-music-panel');
+    this.nowCover = h('div', { className: 'mp-now-cover' });
+    this.nowTitle = h('div', { className: 'mp-now-title ellipsis' });
+    this.nowArtist = h('div', { className: 'mp-now-artist ellipsis' });
+    this.controlsEl = h('div', { className: 'mp-controls' });
     this.menuEl = h('div', { className: 'mp-menu' });
     this.titleEl = h('div', { className: 'mp-title' });
     this.searchEl = h('input', { className: 'mp-search', type: 'text', placeholder: 'Titre, artiste, album…' });
     this.searchWrap = h('div', { className: 'mp-search-wrap' }, this.searchEl);
     this.listEl = h('div', { className: 'mp-list' });
     this.statusEl = h('div', { className: 'mp-status' });
-    this.nowEl = h('div', { className: 'mp-now' });
     root.appendChild(h('div', { className: 'mp-layout' },
       h('div', { className: 'mp-side' },
-        h('div', { className: 'mp-brand', text: '🎵 Musique' }),
-        this.menuEl,
-        h('div', { className: 'mp-help', html: '▲▼ naviguer · ▶ / OK ouvrir<br>⏯ lecture · ⏭ ⏮ pistes · ↩ fermer' })),
-      h('div', { className: 'mp-main' }, this.titleEl, this.searchWrap, this.statusEl, this.listEl, this.nowEl)));
+        h('div', { className: 'mp-now' }, this.nowCover, h('div', { className: 'mp-now-text' }, this.nowTitle, this.nowArtist)),
+        this.controlsEl,
+        this.menuEl),
+      h('div', { className: 'mp-main' }, this.titleEl, this.searchWrap, this.statusEl, this.listEl)));
 
     this.searchEl.addEventListener('keydown', (e) => {
       // Touche « Terminé » du clavier TV ou Entrée : lancer la recherche.
@@ -63,7 +69,7 @@ export class MusicBrowser {
     this.menuEl.innerHTML = '';
     this.tabs.forEach((t, i) => {
       const cls = 'mp-tab' + (i === this.state.menu ? ' is-current' : '') + (i === this.state.menu && this.state.zone === 'menu' ? ' is-selected' : '');
-      this.menuEl.appendChild(h('div', { className: cls }, h('span', { className: 'mp-tab-icon', text: t.icon }), t.label));
+      this.menuEl.appendChild(h('div', { className: cls, text: t.label }));
     });
   }
 
@@ -90,9 +96,20 @@ export class MusicBrowser {
     }
   }
 
+  /** Titre en cours + boutons de lecture (appelé aussi par le widget à chaque changement d'état). */
   renderNow() {
     const t = this.w.currentTrack();
-    this.nowEl.textContent = t ? (this.w.isPlaying() ? '▶ ' : '⏸ ') + t.title + (t.artist ? ' — ' + t.artist : '') : '';
+    this.nowTitle.textContent = t ? t.title : 'Aucune lecture';
+    this.nowArtist.textContent = t ? t.artist || '' : '';
+    this.nowCover.style.backgroundImage = t ? 'url(https://i.ytimg.com/vi/' + t.id + '/mqdefault.jpg)' : '';
+    this.controlsEl.innerHTML = '';
+    this.controls.forEach((id, i) => {
+      const icon = id === 'playpause' ? (this.w.isPlaying() ? 'pause' : 'play') : id;
+      const selected = this.state.zone === 'controls' && i === this.state.control;
+      const btn = h('div', { className: 'mp-btn' + (selected ? ' is-selected' : '') });
+      btn.innerHTML = ICONS[icon];
+      this.controlsEl.appendChild(btn);
+    });
   }
 
   render() { this.renderMenu(); this.renderList(); this.renderNow(); }
@@ -137,24 +154,22 @@ export class MusicBrowser {
         this.load('J’aime', lib.liked(), (tracks) => this.trackItems(tracks, 'J’aime'));
         break;
       case 'search':
-        this.titleEl.textContent = 'Rechercher';
-        if (this.searchResultsFor === null) this.setItems([], 'OK pour saisir une recherche');
-        else this.render();
-        break;
-      case 'quick':
-        this.titleEl.textContent = 'Recherches rapides';
-        this.setItems(this.quick.map((q) => ({ kind: 'query', id: q, title: q, icon: '⚡', sub: 'Rechercher' })));
+        // Avant toute recherche : les recherches rapides de l'admin, accessibles sans clavier.
+        this.titleEl.textContent = this.searchResultsFor === null ? 'Rechercher' : 'Résultats : ' + this.searchResultsFor;
+        if (this.searchResultsFor === null) {
+          this.setItems(this.quick.map((q) => ({ kind: 'query', id: q, title: q, icon: '🔍' })), this.quick.length ? '' : 'OK pour saisir une recherche');
+        } else this.render();
         break;
       case 'queue': {
         const q = this.w.queueInfo();
-        this.titleEl.textContent = 'File en cours' + (q.label ? ' · ' + q.label : '');
+        this.titleEl.textContent = 'En cours' + (q.label ? ' · ' + q.label : '');
         this.setItems(this.trackItems(q.tracks, q.label), q.tracks.length ? '' : 'Aucune lecture en cours');
         this.state.item = Math.max(0, q.index);
         this.render();
         break;
       }
       case 'logout':
-        this.titleEl.textContent = 'Se déconnecter';
+        this.titleEl.textContent = 'Déconnexion';
         this.setItems([], 'OK pour déconnecter le compte YouTube de cette TV');
         break;
       default:
@@ -200,12 +215,15 @@ export class MusicBrowser {
       else this.w.playTracks(it.tracks, this.state.item, it.label);
       this.w.closePanel();
     } else if (it.kind === 'query') {
-      this.searchResultsFor = it.title;
-      this.state.menu = this.tabs.findIndex((t) => t.id === 'search');
-      this.openTab();
       this.searchEl.value = it.title;
       this.runSearch(it.title);
     }
+  }
+
+  /** Bouton ⏮ ⏯ ⏭ validé avec OK. */
+  pressControl() {
+    this.w.mediaKey(this.controls[this.state.control]);
+    this.after(300, () => this.renderNow());
   }
 
   onKey(key) {
@@ -220,18 +238,20 @@ export class MusicBrowser {
       this.after(300, () => this.renderNow());
       return true;
     }
-    if ((key === 'next' || key === 'prev') && this.state.zone === 'menu') {
+    if ((key === 'next' || key === 'prev') && this.state.zone !== 'list') {
       this.w.mediaKey(key);
+      this.after(300, () => this.renderNow());
       return true;
     }
     if (key === 'red') return false;
-    const r = navigate(this.state, key, { menuLength: this.tabs.length, listLength: this.items.length });
+    const r = navigate(this.state, key, { menuLength: this.tabs.length, listLength: this.items.length, controlsLength: this.controls.length });
     this.state = r.state;
     const a = r.action;
     if (a && a.type === 'close') { this.w.closePanel(); return true; }
     if (a && a.type === 'tab') this.openTab();
     if (a && a.type === 'activate-menu') this.activateMenu();
     if (a && a.type === 'activate-item') this.activateItem();
+    if (a && a.type === 'control') this.pressControl();
     this.render();
     return true;
   }
