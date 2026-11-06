@@ -183,11 +183,11 @@ export function renderEditor(container, settings, onChange, api) {
         message('Aucun arrêt trouvé. Essayez un autre nom.');
         return;
       }
-      const list = el('div', { id: 'bus-stop-suggestions', role: 'listbox', className: 'ext-suggestions' });
-      stops.forEach((stop, index) => {
+      const list = el('div', { id: 'bus-stop-suggestions', className: 'ext-suggestions' });
+      list.setAttribute('role', 'listbox');
+      stops.forEach((stop) => {
         const button = el('button', {
           type: 'button',
-          role: 'option',
           textContent: stop.name + ' — lignes ' + stop.routes.join(', '),
           onclick: () => {
             clearTimeout(searchTimer);
@@ -195,6 +195,7 @@ export function renderEditor(container, settings, onChange, api) {
             choose(stop.name, stop.ids, networkSelect.value);
           },
         });
+        button.setAttribute('role', 'option');
         button.setAttribute('aria-selected', 'false');
         button.setAttribute('aria-label', stop.name + ' — lignes ' + stop.routes.join(', ') + ' — choisir');
         button.onkeydown = (e) => {
