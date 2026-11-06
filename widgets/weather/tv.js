@@ -4,6 +4,8 @@ import { describeWeather, buildUrl } from './codes.js';
 import { buildVigilanceUrl, parseVigilance, vigilanceText } from './vigilance.js';
 import { pickHours } from './hourly.js';
 import { formatHour, dayLength, uvLevel, aqiLevel, buildAirUrl } from './extras.js';
+import { buildForecastUrl, hourGroups, dayList, windText, rainText } from './forecast.js';
+import { ListPanel, focusHint } from '../../app/list-panel.js';
 import clearDay from './assets/clear-day.svg';
 import clearNight from './assets/clear-night.svg';
 import partlyDay from './assets/partly-day.svg';
@@ -14,6 +16,9 @@ import drizzle from './assets/drizzle.svg';
 import rain from './assets/rain.svg';
 import snow from './assets/snow.svg';
 import storm from './assets/storm.svg';
+
+const TABS = [{ id: 'hours', label: 'Heure par heure' }, { id: 'days', label: 'Jour par jour' }];
+const FORECAST_TTL = 10 * 60 * 1000; // prévisions détaillées gardées 10 min
 
 const ICONS = {
   'clear-day': clearDay, 'clear-night': clearNight, 'partly-day': partlyDay, 'partly-night': partlyNight,
@@ -44,6 +49,7 @@ export default class WeatherWidget extends Widget {
       hasExtras ? this.extraEl : null));
     if (s.hours > 0) el.appendChild(this.hoursEl);
     if (s.days > 0) el.appendChild(this.daysEl);
+    el.appendChild(focusHint('OK : heures et jours'));
 
     this.every(s.refreshMinutes * 60 * 1000, () => this.refresh());
   }
@@ -143,5 +149,101 @@ export default class WeatherWidget extends Widget {
     }
     this.extraEl.innerHTML = '';
     rows.forEach((r) => this.extraEl.appendChild(r));
+  }
+
+  // ---- Panneau « météo dans le temps » (OK sur le widget) : heure par heure / jour par jour ----
+  onKey(key) {
+    if (this.list) return this.list.onKey(key);
+    if (key === 'enter') { this.openList(); return true; }
+    return false;
+  }
+
+  onPanelClose() { this.list = null; }
+
+  openList() {
+    this.list = new ListPanel(this, {
+      className: 'w-weather-panel',
+      title: '⛅ Météo · ' + (this.settings.label || ''),
+      tabs: TABS,
+      tabsHint: 'heures / jours',
+      rows: (ctx) => (ctx.tab.id === 'days' ? this.dayRows() : this.hourRows()),
+      empty: () => (this.forecast ? 'Prévisions indisponibles' : 'Chargement…'),
+      // OK sur un jour : ses heures.
+      onActivate: (row) => { if (row.day) this.list.showTab(0, this.firstHourOf(row.day)); },
+    });
+    this.loadForecast();
+  }
+
+  loadForecast() {
+    if (this.forecast && Date.now() - this.forecastAt < FORECAST_TTL) { this.list.refresh(); return; }
+    this.list.setStatus(this.forecast ? '' : 'Chargement…');
+    this.fetchJson(buildForecastUrl(this.settings)).then((data) => {
+      this.forecast = data;
+      this.forecastAt = Date.now();
+      if (!this.list) return;
+      this.list.setStatus('');
+      this.list.refresh();
+    }, (e) => {
+      if (this.list) this.list.setStatus('⚠ Prévisions indisponibles : ' + e.message);
+    });
+  }
+
+  nowIso() {
+    return this.forecast && this.forecast.current ? this.forecast.current.time : null;
+  }
+
+  firstHourOf(day) {
+    const groups = hourGroups(this.forecast && this.forecast.hourly, this.nowIso());
+    for (let i = 0; i < groups.length; i++) if (groups[i].day === day) return groups[i].items[0].key;
+    return undefined;
+  }
+
+  hourRows() {
+    if (!this.forecast) return [];
+    const rows = [];
+    hourGroups(this.forecast.hourly, this.nowIso()).forEach((g) => {
+      rows.push({ header: g.label });
+      g.items.forEach((x) => {
+        const w = describeWeather(x.code, x.isDay);
+        rows.push({
+          key: x.key,
+          className: x.now ? 'is-now' : '',
+          el: h('div', { className: 'wxp-row' },
+            h('div', { className: 'wxp-when', text: x.now ? 'Maintenant' : x.hour }),
+            h('div', { className: 'wxp-icon', html: ICONS[w.icon] }),
+            h('div', { className: 'wxp-desc ellipsis', text: w.label }),
+            h('div', { className: 'wxp-temp', text: x.temp + '°' }),
+            h('div', { className: 'wxp-feels muted', text: x.feels !== null ? 'ress. ' + x.feels + '°' : '' }),
+            h('div', { className: 'wxp-rain', text: x.rain !== null ? '💧 ' + rainText(x.rain, x.mm) : '' }),
+            h('div', { className: 'wxp-wind', text: '💨 ' + windText(x.wind, x.gusts) })),
+        });
+      });
+    });
+    return rows;
+  }
+
+  dayRows() {
+    if (!this.forecast) return [];
+    return dayList(this.forecast.daily, this.nowIso()).map((d) => {
+      const w = describeWeather(d.code, true);
+      const uv = uvLevel(d.uv);
+      return {
+        key: d.key,
+        day: d.key,
+        el: h('div', { className: 'wxp-row wxp-day' },
+          h('div', { className: 'wxp-when', text: d.label }),
+          h('div', { className: 'wxp-icon', html: ICONS[w.icon] }),
+          h('div', { className: 'wxp-desc' },
+            h('div', { className: 'ellipsis', text: w.label }),
+            h('div', { className: 'wxp-sub muted ellipsis',
+              text: [d.sunrise && d.sunset ? '☀ ' + d.sunrise + ' – ' + d.sunset : '', uv ? 'UV ' + uv.value : '']
+                .filter(Boolean).join('  ·  ') })),
+          h('div', { className: 'wxp-temp' },
+            h('span', { text: d.max + '°' }),
+            h('span', { className: 'muted', text: d.min !== null ? ' / ' + d.min + '°' : '' })),
+          h('div', { className: 'wxp-rain', text: d.rain !== null ? '💧 ' + rainText(d.rain, d.mm) : '' }),
+          h('div', { className: 'wxp-wind', text: '💨 ' + windText(d.wind, d.gusts) })),
+      };
+    });
   }
 }

@@ -48,3 +48,16 @@
   font-size: calc(var(--h) * 0.08);
   margin-top: calc(var(--h) * 0.05);
 }
+
+/* ---- Panneau « tout voir » (app/list-panel.js) ---- */
+.w-birthdays-panel .bdp-row { display: flex; align-items: center; }
+.w-birthdays-panel .bdp-icon { flex: none; width: 64px; font-size: 38px; }
+.w-birthdays-panel .bdp-name { flex: 1; min-width: 0; font-weight: 600; }
+.w-birthdays-panel .bdp-when { flex: none; margin-left: 24px; color: rgba(242, 245, 249, 0.65); white-space: nowrap; }
+.w-birthdays-panel .lp-row.is-today .bdp-name,
+.w-birthdays-panel .lp-row.is-today .bdp-when { color: var(--accent); }
+.w-birthdays-panel .bdp-detail { text-align: center; }
+.w-birthdays-panel .bdp-detail-icon { font-size: 120px; line-height: 1.2; }
+.w-birthdays-panel .bdp-detail-name { font-size: 54px; font-weight: 700; line-height: 1.2; margin: 16px 0 28px; word-wrap: break-word; }
+.w-birthdays-panel .bdp-detail-when { font-size: 44px; font-weight: 700; color: var(--accent); margin: 8px 0 24px; }
+.w-birthdays-panel .bdp-detail-line { margin-bottom: 14px; }

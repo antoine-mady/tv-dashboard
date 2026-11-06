@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 process.env.TZ = 'Indian/Reunion'; // UTC+4, sans heure d'été : résultats indépendants de la machine
 
-const { parseIcs, expandEvents, toDate, parseDuration, parseUrlList, parseLine } = await import('./ical.js');
+const { parseIcs, expandEvents, toDate, parseDuration, parseUrlList, parseLine, calendarName } = await import('./ical.js');
 
 const ics = (...events) => ['BEGIN:VCALENDAR', 'VERSION:2.0',
   ...events.map((e) => 'BEGIN:VEVENT\r\n' + e.join('\r\n') + '\r\nEND:VEVENT'), 'END:VCALENDAR'].join('\r\n');
@@ -107,4 +107,13 @@ test('31 du mois et 29 février : mois sans ce jour ignorés', () => {
   const occ = between(ics(['SUMMARY:x', 'DTSTART;VALUE=DATE:20260131', 'RRULE:FREQ=MONTHLY;COUNT=4']),
     '2026-01-01T00:00:00Z', '2027-01-01T00:00:00Z');
   assert.deepEqual(occ.map((o) => o.start.getMonth() + 1), [1, 3, 5, 7]);
+});
+
+test('nom de l’agenda (X-WR-CALNAME) et description des événements', () => {
+  const text = 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Famille\\, amis\r\n' + ics(['UID:1', 'SUMMARY:A', 'DESCRIPTION:Ligne 1\\nLigne 2',
+    'DTSTART:20261110T080000Z']).replace('BEGIN:VCALENDAR\r\n', '');
+  assert.equal(calendarName(text), 'Famille, amis');
+  assert.equal(calendarName(ics(['UID:1'])), '');
+  const occ = between(text, '2026-11-01T00:00:00Z', '2026-12-01T00:00:00Z');
+  assert.equal(occ[0].description, 'Ligne 1\nLigne 2');
 });

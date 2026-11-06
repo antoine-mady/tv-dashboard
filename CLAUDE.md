@@ -81,6 +81,12 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      pour le styler. Tant qu'il est ouvert, **toutes** les touches vont à `onKey()` ; si « back » n'est pas
      gérée, l'app ferme le panneau. `this.closePanel()`, `this.panelOpen`, hook `onPanelClose()`.
      Exemple : la bibliothèque de `widgets/music/` (`browser.js`).
+   - **Panneau liste « tout voir »** : `ListPanel` de `app/list-panel.js` gère un panneau plein écran avec liste
+     défilante (titres de groupe), onglets ◀ ▶, recherche (clavier TV / dictée) et volet de détail ; le widget ne
+     fournit que `rows(ctx)` → `[{ header }, { key, el, detail }]`. Mettre `focusable: true`, ouvrir sur OK
+     (`this.list = new ListPanel(this, {…})`), déléguer `onKey` à `this.list.onKey`, `onPanelClose` → `this.list = null`,
+     et `this.list.refresh()` quand les données changent. `focusHint()` = badge « OK : tout voir » visible au focus.
+     Exemples : `widgets/agenda/`, `birthdays/` (recherche), `bus/`, `weather/` (chargement à l'ouverture).
    - QR code : `qrSvg(texte)` de `app/qr.js` (SVG à insérer en `innerHTML`).
    - Champs de saisie : quand un `<input>` a le focus, la télécommande ne transmet que Entrée, Retour, haut et
      bas (`app/remote.js`) ; le clavier natif de la TV gère le reste.
@@ -105,7 +111,7 @@ Référence la plus simple : **`widgets/clock/`**. Exemple complet (admin + serv
 
 ## Règles
 
-- Un widget ne modifie jamais `app/` ni `admin/` (il peut **importer** `app/Widget.js` et `app/dom.js`)
+- Un widget ne modifie jamais `app/` ni `admin/` (il peut **importer** `app/Widget.js`, `app/dom.js`, `app/qr.js`, `app/list-panel.js`)
   et n'écrit jamais dans le DOM hors de son `el`.
 - Aucun secret en dur : tout passe par les `settings` (config locale, ignorée par git).
 - Tout ce qui est démarré doit être arrêté : préférer `this.every/after/listen` ; sinon nettoyer dans `destroy()`.

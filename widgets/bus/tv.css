@@ -106,3 +106,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---- Panneau « tous les horaires » (app/list-panel.js) ---- */
+.w-bus-panel .busp-row { display: flex; align-items: center; }
+.w-bus-panel .busp-time { flex: none; width: 130px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.w-bus-panel .busp-line {
+  flex: none;
+  min-width: 90px;
+  padding: 4px 12px;
+  margin-right: 28px;
+  border-radius: 10px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 800;
+  font-size: 30px;
+  text-align: center;
+  white-space: nowrap;
+}
+.w-bus-panel .busp-dest { flex: 1; min-width: 0; }
+.w-bus-panel .busp-planned { flex: none; margin-left: 24px; font-size: 26px; color: rgba(242, 245, 249, 0.55); }
+.w-bus-panel .busp-delay { flex: none; margin-left: 24px; font-size: 28px; }
+.w-bus-panel .busp-delay.is-late { color: #ffb86b; }
+.w-bus-panel .busp-wait { flex: none; width: 220px; margin-left: 24px; text-align: right; font-weight: 700; }
+.w-bus-panel .lp-row.is-live .busp-time,
+.w-bus-panel .lp-row.is-live .busp-wait { color: #7ee0a1; }
+.w-bus-panel .lp-row.is-canceled .busp-dest,
+.w-bus-panel .lp-row.is-canceled .busp-time { text-decoration: line-through; opacity: 0.6; }
+.w-bus-panel .lp-row.is-canceled .busp-wait { color: #ff6b6b; }
+.w-bus-panel .lp-row.is-missed { opacity: 0.45; }

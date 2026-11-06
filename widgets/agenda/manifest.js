@@ -2,9 +2,9 @@ export default {
   type: 'agenda',
   name: 'Agenda',
   icon: '📅',
-  description: 'Prochains événements de vos agendas Google, iCloud ou Outlook, via leur adresse iCal (sans compte ni clé API).',
+  description: 'Prochains événements de vos agendas Google, iCloud ou Outlook, via leur adresse iCal (sans compte ni clé API). OK sur la télécommande : tous les événements à venir.',
   size: { default: { w: 4, h: 4 }, min: { w: 3, h: 2 } },
-  focusable: false,
+  focusable: true, // OK : panneau plein écran avec tous les événements à venir
   schema: [
     { key: 'title', label: 'Titre', type: 'text', default: 'Agenda', placeholder: 'ex. Famille' },
     { key: 'urls', label: 'Adresses iCal (une par ligne)', type: 'textarea', default: '', required: true,

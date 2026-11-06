@@ -85,11 +85,16 @@ produisent alors `TVDashboard.wgt` et indiquent comment l'installer avec Apps2Sa
 
 ## Widgets fournis
 
+Les widgets Agenda, Anniversaires, Bus et Météo se sélectionnent avec les flèches : **OK** ouvre un panneau plein écran
+(▲▼ pour parcourir, CH▲ / CH▼ pour aller plus vite, ◀ ▶ pour les onglets, Retour pour fermer) :
+📅 Agenda = tous les événements des 90 prochains jours avec le détail (horaire, lieu, description), un onglet par agenda ;
+🎂 Anniversaires = toute l'année, triée par date ou par nom, avec une recherche (▲ jusqu'au champ, OK pour écrire, ou dictée).
+
 | Widget | Remarques |
 |---|---|
 | 🕐 Horloge | Fuseau horaire configurable. |
-| ⛅ Météo | [Open-Meteo](https://open-meteo.com), sans clé API. |
-| 🚌 Horaires de bus | Réseaux de La Réunion (Alternéo, Car Jaune, Citalis, Kar'Ouest), données ouvertes de [transport.data.gouv.fr](https://transport.data.gouv.fr), sans clé API. Dans l'admin, « Chercher l'arrêt » puis « Choisir » : les horaires de l'arrêt sont embarqués dans l'app. Retards en temps réel pour Alternéo et Car Jaune. À la nouvelle saison d'horaires : « Mettre à jour les horaires » puis « Envoyer sur la TV » (le widget prévient 7 jours avant). |
+| ⛅ Météo | [Open-Meteo](https://open-meteo.com), sans clé API. **OK** : prévisions plein écran heure par heure (10 jours) et jour par jour (◀ ▶ pour changer ; OK sur un jour = ses heures). |
+| 🚌 Horaires de bus | Réseaux de La Réunion (Alternéo, Car Jaune, Citalis, Kar'Ouest), données ouvertes de [transport.data.gouv.fr](https://transport.data.gouv.fr), sans clé API. Dans l'admin, « Chercher l'arrêt » puis « Choisir » : les horaires de l'arrêt sont embarqués dans l'app. Retards en temps réel pour Alternéo et Car Jaune. À la nouvelle saison d'horaires : « Mettre à jour les horaires » puis « Envoyer sur la TV » (le widget prévient 7 jours avant). **OK** : tous les horaires jusqu'à demain soir, un onglet par ligne (◀ ▶). |
 | 📶 QR Wi-Fi | Le mot de passe reste dans la config locale et dans l'app installée sur la TV. |
 | 🎵 Musique YouTube | Connecté à votre compte YouTube (voir ci-dessous). Boutons ⏮ ⏯ ⏭ ☰ à l'écran (◀ ▶ puis OK) pour les télécommandes sans touches média ; ☰ = bibliothèque plein écran (playlists, J'aime, recherche, en cours) avec les mêmes boutons en haut. Les touches ⏭ ⏮ ⏯ marchent aussi, même sans focus ; touche rouge = app YouTube. |
 | 🖼️ Photos | Disque branché sur la box : le **partage multimédia DLNA/UPnP** doit être activé sur la box Zeop. Le bouton « Rechercher la box » trouve l'URL automatiquement. Sinon, un disque USB branché directement sur la TV fonctionne aussi. |

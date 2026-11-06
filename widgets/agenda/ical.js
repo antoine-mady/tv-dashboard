@@ -93,6 +93,20 @@ export function parseRrule(v) {
   };
 }
 
+/** Nom de l'agenda (X-WR-CALNAME, fourni par Google, iCloud, Outlook), ou '' . */
+export function calendarName(text) {
+  const lines = unfold(String(text || '')).split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const up = lines[i].toUpperCase();
+    if (up === 'BEGIN:VEVENT') break;
+    if (up.indexOf('X-WR-CALNAME') === 0) {
+      const p = parseLine(lines[i]);
+      if (p) return unescapeText(p.value).trim();
+    }
+  }
+  return '';
+}
+
 /** Texte .ics → liste de VEVENT bruts (dates en heure murale, non encore converties). */
 export function parseIcs(text) {
   const lines = unfold(text).split('\n');
@@ -115,6 +129,7 @@ export function parseIcs(text) {
       case 'UID': ev.uid = p.value; break;
       case 'SUMMARY': ev.summary = unescapeText(p.value); break;
       case 'LOCATION': ev.location = unescapeText(p.value); break;
+      case 'DESCRIPTION': ev.description = unescapeText(p.value); break;
       case 'STATUS': ev.status = p.value.toUpperCase(); break;
       case 'DTSTART': ev.start = parseDateValue(p.value, p.params); break;
       case 'DTEND': ev.end = parseDateValue(p.value, p.params); break;
@@ -269,7 +284,8 @@ function makeOccurrence(ev, w, extra) {
   } else {
     end = new Date(start.getTime() + eventDuration(ev, toDate(ev.start).getTime()));
   }
-  const o = { summary: ev.summary || '(Sans titre)', location: ev.location || '', start, end, allDay: w.allDay };
+  const o = { summary: ev.summary || '(Sans titre)', location: ev.location || '', description: ev.description || '',
+    start, end, allDay: w.allDay };
   Object.keys(extra || {}).forEach((k) => { o[k] = extra[k]; });
   return o;
 }

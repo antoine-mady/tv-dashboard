@@ -68,3 +68,38 @@
   font-size: calc(var(--h) * 0.07);
   margin-top: calc(var(--h) * 0.05);
 }
+
+/* ---- Panneau « tout voir » (app/list-panel.js) ---- */
+.w-agenda-panel .agp-row { display: flex; align-items: center; }
+.w-agenda-panel .agp-dot {
+  flex: none;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 24px;
+}
+.w-agenda-panel .agp-time {
+  flex: none;
+  width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: rgba(242, 245, 249, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+.w-agenda-panel .lp-row.is-now .agp-time { color: var(--accent); font-weight: 700; }
+.w-agenda-panel .agp-text { flex: 1; min-width: 0; }
+.w-agenda-panel .agp-summary { font-weight: 600; }
+.w-agenda-panel .agp-location { font-size: 26px; }
+.w-agenda-panel .agp-detail-cal { display: flex; align-items: center; font-size: 28px; color: rgba(242, 245, 249, 0.7); }
+.w-agenda-panel .agp-detail-title { font-size: 46px; font-weight: 700; line-height: 1.2; margin: 20px 0 28px; }
+.w-agenda-panel .agp-detail-line { margin-bottom: 14px; }
+.w-agenda-panel .agp-detail-desc {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 28px;
+  color: rgba(242, 245, 249, 0.8);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
