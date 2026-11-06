@@ -93,6 +93,7 @@ Les widgets Agenda, Anniversaires, Bus et Météo se sélectionnent avec les fl�
 
 | Widget | Remarques |
 |---|---|
+| ✍️ Texte | Saisie avec le clavier de la TV ou par dictée vocale (OK pour modifier). L'admin règle l'alignement, la taille et la couleur ; le texte reste enregistré sur la TV. |
 | 🕐 Horloge | Fuseau horaire configurable. |
 | ⛅ Météo | [Open-Meteo](https://open-meteo.com), sans clé API. **OK** : prévisions plein écran heure par heure (10 jours) et jour par jour (◀ ▶ pour changer ; OK sur un jour = ses heures). |
 | 🚌 Horaires de bus | Réseaux de La Réunion (Alternéo, Car Jaune, Citalis, Kar'Ouest), données ouvertes de [transport.data.gouv.fr](https://transport.data.gouv.fr), sans clé API. Dans l'admin, « Chercher l'arrêt » puis « Choisir » : les horaires de l'arrêt sont embarqués dans l'app. Retards en temps réel pour Alternéo et Car Jaune. À la nouvelle saison d'horaires : « Mettre à jour les horaires » puis « Envoyer sur la TV » (le widget prévient 7 jours avant). **OK** : tous les horaires jusqu'à demain soir, un onglet par ligne (◀ ▶). |
