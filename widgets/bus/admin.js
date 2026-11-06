@@ -144,6 +144,16 @@ export function renderEditor(container, settings, onChange, api) {
   btnSearch.onclick = search;
   input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); search(); } };
   btnUpdate.onclick = async () => {
-    for (let i = 0; i < tables.length; i++) await choose(tables[i].stopName, tables[i].stopIds, i);
+    message('Mise à jour des horaires de tous les arrêts…');
+    try {
+      const next = [];
+      for (const t of tables) {
+        const { timetable } = await api.call('timetable?' + qs({ network: settings.network, gtfsUrl: settings.gtfsUrl, ids: t.stopIds.join(','), name: t.stopName }));
+        next.push(timetable);
+      }
+      saveTables(next);
+    } catch (e) {
+      message('Erreur : ' + e.message, 'error');
+    }
   };
 }
