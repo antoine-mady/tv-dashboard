@@ -88,7 +88,7 @@ L'app est buildée, signée, installée puis lancée sur la TV (environ 10 s). �
 | ⛅ Météo | [Open-Meteo](https://open-meteo.com), sans clé API. |
 | 🚌 Horaires de bus | Réseaux de La Réunion (Alternéo, Car Jaune, Citalis, Kar'Ouest), données ouvertes de [transport.data.gouv.fr](https://transport.data.gouv.fr), sans clé API. Dans l'admin, « Chercher l'arrêt » puis « Choisir » : les horaires de l'arrêt sont embarqués dans l'app. Retards en temps réel pour Alternéo et Car Jaune. À la nouvelle saison d'horaires : « Mettre à jour les horaires » puis « Envoyer sur la TV » (le widget prévient 7 jours avant). |
 | 📶 QR Wi-Fi | Le mot de passe reste dans la config locale et dans l'app installée sur la TV. |
-| 🎵 Musique YouTube | Connecté à votre compte YouTube (voir ci-dessous). OK = bibliothèque plein écran (playlists, J'aime, recherche, recherches rapides, file en cours), ⏭ ⏮ ⏯ fonctionnent même sans focus, touche rouge = app YouTube. |
+| 🎵 Musique YouTube | Connecté à votre compte YouTube (voir ci-dessous). Boutons ⏮ ⏯ ⏭ ☰ à l'écran (◀ ▶ puis OK) pour les télécommandes sans touches média ; ☰ = bibliothèque plein écran (playlists, J'aime, recherche, en cours) avec les mêmes boutons en haut. Les touches ⏭ ⏮ ⏯ marchent aussi, même sans focus ; touche rouge = app YouTube. |
 | 🖼️ Photos | Disque branché sur la box : le **partage multimédia DLNA/UPnP** doit être activé sur la box Zeop. Le bouton « Rechercher la box » trouve l'URL automatiquement. Sinon, un disque USB branché directement sur la TV fonctionne aussi. |
 
 ## Connecter YouTube (widget Musique)

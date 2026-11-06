@@ -1,13 +1,16 @@
 // Widget musique connecté au compte YouTube (API YouTube Data v3 + lecteur YouTube via la page player/).
 // États : 'login' (bouton connecter) → 'connecting' (QR code + code) → 'player' (mini-lecteur).
-// OK sur le mini-lecteur ouvre la bibliothèque en plein écran (browser.js).
+// Mini-lecteur : boutons ⏮ ⏯ ⏭ ☰ (◀ ▶ pour choisir, OK pour valider) — utiles si la télécommande n'a pas
+// de touches média. ☰ ouvre la bibliothèque en plein écran (browser.js).
 import Widget from '../../app/Widget.js';
 import { h } from '../../app/dom.js';
 import { qrSvg } from '../../app/qr.js';
-import { parsePlaylistId, formatDuration, shuffleQueue } from './playlist.js';
+import { parsePlaylistId, shuffleQueue } from './playlist.js';
 import { createAuth, createLibrary } from './auth.js';
 import { MusicBrowser } from './browser.js';
 import { PlayerBridge } from './bridge.js';
+import { stepControl } from './list-nav.js';
+import { ICONS } from './icons.js';
 
 const PLAYING = 1;
 const BUFFERING = 3;
@@ -32,15 +35,28 @@ export default class MusicWidget extends Widget {
     this.coverEl = h('div', { className: 'mu-cover' });
     this.stateEl = h('div', { className: 'mu-state', text: '♪' });
     this.titleEl = h('div', { className: 'mu-title ellipsis', text: 'Aucune lecture' });
-    this.artistEl = h('div', { className: 'mu-artist muted ellipsis', text: 'OK : ouvrir ma bibliothèque' });
-    this.sourceEl = h('div', { className: 'mu-source ellipsis' });
+    this.artistEl = h('div', { className: 'mu-artist muted ellipsis', text: 'Choisissez une musique avec ☰' });
+    this.warnEl = h('div', { className: 'mu-warn ellipsis' });
     this.barEl = h('div', { className: 'mu-bar-fill' });
-    this.timeEl = h('div', { className: 'mu-time muted' });
-    this.hintEl = h('div', { className: 'mu-hint muted', text: 'OK : bibliothèque · ⏯ ⏭ ⏮ · 🔴 : app YouTube' });
+    // Boutons de lecture : ◀ ▶ pour choisir, OK pour valider (pas besoin de touches média).
+    this.controls = [
+      { id: 'prev', label: 'Précédent' },
+      { id: 'playpause', label: 'Lecture / pause' },
+      { id: 'next', label: 'Suivant' },
+      { id: 'library', label: 'Bibliothèque' },
+    ];
+    this.controlIndex = 1;
+    this.controls.forEach((c) => {
+      c.el = h('div', { className: 'mu-btn' + (c.id === 'playpause' ? ' mu-btn-main' : '') });
+      c.el.innerHTML = ICONS[c.id === 'playpause' ? 'play' : c.id];
+    });
     this.playerView = h('div', { className: 'mu-playerview' },
       h('div', { className: 'mu-media' }, h('div', { className: 'mu-player' }, this.holder), this.coverEl, this.stateEl),
-      h('div', { className: 'mu-info' }, this.sourceEl, this.titleEl, this.artistEl, h('div', { className: 'mu-bar' }, this.barEl), this.timeEl, this.hintEl));
+      h('div', { className: 'mu-info' }, this.titleEl, this.artistEl, this.warnEl,
+        h('div', { className: 'mu-bar' }, this.barEl),
+        h('div', { className: 'mu-controls' }, ...this.controls.map((c) => c.el))));
 
+    this.setWarning('');
     el.classList.add(s.showVideo ? 'mu-video' : 'mu-audio');
     el.appendChild(this.loginView);
     el.appendChild(this.playerView);
@@ -150,7 +166,7 @@ export default class MusicWidget extends Widget {
       const id = parsePlaylistId(s.startPlaylist);
       if (id) p = this.playPlaylist({ id, title: 'Playlist de démarrage' });
     }
-    if (p) p.catch((e) => (e && e.authLost ? this.onAuthLost(e) : this.setSource('⚠ ' + e.message)));
+    if (p) p.catch((e) => (e && e.authLost ? this.onAuthLost(e) : this.setWarning(e.message)));
   }
 
   playPlaylist(playlist) {
@@ -167,19 +183,21 @@ export default class MusicWidget extends Widget {
     const start = this.settings.shuffle ? 0 : Math.max(0, index);
     this.queue = { tracks: ordered, label: label || '' };
     this.errors = 0;
-    this.setSource(label);
+    this.setWarning('');
     this.ensurePlayer().then(() => {
       this.player.loadPlaylist(ordered.map((t) => t.id), start);
       this.player.setLoop(true);
-    }, (e) => this.setSource('⚠ ' + e.message));
+    }, (e) => this.setWarning(e.message));
   }
 
   playAt(index) {
     if (this.player && this.player.playVideoAt) this.player.playVideoAt(index);
   }
 
-  setSource(text) {
-    this.sourceEl.textContent = text || '';
+  /** Message d'erreur sous le titre (vide = masqué). */
+  setWarning(text) {
+    this.warnEl.textContent = text ? '⚠ ' + text : '';
+    this.warnEl.style.display = text ? '' : 'none';
   }
 
   currentTrack() {
@@ -202,7 +220,8 @@ export default class MusicWidget extends Widget {
   onState(state) {
     this.stateEl.textContent = state === PLAYING ? '' : state === BUFFERING ? '…' : '▶';
     this.stateEl.style.opacity = state === PLAYING ? '0' : '1';
-    if (state === PLAYING && this.errors) { this.errors = 0; this.setSource(this.queue.label); }
+    this.controls[1].el.innerHTML = ICONS[state === PLAYING || state === BUFFERING ? 'pause' : 'play'];
+    if (state === PLAYING && this.errors) { this.errors = 0; this.setWarning(''); }
     const t = this.currentTrack();
     if (t && t.id !== this.videoId) {
       this.videoId = t.id;
@@ -218,18 +237,17 @@ export default class MusicWidget extends Widget {
     // 152/153 : le lecteur refuse l'environnement (référent manquant) → inutile d'insister.
     this.errors++;
     if (code === 'api') {
-      this.setSource('⚠ La page lecteur n’arrive pas à charger YouTube');
+      this.setWarning('La page lecteur n’arrive pas à charger YouTube');
       return;
     }
     if (code === 152 || code === 153) {
-      this.setSource('⚠ Lecteur YouTube refusé sur cette TV (erreur ' + code + ')');
+      this.setWarning('Lecteur YouTube refusé sur cette TV (erreur ' + code + ')');
       return;
     }
     if (this.errors > 15) {
-      this.setSource('⚠ Aucun titre lisible ici (erreur YouTube ' + code + ')');
+      this.setWarning('Aucun titre lisible ici (erreur YouTube ' + code + ')');
       return;
     }
-    this.setSource((this.queue.label || '') + ' · titre ignoré (erreur ' + code + ')');
     this.after(500, () => this.player.nextVideo());
   }
 
@@ -238,7 +256,22 @@ export default class MusicWidget extends Widget {
     const d = this.player.getDuration();
     const t = this.player.getCurrentTime();
     this.barEl.style.width = d ? (100 * t / d) + '%' : '0';
-    this.timeEl.textContent = d ? formatDuration(t) + ' / ' + formatDuration(d) : '';
+  }
+
+  openLibrary() {
+    this.browser = new MusicBrowser(this, this.openPanel());
+  }
+
+  renderControls() {
+    this.controls.forEach((c, i) => {
+      c.el.className = 'mu-btn' + (c.id === 'playpause' ? ' mu-btn-main' : '') + (this.focused && i === this.controlIndex ? ' is-selected' : '');
+    });
+  }
+
+  /** Bouton du mini-lecteur validé avec OK. Sans rien en lecture, ⏯ ouvre la bibliothèque. */
+  pressControl(id) {
+    if (id === 'library' || (id === 'playpause' && !this.queue.tracks.length)) { this.openLibrary(); return; }
+    this.mediaKey(id);
   }
 
   /** Touches média (aussi utilisées par le panneau). Retourne true si gérée. */
@@ -273,7 +306,13 @@ export default class MusicWidget extends Widget {
       return key === 'enter';
     }
     if (key === 'enter') {
-      this.browser = new MusicBrowser(this, this.openPanel());
+      this.pressControl(this.controls[this.controlIndex].id);
+      return true;
+    }
+    const step = stepControl(this.controlIndex, key, this.controls.length);
+    if (step.handled) {
+      this.controlIndex = step.index;
+      this.renderControls();
       return true;
     }
     return this.mediaKey(key);
@@ -285,7 +324,7 @@ export default class MusicWidget extends Widget {
 
   onFocus(focused) {
     this.focused = focused;
-    this.hintEl.style.opacity = focused ? '1' : '0';
+    this.renderControls();
   }
 
   destroy() {
