@@ -225,7 +225,7 @@ export function initDictation(root, opts) {
 
   function hintText() {
     const parts = [];
-    if (engines.samsung) parts.push('maintenez le bouton micro');
+    if (engines.samsung) parts.push('icône micro ou bouton micro');
     if (engines.Speech) parts.push(o.preview ? 'F2 ou clic ici' : 'touche de couleur');
     return '🎤 Dicter : ' + parts.join(' ou ');
   }
