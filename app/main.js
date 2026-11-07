@@ -149,16 +149,14 @@ function start() {
 
   function byId(id) { return focusables.find((i) => i.conf.id === id); }
 
-  /** `pop` : petit rebond (déplacement du focus à la télécommande), sauf si la cellule est encore en train d'apparaître. */
-  function setFocus(id, pop) {
+  /** Met à jour le focus immédiatement ; les flèches ne déclenchent aucun recalcul de layout synchrone. */
+  function setFocus(id) {
     const prev = byId(focusedId);
     if (prev) { prev.cell.classList.remove('is-focused'); try { prev.inst.onFocus(false); } catch (e) { /* ignore */ } }
     focusedId = id;
     const next = byId(id);
     if (next) {
       next.cell.classList.add('is-focused');
-      const entering = ['cell-in', 'cell-in-next', 'cell-in-prev', 'cell-wake'].some((c) => next.cell.classList.contains(c));
-      if (pop && mode === 'full' && !entering) animate(next.cell, 'focus-pop', 0, 350);
       try { next.inst.onFocus(true); } catch (e) { /* ignore */ }
     }
   }
@@ -262,7 +260,7 @@ function start() {
     if (key === global.pageKey && pages.length > 1) { goToPage(1); return; }
     if (key === 'left' || key === 'right' || key === 'up' || key === 'down') {
       const next = findNeighbor(items, focusedId, key);
-      if (next) setFocus(next, true);
+      if (next) setFocus(next);
       return;
     }
     // Les touches média vont au premier widget qui sait les gérer (ex. musique), même sans focus.
