@@ -4,7 +4,7 @@ export default {
   icon: '🕐',
   description: 'Heure et date.',
   size: { default: { w: 4, h: 2 }, min: { w: 2, h: 1 } },
-  focusable: false,
+  focusable: true,
   schema: [
     { key: 'timezone', label: 'Fuseau horaire', type: 'select', default: '', options: [
       { value: '', label: 'Heure de la TV' },

@@ -4,7 +4,7 @@ export default {
   icon: '🌺',
   description: 'Un mot ou un proverbe de créole réunionnais chaque jour, avec sa traduction et le rappel de la veille.',
   size: { default: { w: 4, h: 2 }, min: { w: 3, h: 2 } },
-  focusable: false,
+  focusable: true,
   schema: [
     { key: 'title', label: 'Titre', type: 'text', default: 'Mot kréol du jour' },
     { key: 'mode', label: 'Contenu', type: 'select', default: 'both', options: [

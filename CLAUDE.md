@@ -66,7 +66,7 @@ en ignorant les dossiers qui commencent par `_` ou `.`). Il n'y a **aucun regist
      type: 'mon-widget',          // = nom du dossier (vérifié par les tests)
      name: 'Mon widget', icon: '🧩', description: '…',
      size: { default: { w: 3, h: 2 }, min: { w: 2, h: 1 } },   // grille 12×6
-     focusable: false,            // true si onKey() est utilisé (télécommande)
+     focusable: true,             // inclus dans la navigation ; onKey() peut rester sans action
      frameless: false,            // true = pas de cadre ni de padding
      remoteHelp: [['⏯', 'Lecture / pause']], // facultatif : lignes ajoutées à l'aide de la télécommande (touche Info)
      schema: [ { key: 'city', label: 'Ville', type: 'text', default: 'Saint-Denis', required: true } ],

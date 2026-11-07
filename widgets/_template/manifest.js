@@ -6,7 +6,7 @@ export default {
   icon: '🧩',                  // emoji affiché dans l'admin
   description: 'Décrivez ici ce que fait le widget.',
   size: { default: { w: 3, h: 2 }, min: { w: 2, h: 1 } }, // en cases d'une grille 12×6
-  focusable: false,            // true si le widget réagit à la télécommande (onKey)
+  focusable: true,            // true si le widget réagit à la télécommande (onKey)
   frameless: false,            // true pour supprimer le cadre et le padding (photos plein cadre…)
   // Réglages : la page admin génère le formulaire à partir de cette liste.
   // Types : text, password, number (min/max/step), bool, select (options), color, time (HH:MM), textarea

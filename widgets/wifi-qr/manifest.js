@@ -4,7 +4,7 @@ export default {
   icon: '📶',
   description: 'QR code à scanner pour se connecter au Wi-Fi.',
   size: { default: { w: 3, h: 3 }, min: { w: 2, h: 2 } },
-  focusable: false,
+  focusable: true,
   schema: [
     { key: 'title', label: 'Titre', type: 'text', default: 'Wi-Fi' },
     { key: 'ssid', label: 'Nom du réseau (SSID)', type: 'text', default: '', required: true },
