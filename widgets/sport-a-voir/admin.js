@@ -69,7 +69,10 @@ export function renderEditor(container, settings, onChange) {
         else next.delete(league.id);
         update(onChange, next);
       };
-      details.append(el('label', { className: 'sav-admin-league' }, input, el('span', { textContent: league.name })));
+      details.append(el('label', {
+        className: 'sav-admin-league',
+        style: { display: 'block', margin: '6px 0' },
+      }, input, el('span', { textContent: ' ' + league.name })));
     });
     container.append(details);
   });
