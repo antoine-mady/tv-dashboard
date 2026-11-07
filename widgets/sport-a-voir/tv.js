@@ -8,23 +8,25 @@ import { fetchEspnSchedule } from './sports/espn/api.js';
 export default class SportAvoirWidget extends Widget {
   mount(el, settings) {
     this.settings = settings || {};
-    this.selectedLeagues = this.store.get('selectedLeagues', LEAGUES.map((league) => league.id));
-    if (!Array.isArray(this.selectedLeagues)) this.selectedLeagues = LEAGUES.map((league) => league.id);
-    this.selectedLeagues = this.selectedLeagues.filter((id) => LEAGUES.some((league) => league.id === id));
-    if (this.store.get('selectionInitialized', false) !== true) {
-      this.selectedLeagues = LEAGUES.map((league) => league.id);
-      this.store.set('selectionInitialized', true);
-    }
-    const catalogVersion = Number(this.store.get('catalogVersion', 1));
-    if (catalogVersion < 2) {
-      // Active les nouvelles catégories une fois, tout en conservant les choix déjà enregistrés.
-      ['cs2', 'dota2', 'cod', 'europa-league', 'mls', 'nba', 'wnba', 'ncaa-basketball',
-        'nfl', 'college-football', 'mlb', 'nhl'].forEach((id) => {
-        if (this.selectedLeagues.indexOf(id) === -1) this.selectedLeagues.push(id);
-      });
+    const configured = typeof this.settings.selectedLeagues === 'string'
+      ? this.settings.selectedLeagues.split(',').map((id) => id.trim()).filter(Boolean)
+      : LEAGUES.map((league) => league.id);
+    const validConfigured = configured.filter((id, index) =>
+      LEAGUES.some((league) => league.id === id) && configured.indexOf(id) === index);
+    const configKey = validConfigured.slice().sort().join(',');
+    const savedConfigKey = this.store.get('configuredLeagues', null);
+    if (savedConfigKey !== configKey) {
+      // Un changement dans l’admin met à jour la sélection de départ sur la TV.
+      this.selectedLeagues = validConfigured;
       this.store.set('selectedLeagues', this.selectedLeagues);
-      this.store.set('catalogVersion', 2);
+      this.store.set('configuredLeagues', configKey);
+    } else {
+      const saved = this.store.get('selectedLeagues', validConfigured);
+      this.selectedLeagues = Array.isArray(saved)
+        ? saved.filter((id) => LEAGUES.some((league) => league.id === id))
+        : validConfigured.slice();
     }
+    this.store.set('selectionInitialized', true);
     this.schedules = {};
     this.errors = {};
     this.refreshPromise = null;
