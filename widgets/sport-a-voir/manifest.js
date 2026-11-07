@@ -18,6 +18,13 @@ export default {
       help: 'Nécessaire pour League of Legends, CS2, Dota 2 et Call of Duty. Les sports ESPN fonctionnent sans clé.',
     },
     {
+      key: 'selectedLeagues',
+      label: 'Ligues sélectionnées',
+      type: 'text',
+      default: 'lec,worlds,cs2,dota2,cod,premier-league,ligue-1,la-liga,bundesliga,serie-a,champions-league,europa-league,mls,nba,wnba,ncaa-basketball,nfl,college-football,mlb,nhl,six-nations,rugby-world-cup',
+      hidden: true,
+    },
+    {
       key: 'maxMatches',
       label: 'Événements visibles',
       type: 'number',
