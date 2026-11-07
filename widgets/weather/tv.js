@@ -5,7 +5,7 @@ import { buildVigilanceUrl, parseVigilance, vigilanceText } from './vigilance.js
 import { pickHours } from './hourly.js';
 import { formatHour, dayLength, uvLevel, aqiLevel, buildAirUrl } from './extras.js';
 import { buildForecastUrl, hourGroups, dayList, windText, rainText } from './forecast.js';
-import { ListPanel, focusHint } from '../../app/list-panel.js';
+import { ListPanel } from '../../app/list-panel.js';
 import clearDay from './assets/clear-day.svg';
 import clearNight from './assets/clear-night.svg';
 import partlyDay from './assets/partly-day.svg';
@@ -49,7 +49,6 @@ export default class WeatherWidget extends Widget {
       hasExtras ? this.extraEl : null));
     if (s.hours > 0) el.appendChild(this.hoursEl);
     if (s.days > 0) el.appendChild(this.daysEl);
-    el.appendChild(focusHint('OK : heures et jours'));
 
     this.every(s.refreshMinutes * 60 * 1000, () => this.refresh());
   }
