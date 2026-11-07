@@ -4,7 +4,7 @@ export default {
   icon: '♻️',
   description: 'Prochaines collectes du bac jaune, bac vert, des encombrants et des déchets végétaux. Calendrier réglable par secteur.',
   size: { default: { w: 4, h: 4 }, min: { w: 3, h: 2 } },
-  focusable: false,
+  focusable: true,
   schema: [
     { key: 'sector', label: 'Secteur', type: 'text', default: 'A23 · Grand Bois' },
     { key: 'cartonDates', label: 'Cartons / bac jaune — dates (une par ligne)', type: 'textarea',
