@@ -179,6 +179,7 @@ export function renderForm(container, schema, values, onChange) {
     container.innerHTML = '';
     let group = null;
     schema.filter((f) => isVisible(f, vals)).forEach((field) => {
+      if (field.hidden) return;
       // `group` (optionnel) : titre de section affiché quand il change d'un champ à l'autre.
       if (field.group && field.group !== group) {
         const head = document.createElement('h3');
